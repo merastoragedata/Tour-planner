@@ -1,0 +1,477 @@
+<!doctype html>
+<!--
+HANDOVER NOTES (paste this whole file into a new chat to continue). Keep this block updated in every version.
+PROJECT: Yatra Portal 2026 - private family pilgrimage portal, single index.html on free GitHub Pages. Owner: Ashish (iPhone). Everyone else Android. Zero cost only. English first, Hindi later.
+OWNER PREFERENCE: discuss requirements first, then change the page step by step. He uploads each new index.html to GitHub; all user data must survive (never rename localStorage key "yatra" or its fields; to-do ids are stable, never reuse).
+TRIP: 27 Nov - 12 Dec 2026. Satna group: Ashish(a) Krati(k) Shanti(s) Harmangal(h) Saloniya(l). Atul(t) from/to Itarsi (leaves train at Jabalpur). Suresh(u)+Divya(d) from/to Jajpur Keonjhar Rd (by road to Bhubaneswar). Vinit(v) CANCELLED: sees only his charges and pays cancellation charges to the payer. Maa/Abha Shukla(m), wife of Atul, is not travelling: views everything, chats, photos, no expenses. Vinit=Vineet, Krati=Kriti.
+MONEY RULES: person-wise cost = booking total / passengers on that booking (never pool). Settlement: Suresh bears u,d,h,l; Ashish bears a,k,s,t,v. Expenses default split among the 8 travellers (a,k,s,h,l,t,u,d). Every ticket/stay has a Paid-by selector naming a person. Up to 3 expense screenshots (compressed JPEG).
+DATA: T=tickets, S=stays, SG=sightseeing, PEND=to book/decide, TODO, TR=train info (TR[no][1] is the date to pick in Where Is My Train = the date the train starts from its origin), RAKE=coach order per train (only 11756 so far, from owner's screenshot), DT=deity/temple cards, LINKS, PINS, XY=weather coordinates. Berth type is computed from number: 3A/SL/3E 8 berths per compartment (1LB 2MB 3UB 4LB 5MB 6UB 7SL 8SU); 2A 6 per compartment. Coach plan shows each compartment like Where Is My Train: rows (1,2,3 + side lower) and (4,5,6 + side upper).
+SHARED STATE (needs Supabase, not yet configured): keys paid, todo, swaps, delay, exp, img_<id>, loc_<person> in table yatra_kv; chat in table yatra_chat. Without Supabase everything works per phone only. SQL: create table public.yatra_kv(key text primary key, val jsonb, updated_at timestamptz default now()); create table public.yatra_chat(id bigserial primary key, who text, txt text, ts timestamptz default now()); alter table public.yatra_kv enable row level security; alter table public.yatra_chat enable row level security; create policy "all" on public.yatra_kv for all to anon using(true) with check(true); create policy "all" on public.yatra_chat for all to anon using(true) with check(true); grant select,insert,update,delete on public.yatra_kv to anon; grant select,insert on public.yatra_chat to anon; grant usage,select on sequence public.yatra_chat_id_seq to anon;  (explicit grants needed after the 30 Oct 2026 Data API change). Then fill SB.url and SB.key.
+FILES: original tickets tickets/<PNR>.pdf ; stay vouchers stays/<id>.pdf ; deity photos images/<slug>.jpg (slug = lowercase title with dashes); all optional.
+DONE (v3 additions): account report as Excel (.xlsx, built in the browser, no library) and PDF with sheets Summary / Train expenses / Stay expenses (includes expenses added with category Stay extra) / Other expenses; expense categories Train ticket and Stay extra feed the train and stay groups; report styling: black title and section bands with white text, grey column headers, black text on white cells (owner asked for black background and black font; interpreted this way, confirm). Live location: browsers cannot track in the background, so each person pastes a Google Maps 'Until you turn this off' share link (stored as ll_<person>); page-based sharing kept only as backup.
+DONE (v2): paid-by by person name, copyable PNRs, share-as-image (one person or everyone), by-day and by-train-and-stay views with gaps, coach plans with full names, berth guide, seat swap (stored override, ticket unchanged), manual late-minutes, calendar alarms (.ics: 2h and 15 min before trains, arrival, stays), scenes (train/station/hotel/temple/beach), deity emblem cards, Open-Meteo weather (opens 16 days before), money: statements per person with CSV/print, group settlement, expenses with screenshots, group chat (text, polling), location sharing + directions, PIN gate (optional), 5 themes, Photos/Drive link buttons.
+NOT DONE: Supabase turned on and tested, real push notifications (needs server; alarms use calendar file instead), Hindi, chat photos/voice, family info with real images and verified Hindi video links, food stops, full coach orders for all trains (owner will send screenshots), detailed itinerary (owner will send), unverified: Where Is My Train package name com.whereismytrain.android.
+OPEN DECISIONS: TVC to Kanyakumari (16649 or road); Madurai to Rameswaram (16343 or 56711); Tirupati to Kanchipuram (16204, or Arakkonam by train then road); accommodation for TVC night 30 Nov, Madurai, Rameswaram, Tirupati, Kanchipuram; Atul Jabalpur to Itarsi ticket; Vinit cancellations; one duplicate Trichy to Tirupati set.
+-->
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Yatra Portal 2026</title>
+<style>
+:root{--bg:#fbf3f3;--card:#fff;--ink:#3a1420;--acc:#9b1c3b;--soft:#f6dfe4;--mut:#80606a;--on:#fff;--f:Georgia,serif;--r:14px;--pat:radial-gradient(circle at 10px 10px,#9b1c3b14 2px,transparent 3px) 0 0/20px 20px}
+[data-t=ocean]{--bg:#eef6fb;--ink:#12303f;--acc:#0b6fa4;--soft:#d6ecf8;--mut:#587384;--f:'Trebuchet MS',sans-serif;--r:24px;--pat:repeating-linear-gradient(0deg,#0b6fa410 0 2px,transparent 2px 14px)}
+[data-t=forest]{--bg:#eff7ee;--ink:#1c3321;--acc:#2a7d45;--soft:#d9eed9;--mut:#5b7360;--f:'Palatino Linotype',serif;--r:6px;--pat:linear-gradient(135deg,#2a7d4512 25%,transparent 25% 50%,#2a7d4512 50% 75%,transparent 75%) 0 0/24px 24px}
+[data-t=night]{--bg:#14161c;--card:#1f232c;--ink:#eceff4;--acc:#f5a524;--soft:#2c3240;--mut:#9aa4b5;--on:#14161c;--f:'Courier New',monospace;--r:2px;--pat:radial-gradient(#fff3 1px,transparent 1.5px) 0 0/38px 38px}
+[data-t=saffron]{--bg:#fff6e6;--ink:#35230f;--acc:#d9620a;--soft:#ffe2b8;--mut:#86683f;--f:Impact,'Arial Black',sans-serif;--r:30px 6px;--pat:repeating-linear-gradient(45deg,#d9620a10 0 8px,transparent 8px 16px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--pat),var(--bg);color:var(--ink);font:16px/1.45 system-ui,sans-serif;padding:env(safe-area-inset-top) 0 calc(70px + env(safe-area-inset-bottom))}
+h1,h2,h3,.day{font-family:var(--f);margin:0}
+header{padding:14px 14px 4px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+header h1{font-size:22px;flex:1 0 100%}
+select,button{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--soft);border-radius:10px;padding:8px 10px}
+button.p{background:var(--acc);color:var(--on);border:0}
+main{padding:0 12px;max-width:720px;margin:auto}
+.scene{height:150px;border-radius:var(--r);overflow:hidden;position:relative;margin:8px 0 4px;color:#fff;background:#223}
+.scene>*{position:absolute}
+.scene .lb{left:12px;top:8px;font:700 15px var(--f);text-shadow:0 1px 4px #0008;z-index:3}
+.chips{display:flex;gap:6px;overflow:auto;padding:4px 0}
+.chips button{font-size:13px;padding:5px 10px;white-space:nowrap}.chips .on{background:var(--acc);color:var(--on)}
+.wx{margin:4px 2px;font-size:15px}
+.sky{inset:0;background:linear-gradient(#6fb1e8,#d9ecff)}
+.far{left:0;right:0;bottom:44px;height:50px;background:radial-gradient(70px 44px at 50% 100%,#2f6b45 98%,transparent) 0 100%/150px 50px repeat-x;animation:mv 9s linear infinite}
+.poles{left:0;right:0;bottom:30px;height:70px;background:repeating-linear-gradient(90deg,transparent 0 80px,#1a1a1a 80px 83px);animation:mv2 1.2s linear infinite}
+.rail{left:0;right:0;bottom:0;height:34px;background:#3a3a3a repeating-linear-gradient(90deg,#8b5a2b 0 8px,transparent 8px 28px);animation:mv2 .5s linear infinite;border-top:3px solid #aaa}
+.tr{left:6%;width:88%;bottom:22px;animation:bob .45s ease-in-out infinite alternate}
+.plat{left:0;right:0;bottom:0;height:46px;background:#777;border-top:6px solid #e9c46a}
+.arr{bottom:46px;width:130%;left:-130%;animation:slide 7s ease-out infinite}
+.clock{right:14px;top:10px;width:42px;height:42px;border-radius:50%;background:#fff;border:3px solid #333}
+.clock:after{content:'';position:absolute;left:18px;top:6px;width:2px;height:16px;background:#222;transform-origin:bottom;animation:spin 8s linear infinite}
+.room{inset:0;background:linear-gradient(#2b1d3a,#4a2c3a)}
+.win{right:16px;top:26px;width:70px;height:64px;border:4px solid #c9a46a;background:#0a1030;border-radius:4px}
+.win:before{content:'';position:absolute;right:10px;top:8px;width:16px;height:16px;border-radius:50%;background:#ffe9a8;box-shadow:-22px 18px 0 -6px #fff,-34px 6px 0 -6px #fff}
+.bed{left:14px;bottom:0;width:62%;height:44px;background:#e8d9c4;border-radius:8px 8px 0 0;border-top:12px solid #9b1c3b}
+.lamp{left:68%;bottom:40px;width:26px;height:34px;background:#ffd36b;border-radius:6px 6px 14px 14px;animation:glow 2.4s ease-in-out infinite alternate}
+.tmp{inset:0;background:linear-gradient(#ff9a4d,#ffd9a0 70%,#7a4a2a)}
+.diya{bottom:8px;width:14px;height:8px;background:#b5651d;border-radius:0 0 14px 14px}
+.diya:before{content:'';position:absolute;left:4px;top:-14px;width:6px;height:14px;background:#ffd23f;border-radius:50% 50% 50% 50%/70% 70% 30% 30%;box-shadow:0 0 10px #ffb300;animation:fl .5s ease-in-out infinite alternate}
+.bell{top:0;width:3px;height:30px;background:#6b4a1c;transform-origin:top;animation:sw 2.2s ease-in-out infinite alternate}
+.bell:after{content:'';position:absolute;left:-7px;bottom:-8px;width:16px;height:14px;background:#d4a017;border-radius:50% 50% 4px 4px}
+.sea{left:0;right:0;bottom:30px;height:56px;background:linear-gradient(#1aa6c9,#0b6fa4)}
+.w1{left:0;right:0;bottom:70px;height:14px;background:radial-gradient(14px 10px at 50% 100%,#fff 90%,transparent) 0 100%/30px 14px repeat-x;animation:mv2 3s linear infinite}
+.sand{left:0;right:0;bottom:0;height:34px;background:#f1d9a0}
+.sun{right:30px;top:20px;width:44px;height:44px;border-radius:50%;background:#ffd23f;box-shadow:0 0 30px #ffd23f;animation:glow 3s ease-in-out infinite alternate}
+@keyframes mv{to{background-position-x:-150px}}@keyframes mv2{to{background-position-x:-146px}}
+@keyframes bob{to{transform:translateY(-3px)}}@keyframes slide{0%{left:-130%}55%,100%{left:-10%}}
+@keyframes spin{to{transform:rotate(360deg)}}@keyframes glow{to{filter:brightness(1.35)}}
+@keyframes fl{to{transform:scale(1.15,.85) translateX(1px)}}@keyframes sw{from{transform:rotate(-10deg)}to{transform:rotate(10deg)}}
+@keyframes pulse{50%{box-shadow:0 0 0 5px var(--soft)}}
+@media(prefers-reduced-motion:reduce){.scene *,.bay.me{animation:none!important}}
+.hero{background:var(--acc);color:var(--on);border-radius:var(--r);padding:14px;margin:8px 0}
+.hero b{font:700 24px var(--f);display:block}
+details{margin:8px 0}
+details.d>summary{font:700 18px var(--f);padding:10px 12px;background:var(--card);border-radius:var(--r);cursor:pointer;list-style:none;display:flex;justify-content:space-between}
+details.d.today>summary{background:var(--acc);color:var(--on)}
+.card{background:var(--card);border-radius:var(--r);padding:12px;margin:8px 0;border-left:5px solid var(--soft)}
+.card.mine{border-left-color:var(--acc);box-shadow:0 0 0 2px var(--soft)}
+.card.pend{border:2px dashed var(--acc);background:transparent}
+.card.dim{opacity:.65}
+.grp{font-weight:700;color:var(--acc);margin:10px 2px 0}
+.row{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.mut{color:var(--mut);font-size:14px}.big{font-size:19px;font-weight:700}
+.seat{background:var(--soft);border-radius:8px;padding:2px 8px;font-weight:600;display:inline-block}
+.x{text-decoration:line-through;opacity:.6}
+.btns{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}.btns button{font-size:14px;padding:6px 10px}
+select.warn{border-color:#d33;background:#fff0f0;color:#900}
+.coach{display:flex;gap:6px;align-items:center;margin:6px 0}.coach b{width:30px}
+.bays{display:flex;gap:3px;flex:1}
+.bay{flex:1;min-height:34px;border-radius:5px;background:var(--soft);font-size:10px;line-height:1.1;text-align:center;padding:2px 0;word-break:break-all}
+.bay.me{background:var(--acc);color:var(--on);animation:pulse 1.6s infinite}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--soft);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;border:0;border-radius:0;background:none;padding:14px 2px;font-size:13px}
+nav button.on{color:var(--acc);font-weight:700;box-shadow:inset 0 3px var(--acc)}
+.modal{position:fixed;inset:0;background:#0008;display:none;align-items:flex-end;justify-content:center;z-index:9}.modal.show{display:flex}
+.sheet{background:var(--card);width:100%;max-width:520px;border-radius:18px 18px 0 0;padding:18px;max-height:85vh;overflow:auto}
+table{width:100%;border-collapse:collapse}td,th{padding:7px 4px;border-bottom:1px solid var(--soft);text-align:left}.r{text-align:right}
+label.t{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--soft)}
+@media print{header,nav,.btns,.scene,.chips{display:none}}
+.scene{height:190px}
+.cl{top:22px;left:-70px;width:60px;height:18px;border-radius:20px;background:#fff;box-shadow:30px -8px 0 6px #fff,60px 0 0 0 #fff;opacity:.9;animation:cld 12s linear infinite}
+@keyframes cld{to{left:110%}}
+.tmp{background:linear-gradient(var(--tc,#ff9a4d),#ffd9a0 70%,#7a4a2a)}
+.rise{bottom:0;width:7px;height:7px;border-radius:50%;background:#ffd23f;box-shadow:0 0 10px #ffb300;animation:rs 4s linear infinite}
+@keyframes rs{to{transform:translateY(-170px);opacity:0}}
+.w2{left:0;right:0;bottom:50px;height:14px;background:radial-gradient(14px 10px at 50% 100%,#ffffffaa 90%,transparent) 0 100%/38px 14px repeat-x;animation:mv2 5s linear infinite reverse}
+.pnr{background:var(--soft);border-radius:8px;padding:2px 8px;font:600 14px ui-monospace,monospace;cursor:pointer;white-space:nowrap;display:inline-block}
+.leg{background:var(--card);border-radius:var(--r);padding:12px;margin:0;border-left:8px solid #1d6fb8}
+.leg.sy{border-left-color:#7b3fc4}.leg.pd{border:2px dashed var(--acc);background:transparent}
+.lh{font:700 13px var(--f);color:var(--mut)}.st{font-size:15px}
+.gap{text-align:center;color:var(--mut);padding:8px;font-size:14px}
+.late{background:#d33;color:#fff;border-radius:8px;padding:1px 8px;font-size:13px}
+.em{width:64px;height:64px;margin-right:10px}.spin{animation:spin 8s linear infinite}.gl{animation:glow 1.8s ease-in-out infinite alternate}
+.dv{border-left-width:8px}.dimg{width:100%;border-radius:10px;margin-top:8px}
+.plan{border:2px solid var(--soft);border-radius:12px;padding:6px;margin:6px 0}
+.pr{display:grid;grid-template-columns:repeat(var(--m,3),1fr) .95fr;gap:4px;margin:3px 0}
+.b{border:1px solid var(--soft);border-radius:8px;padding:3px 2px;text-align:center;font-size:11px;min-height:56px}
+.b b{display:block;font-size:16px}.b i{font-style:normal;display:block;font-weight:700;font-size:11px;overflow-wrap:anywhere}
+.b.f{background:var(--soft)}.b.me{background:var(--acc);color:var(--on);animation:pulse 1.6s infinite}.b.side{border-style:dashed}
+.coach{display:flex;gap:6px;align-items:center;margin:8px 0 2px}.coach>b{width:34px}
+.bays{display:flex;gap:3px;flex:1}.bay{flex:1;text-align:center;font-size:11px;border-radius:5px;background:var(--soft);opacity:.55;padding:2px 0}.bay.f{opacity:1;background:var(--acc);color:var(--on)}
+.chipsr{display:flex;gap:4px;flex-wrap:wrap;margin:8px 0}.chipsr span{background:var(--soft);border-radius:8px;padding:3px 8px;font-weight:600}.chipsr span.on{background:var(--acc);color:var(--on)}.chipsr small{opacity:.7;margin-left:3px}
+.btns .on{background:var(--acc);color:var(--on)}
+.form label{display:block;margin:8px 0;font-weight:600}.form input[type=text],.form input[type=number],.form input[type=date],.form select{display:block;width:100%;margin-top:4px;font-size:16px}
+.chk{display:flex;flex-wrap:wrap;gap:6px 14px;margin:6px 0}.chk label{font-weight:400;margin:0}
+.big2 b{font-size:30px}
+.chat{height:46vh;overflow:auto;background:var(--card);border-radius:var(--r);padding:8px}
+.msg{max-width:82%;background:var(--soft);border-radius:12px;padding:6px 10px;margin:6px 0}.msg.mm{margin-left:auto;background:var(--acc);color:var(--on)}.msg small{opacity:.7}
+nav{overflow-x:auto}nav button{flex:0 0 auto;min-width:76px}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#222;color:#fff;padding:8px 16px;border-radius:20px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20}#toast.show{opacity:1}
+</style></head><body>
+<header><h1>Yatra Portal 2026</h1><select id="me" aria-label="Who are you"></select>
+<select id="th" aria-label="Theme"><option value="maroon">Temple Maroon</option><option value="ocean">Ocean Blue</option><option value="forest">Forest Green</option><option value="night">Night</option><option value="saffron">Saffron</option></select></header>
+<main id="v"></main><nav id="nav"></nav>
+<div class="modal" id="md"><div class="sheet" id="sh"></div></div>
+<script>
+const SB={url:'',key:''}; // fill after Supabase setup (see handover notes)
+const P={a:'Ashish',k:'Krati',s:'Shanti',h:'Harmangal',l:'Saloniya',t:'Atul',u:'Suresh',d:'Divya',v:'Vinit',m:'Maa (Abha)'};
+const I2={a:'As',k:'Kr',s:'Sh',h:'Ha',l:'Sa',t:'At',u:'Su',d:'Di',v:'Vi'};
+const GA='asktv',GS='uhld',A8='akshltud';
+const TR={'11756':['Rewa–NITR Exp','27 Nov (likely)'],'12626':['Kerala SF Exp','27 Nov'],'15608':['Aronai Exp','check in app'],'12634':['Kanyakumari Exp','2 Dec'],'16752':['Rameswaram–Chennai Exp','5 Dec'],'16780':['Rameswaram–Tirupati Exp','6 Dec (verify)'],'16367':['Kashi Tamil Exp','check in app'],'12704':['Falaknuma SF Exp','11 Dec']};
+// [pnr,train,from,to,dep 'MMDD HHMM',arr,class,total,pax 'p=Coach/No|..']
+const T=[
+['5000185849','11756','Satna','NSC Bose Itwari','1127 1810','1128 0730','3A',2889.95,'a=B3/33|k=B3/36|v=B3/34'],
+['7000185872','11756','Satna','NSC Bose Itwari','1127 1810','1128 0730','3A',2889.95,'s=B3/28|h=B3/25|l=B3/26'],
+['2844718725','12626','Itarsi','Thiruvananthapuram','1128 0715','1129 2150','3A',4534.5,'t=B3/17|h=B3/20'],
+['6110315961','15608','Bhubaneswar','Thiruvananthapuram','1128 0735','1129 2045','2A',6244.5,'d=A2/16|u=WL RLWL/1'],
+['2960090113','12626','Nagpur','Vijayawada','1128 1150','1128 2215','3A',3249.95,'a=B3/54|k=B3/55|v=B3/53'],
+['2960088762','12626','Nagpur','Thiruvananthapuram','1128 1150','1129 2150','3A',4224.5,'s=B4/9|l=B4/12'],
+['2264030172','12626','Vijayawada','Thiruvananthapuram','1128 2225','1129 2150','3E',4554.95,'a=M1/74|k=M1/75|v=M1/76'],
+['4558077754','12634','Kanyakumari','Madurai','1202 1800','1202 2215','SL',892.7,'a=S4/42|u=S4/48'],
+['4765819105','12634','Kanyakumari','Madurai','1202 1800','1202 2215','SL',893.6,'d=S4/34|k=S4/35|l=S4/33|s=S4/36'],
+['4345862055','12634','Kanyakumari','Madurai','1202 1800','1202 2215','SL',232.25,'h=S4/28'],
+['4245860618','12634','Kanyakumari','Madurai','1202 1800','1202 2215','SL',452.7,'t=S4/41|v=S4/44'],
+['5000310311','16752','Rameswaram','Tiruchirappalli','1205 1800','1205 2300','SL',793.6,'a=S4/22|d=S4/20|k=S4/17|u=S4/19'],
+['7000312579','16752','Rameswaram','Tiruchirappalli','1205 1800','1205 2300','SL',402.7,'s=S4/41|l=S4/44'],
+['1000311064','16752','Rameswaram','Tiruchirappalli','1205 1800','1205 2300','SL',402.7,'h=S4/28|t=S4/25'],
+['7000336150','16780','Tiruchirappalli','Tirupati','1206 2215','1207 1010','3A',3445.4,'a=B2/56|d=WL 1|k=WL 2|u=WL 3'],
+['3000338331','16780','Tiruchirappalli','Tirupati','1206 2215','1207 1010','SL',988.15,'d=S6/78|k=S6/80|u=S6/75'],
+['1000336810','16780','Tiruchirappalli','Tirupati','1206 2215','1207 1010','3A',1734.5,'t=B2/49|h=B2/52'],
+['3000338219','16780','Tiruchirappalli','Tirupati','1206 2215','1207 1010','3A',1734.5,'l=B3/41|s=B3/44'],
+['4558483258','16367','Kanchipuram','Vijayawada','1211 1100','1211 2000','3A',1784.5,'d=B1/61|u=B1/62'],
+['4146288690','16367','Kanchipuram','Satna','1211 1100','1212 1550','3A',3714.5,'a=B1/60|k=B1/58'],
+['4346288445','16367','Kanchipuram','Satna','1211 1100','1212 1550','3A',3714.5,'t=B2/49|s=B2/52'],
+['4346288740','16367','Kanchipuram','Satna','1211 1100','1212 1550','3A',3714.5,'h=B2/41|l=B2/44'],
+['4446336186','12704','Vijayawada','Jajpur Keonjhar Rd','1211 2135','1212 1134','2A',3674.5,'d=A2/31|u=A2/32']];
+// [room,city,from,to,total,guests,note,id]
+const S=[
+['Retiring dorm D3A, D3B','Nagpur (NSC Bose Itwari)','1128 0800','1128 2000',168,'ak','Voucher 6006386713','6006386713'],
+['Retiring dorm D3C','Nagpur (NSC Bose Itwari)','1128 0800','1128 2000',84,'l','Voucher 6006386739','6006386739'],
+['Sri Udupis Inn · 7-bed + 4-bed rooms','Thiruvananthapuram','1129 1200','1130 1200',4410,A8,'Pay at hotel · RE0990','RE0990'],
+['Triveni Tourist Home · 2 four-bed rooms','Kanyakumari','1201 1230','1202 1100',3258,A8,'Paid on Goibibo · GH25020279147548','GH25020279147548'],
+['Room 114 · deluxe 5-bed','Tiruchirappalli','1205 2300','1206 2300',4014,'adku','Voucher 6006367012','6006367012'],
+['Room 102 · deluxe','Tiruchirappalli','1205 2300','1206 2300',2229,'sl','Voucher 6006367157','6006367157'],
+['Dorm GL03, GL04 · male dorm','Tiruchirappalli','1205 2300','1206 2300',1284,'ht','Voucher 6006367120','6006367120']];
+// sightseeing from your itinerary: [MMDD,title,scene,note] (days are tentative)
+const SG=[['1130','Padmanabhaswamy Temple','temple','Strict dress code, no phones'],['1130','Shankhumukham Beach','beach','Evening by the sea'],['1202','Sunrise at the Cape, Vivekananda Rock','beach','Before the 18:00 train'],['1202','Kumari Amman Temple, Suchindram','temple',''],['1203','Meenakshi Amman Temple, Thirupparankundram','temple','Evening Palliyarai ceremony'],['1204','Ramanathaswamy Temple','temple','After arriving 12:15'],['1205','Dhanushkodi','beach',''],['1206','Rockfort Ucchi Pillayar, Thiruvanaikaval, Samayapuram','temple','Thanjavur if time allows'],['1208','Tirumala Srivari darshan','temple',''],['1209','Tiruchanoor, Srikalahasti, Kapila Theertham','temple',''],['1210','Kanchipuram: Kamakshi Amman, Ekambareswarar, Varadharaja Perumal, Kailasanathar','temple','After arrival']];
+const PEND=[['1130 1200','Thiruvananthapuram stay for the night of 30 Nov','Not booked'],['1201 1837','Thiruvananthapuram → Kanyakumari','Parasuram 16649 (18:37 → 21:30) or road · decide'],['1202 2230','Madurai stay, 2–4 Dec','Not booked'],['1204 0925','Madurai → Rameswaram','Amritha 16343 (09:25 → 12:15) or 56711 · decide'],['1204 1300','Rameswaram stay, 4–5 Dec','Not booked'],['1207 1100','Tirupati stay, 7–10 Dec','Not booked'],['1210 0700','Tirupati → Kanchipuram','22101 is diverted · 16204 or Arakkonam by train then road'],['1210 2000','Kanchipuram stay, 10 Dec','Not booked'],['1212 1300','Atul: Jabalpur → Itarsi','Ticket not booked']];
+const TODO=[['c1','Cancel Vinit’s seat: 5000185849, 2960090113, 2264030172, 4245860618'],['c2','Cancel one set of Trichy → Tirupati tickets (3A waitlist or sleeper)'],['c3','Book Atul’s Jabalpur → Itarsi ticket (12 Dec)'],['c4','Change Harmangal’s boarding Itarsi → Nagpur (PNR 2844718725 shared with Atul)'],['c5','Update Sri Udupis Inn from 9 guests to 8'],['c6','Beds at NSC Bose Itwari for Shanti and Harmangal'],['c7','Check Saloniya’s NSC voucher ID (same number as Ashish’s)'],['c8','Suresh is on waitlist for Bhubaneswar → Thiruvananthapuram'],['c9','Vijayawada 28 Nov: Ashish and Krati change from B3 to M1 in 10 minutes'],['c10','Set who paid for every booking (Trains and Stays tabs)'],['n1','Create the Supabase tables from the handover notes and fill SB'],['n2','Put original PDFs in tickets/ and stays/ folders (named by PNR or voucher number)'],['n3','Send bogie arrangement screenshots for each train'],['n4','Send the detailed day-by-day itinerary'],['n5','Create PINs for people (People tab) if wanted'],['n6','Add the Google Photos album and Drive folder links in LINKS'],['n7','Optional: add deity photos as images/<name>.jpg']];
+const XY={Satna:[24.58,80.83],Itarsi:[22.61,77.76],Nagpur:[21.15,79.09],'NSC Bose Itwari':[21.15,79.09],Vijayawada:[16.52,80.62],Bhubaneswar:[20.27,85.84],Thiruvananthapuram:[8.49,76.95],Kanyakumari:[8.08,77.54],Madurai:[9.92,78.12],Rameswaram:[9.29,79.31],Tiruchirappalli:[10.8,78.69],Tirupati:[13.63,79.42],Kanchipuram:[12.84,79.7],'Jajpur Keonjhar Rd':[21.0,86.1]};
+const RAKE={'11756':{M2:4,M3:5,B1:6,B2:7,B3:8,A1:9,A2:10,H1:11,S1:12,S2:13}}; // coach positions from Where Is My Train; add more trains from owner's screenshots
+const LINKS={photos:'',drive:''}; // paste the shared Google Photos album and Drive folder links
+const PINS={}; // person letter -> sha256 hex of PIN (make one in People tab). Empty = no PIN
+const EM={
+v:'<svg viewBox="0 0 60 60" class="em spin"><circle cx="30" cy="30" r="22" fill="none" stroke="#d4a017" stroke-width="3"/><circle cx="30" cy="30" r="6" fill="#d4a017"/><path d="M30 8V52M8 30H52M14 14L46 46M46 14L14 46" stroke="#d4a017" stroke-width="2"/></svg>',
+s:'<svg viewBox="0 0 60 60" class="em gl"><path d="M30 6V54M18 12V28Q18 38 30 38Q42 38 42 28V12" fill="none" stroke="#c9d3e0" stroke-width="3.5" stroke-linecap="round"/><path d="M18 12l-4-7M42 12l4-7M30 6l-3 6h6z" stroke="#c9d3e0" stroke-width="3" stroke-linecap="round"/><circle cx="48" cy="12" r="5" fill="#ffe9a8"/></svg>',
+d:'<svg viewBox="0 0 60 60" class="em gl"><g fill="#f48fb1" stroke="#fff" stroke-width="1"><ellipse cx="30" cy="30" rx="7" ry="17" transform="rotate(-60 30 46)"/><ellipse cx="30" cy="30" rx="7" ry="17" transform="rotate(-30 30 46)"/><ellipse cx="30" cy="30" rx="7" ry="17" transform="rotate(30 30 46)"/><ellipse cx="30" cy="30" rx="7" ry="17" transform="rotate(60 30 46)"/><ellipse cx="30" cy="28" rx="7" ry="18" fill="#f8bbd0"/></g><circle cx="30" cy="48" r="4" fill="#ffd23f"/></svg>',
+o:'<svg viewBox="0 0 60 60" class="em gl"><text x="30" y="46" font-size="44" text-anchor="middle" fill="#ff9933">ॐ</text></svg>',
+k:'<svg viewBox="0 0 60 60" class="em gl"><path d="M30 4C39 16 39 28 30 36C21 28 21 16 30 4ZM30 36V57" fill="#c9d3e0" stroke="#c9d3e0" stroke-width="3" stroke-linecap="round"/></svg>'};
+// [match, emblem, deity, vibe, colour]
+const DT=[[/Padmanabha/,'v','Lord Padmanabha (Vishnu) resting on Anantha','Stone corridors and oil lamps. Strict dress code, no phones.','#2b4a8a'],
+[/Kumari Amman/,'d','Goddess Kanyakumari','A seaside shrine of the virgin goddess.','#b3203f'],
+[/Suchindram/,'o','Lord Thanumalayan (Shiva, Vishnu and Brahma as one)','Tall gopuram and carved musical pillars.','#7a4a2a'],
+[/Meenakshi/,'d','Goddess Meenakshi and Lord Sundareshwar','Towering painted gopurams and the thousand-pillar hall.','#b3203f'],
+[/Thirupparankundram/,'k','Lord Murugan','A rock-cut hill temple.','#8a2b2b'],
+[/Ramanathaswamy/,'s','Lord Ramanathaswamy (Shiva), a Jyotirlinga','Very long pillared corridors and the holy-water bath at 22 theerthams.','#3b4a6b'],
+[/Ucchi Pillayar/,'o','Lord Ganesha (Ucchi Pillayar)','A climb of steps up the Rockfort with city views.','#d9620a'],
+[/Thiruvanaikaval/,'s','Lord Jambukeswarar (Shiva, the water linga)','A shrine with a spring around the sanctum.','#3b4a6b'],
+[/Samayapuram/,'d','Goddess Samayapuram Mariamman','A busy, devotional village shrine.','#b3203f'],
+[/Tirumala/,'v','Lord Venkateswara (Balaji)','Seven hills and chants of "Govinda!". Long queues, so start early.','#2b4a8a'],
+[/Tiruchanoor/,'d','Goddess Padmavathi','The lotus-throne goddess, wife of Lord Venkateswara.','#b3203f'],
+[/Srikalahasti/,'s','Lord Kalahastheeswara (Shiva, the wind linga)','A temple at the foot of a hill beside the Swarnamukhi river.','#3b4a6b'],
+[/Kamakshi/,'d','Goddess Kamakshi, with Ekambareswarar, Varadharaja Perumal and Kailasanathar','The temple town of a thousand shrines.','#b3203f']];
+const dt=t=>DT.find(x=>x[0].test(t));
+const L={g(k,d){try{return localStorage.getItem(k)||d}catch(e){return d}},s(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+let ST=Object.assign({me:L.g('me','a'),th:L.g('th','maroon'),tab:'trip',vw:'day',mv:'stmt',sp:'',sc:'auto',paid:{},todo:[],swaps:{},delay:{},exp:[],loc:0},JSON.parse(L.g('yatra','{}')));
+const SHARED=['paid','todo','swaps','delay','exp'];
+const H={apikey:SB.key,Authorization:'Bearer '+SB.key,'Content-Type':'application/json'};
+const sbf=(p,o)=>fetch(SB.url+'/rest/v1/'+p,{...o,headers:{...H,...(o&&o.headers)}});
+function save(k){L.s('yatra',JSON.stringify(ST));if(k&&SB.url)sbf('yatra_kv?on_conflict=key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates'},body:JSON.stringify({key:k,val:ST[k]})}).catch(()=>{})}
+function pull(){if(!SB.url)return;sbf('yatra_kv?select=key,val&key=not.like.img_*').then(r=>r.json()).then(r=>{r.forEach(x=>{if(SHARED.includes(x.key)||x.key.startsWith('loc_')||x.key.startsWith('ll_'))ST[x.key]=x.val});L.s('yatra',JSON.stringify(ST));if(ST.tab!='chat')render()}).catch(()=>{})}
+const $=s=>document.querySelector(s),px=s=>s.split('|').map(x=>x.split('='));
+const D=s=>new Date(2026,+s.slice(0,2)-1,+s.slice(2,4),+s.slice(5,7),+s.slice(7,9));
+const inr=n=>'₹'+Math.round(n).toLocaleString('en-IN');
+const fd=d=>d.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'});
+const ft=d=>d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:false});
+const sameDay=(a,b)=>a.toDateString()===b.toDateString();
+const dayOf=k=>new Date(2026,+k.slice(0,2)-1,+k.slice(2,4));
+const me=()=>ST.me,mineT=()=>T.filter(t=>px(t[8]).some(x=>x[0]==me()));
+const dur=ms=>{const m=Math.round(ms/6e4),h=Math.floor(m/60);return (h?h+'h ':'')+m%60+'m'};
+const BT={LB:'Lower',MB:'Middle',UB:'Upper',SL:'Side lower',SU:'Side upper'};
+function seat(cl,s){const m=/^([A-Z]\d)\/(\d+)$/.exec(s);if(!m)return{txt:s};const n=+m[2],sz=cl=='2A'?6:8,r=n%sz;
+const ty=cl=='2A'?{1:'LB',2:'UB',3:'LB',4:'UB',5:'SL',0:'SU'}[r]:{1:'LB',2:'MB',3:'UB',4:'LB',5:'MB',6:'UB',7:'SL',0:'SU'}[r];
+return{c:m[1],n,sz,bay:Math.ceil(n/sz),ty,txt:`${m[1]} · ${n} · ${BT[ty]}`}}
+const eff=(t,p)=>ST.swaps[t[0]+p]||px(t[8]).find(x=>x[0]==p)[1];
+const PX=t=>px(t[8]).map(([p])=>[p,eff(t,p)]);
+const sT=(t,p)=>seat(t[6],eff(t,p)).txt+(ST.swaps[t[0]+p]?' ⇄':'');
+const lateM=t=>+ST.delay[t[1]+t[4].slice(0,4)]||0;
+const lateB=t=>lateM(t)?`<span class="late">+${lateM(t)} min late</span>`:'';
+const pn=x=>`<span class="pnr" onclick="cp('${x}')" title="Tap to copy">${x} ⧉</span>`;
+function toast(m){const e=$('#toast');e.textContent=m;e.className='show';setTimeout(()=>e.className='',1700)}
+function cp(t){const f=()=>{const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy')}catch(e){}a.remove()};navigator.clipboard?navigator.clipboard.writeText(t).catch(f):f();toast('Copied '+t)}
+const ID=Object.assign({},...[...T.map(t=>({[t[0]]:1})),...S.map(s=>({[s[7]]:1}))]);
+const pay=id=>{const v=ST.paid[id]||'';return `<select class="${v?'':'warn'}" onchange="setPaid('${id}',this.value)" aria-label="Who paid"><option value="">Paid by: not set</option>${'aukshltdv'.split('').map(p=>`<option value="${p}" ${v==p?'selected':''}>Paid by ${P[p]}</option>`).join('')}<option value="x" ${v=='x'?'selected':''}>Not paid yet</option></select>`};
+function setPaid(id,v){ST.paid[id]=v;save('paid');render()}
+function show(h){$('#sh').innerHTML=h+'<div class="btns"><button class="p" onclick="window.print()">Save / print</button><button onclick="$(\'#md\').classList.remove(\'show\')">Close</button></div>';$('#md').classList.add('show')}
+function tcard(i){const t=T[i];show(`<h3>${t[1]} ${TR[t[1]][0]}</h3><p>${pn(t[0])} <span class="mut">${t[6]}</span></p><p class="big">${t[2]} ${ft(D(t[4]))} → ${t[3]} ${ft(D(t[5]))}</p><p class="mut">${fd(D(t[4]))}</p>${PX(t).map(([p])=>`<div class="row"><span class="${p=='v'?'x':''}">${P[p]}</span><span class="seat">${sT(t,p)}</span></div>`).join('')}<p class="mut">Total ${inr(t[7])} · ${px(t[8]).length} passengers</p>`)}
+function stayGroups(){const g={};S.forEach(s=>{const k=s[1]+s[2].slice(0,4);(g[k]=g[k]||{c:s[1],f:s[2],o:s[3],r:[]}).r.push(s)});return g}
+function scard(k){const g=stayGroups()[k];show(`<h3>${g.c}</h3><p class="mut">In ${fd(D(g.f))} ${ft(D(g.f))} → out ${fd(D(g.o))} ${ft(D(g.o))}</p>${g.r.map(s=>`<p><b>${s[0]}</b><br>${s[5].split('').map(p=>P[p]).join(', ')}<br>${inr(s[4])} · ${pn(s[7])}</p>`).join('')}<p class="big">Total ${inr(g.r.reduce((a,s)=>a+s[4],0))}</p>`)}
+function wimt(no,i){const t=T[i];show(`<h3>Live status</h3><p>In Where Is My Train enter:</p><p class="big">Train ${no}</p><p class="big">Date: ${TR[no][1]}</p><p class="mut">The app uses the day the train starts from its first station, not the day you board (${fd(D(t[4]))}).</p><div class="btns"><button onclick="cp('${no}')">Copy train number</button><a href="intent:#Intent;package=com.whereismytrain.android;S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dcom.whereismytrain.android;end"><button class="p">Open the app</button></a></div>`)}
+function setLate(k,v){ST.delay[k]=+v||0;save('delay');render()}
+// ---------- scenes ----------
+const SC={
+train:'<div class="sky"></div><div class="cl"></div><div class="far"></div><div class="poles"></div><svg class="tr" viewBox="0 0 300 50"><g fill="#c0392b"><rect x="5" y="8" width="90" height="30" rx="5"/><rect x="100" y="8" width="90" height="30" rx="5"/><rect x="195" y="8" width="95" height="30" rx="9"/></g><path d="M12 18H88M107 18H183M202 18H282" stroke="#ffe9a8" stroke-width="9" stroke-dasharray="11 7"/><g fill="#222"><circle cx="30" cy="42" r="5"/><circle cx="70" cy="42" r="5"/><circle cx="125" cy="42" r="5"/><circle cx="165" cy="42" r="5"/><circle cx="225" cy="42" r="5"/><circle cx="265" cy="42" r="5"/></g></svg><div class="rail"></div>',
+station:'<div class="sky" style="background:linear-gradient(#f4a261,#ffe8c2)"></div><div class="cl"></div><div class="clock"></div><svg class="arr" viewBox="0 0 300 50"><g fill="#1d6fb8"><rect x="0" y="8" width="150" height="34" rx="6"/><rect x="154" y="8" width="146" height="34" rx="6"/></g><path d="M10 20H140M164 20H290" stroke="#fff" stroke-width="9" stroke-dasharray="12 8"/></svg><div class="plat"></div>',
+hotel:'<div class="room"></div><div class="win"></div><div class="bed"></div><div class="lamp"></div>',
+temple:'<div class="tmp"></div><svg viewBox="0 0 200 110" style="left:50%;margin-left:-110px;bottom:12px;width:220px"><g fill="#5a2d14"><polygon points="20,110 180,110 170,86 30,86"/><polygon points="40,86 160,86 150,64 50,64"/><polygon points="58,64 142,64 134,44 66,44"/><polygon points="74,44 126,44 119,28 81,28"/><polygon points="88,28 112,28 100,8"/></g><rect x="94" y="92" width="12" height="18" fill="#ffd23f"/></svg><div class="bell" style="left:18%"></div><div class="bell" style="left:82%;animation-delay:.7s"></div><div class="diya" style="left:10%"></div><div class="diya" style="left:28%"></div><div class="diya" style="left:64%"></div><div class="diya" style="left:88%"></div><div class="rise" style="left:20%"></div><div class="rise" style="left:45%;animation-delay:1.3s"></div><div class="rise" style="left:75%;animation-delay:2.4s"></div>',
+beach:'<div class="sky" style="background:linear-gradient(#ffb36b,#bfe6ff)"></div><div class="cl"></div><div class="sun"></div><div class="sea"></div><div class="w1"></div><div class="w2"></div><div class="sand"></div>'};
+const SN={train:'On the train',station:'At the station',hotel:'At the stay',temple:'Temple day',beach:'Beach day'};
+function todayG(){return SG.find(x=>sameDay(dayOf(x[0]),new Date()))}
+function auto(){const n=new Date(),my=mineT();
+if(my.some(t=>D(t[4])<=n&&D(t[5])>n))return'train';
+if(S.some(s=>s[5].includes(me())&&D(s[2])<=n&&D(s[3])>n))return'hotel';
+if(my.some(t=>Math.abs(D(t[4])-n)<108e5||Math.abs(D(t[5])-n)<36e5))return'station';
+const g=todayG();return g?g[2]:'temple'}
+function focus(){const n=new Date(),my=mineT().sort((a,b)=>D(a[4])-D(b[4]));let pl=my.length?my[0][2]:'Satna',dt=my.length?D(my[0][4]):n,lb='Trip starts from';
+my.forEach(t=>{if(D(t[4])<=n){dt=n;pl=t[3];lb=D(t[5])>n?'On the way to':'At'}});return[pl,dt,lb]}
+const WM=c=>c==0?'☀️':c<4?'⛅':c<50?'🌫️':c<68?'🌧️':c<80?'❄️':c<90?'🌦️':'⛈️';
+async function wx(){const el=$('#wx');if(!el)return;const[pl,dt,lb]=focus(),c=XY[pl];if(!c){el.textContent='';return}
+const z=n=>String(n).padStart(2,'0'),iso=`${dt.getFullYear()}-${z(dt.getMonth()+1)}-${z(dt.getDate())}`;
+try{const j=await(await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${c[0]}&longitude=${c[1]}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FKolkata&start_date=${iso}&end_date=${iso}`)).json();
+if(!j.daily)throw 0;el.innerHTML=`${WM(j.daily.weather_code[0])} <b>${lb} ${pl}</b> · ${Math.round(j.daily.temperature_2m_min[0])}–${Math.round(j.daily.temperature_2m_max[0])}°C · rain ${j.daily.precipitation_probability_max[0]}%`}
+catch(e){el.innerHTML=`🌤️ <b>${lb} ${pl}</b> · forecast for ${fd(dt)} opens 16 days before`}}
+function sceneHTML(){const a=auto(),s=ST.sc=='auto'?a:ST.sc,g=todayG()||SG.find(x=>dt(x[1])),d=g&&dt(g[1]);
+return `<div class="scene" style="--tc:${d?d[4]:'#ff9a4d'}" aria-label="${SN[s]}">${SC[s]}<span class="lb">${SN[s]}</span></div><div class="chips">${['auto','train','station','hotel','temple','beach'].map(k=>`<button class="${ST.sc==k?'on':''}" onclick="ST.sc='${k}';save();render()">${k=='auto'?'Auto ('+SN[a]+')':SN[k]}</button>`).join('')}</div><div class="wx" id="wx"></div>`}
+function darshan(g){const d=dt(g[1]);if(!d)return `<div class="card"><b>${g[1]}</b><div class="mut">${g[3]||'Time to be set'}</div></div>`;
+const sl=g[1].replace(/\W+/g,'-').toLowerCase();
+return `<div class="card dv" style="border-left-color:${d[4]}"><div class="row" style="align-items:center;flex-wrap:nowrap"><div>${EM[d[1]]}</div><div><b>${g[1]}</b><div>${d[2]}</div><div class="mut">${d[3]}${g[3]?' · '+g[3]:''}</div></div></div><img class="dimg" src="images/${sl}.jpg" alt="" onerror="this.remove()"></div>`}
+// ---------- trip ----------
+function legCard(e,n){const m=me();
+if(e.k=='t'){const t=e.t;return `<div class="leg tr"><div class="lh">Leg ${n} · Train</div><b>${t[1]} ${TR[t[1]][0]}</b> ${lateB(t)}<div class="st">Starts ${fd(e.s)} ${ft(e.s)} · ${t[2]}</div><div class="st">Ends ${fd(e.e)} ${ft(e.e)} · ${t[3]}</div><div class="seat">${sT(t,m)}</div> ${pn(t[0])}</div>`}
+if(e.k=='s'){const s=e.r;return `<div class="leg sy"><div class="lh">Leg ${n} · Stay</div><b>${s[1]}</b><div>${s[0]}</div><div class="st">Check-in ${fd(e.s)} ${ft(e.s)}</div><div class="st">Check-out ${fd(e.e)} ${ft(e.e)}</div>${pn(s[7])}</div>`}
+return `<div class="leg pd"><div class="lh">To book or decide</div><b>${e.p[1]}</b><div class="mut">${e.p[2]}</div></div>`}
+function legView(){const m=me(),ev=[];
+mineT().forEach(t=>ev.push({k:'t',t,s:D(t[4]),e:D(t[5])}));
+S.filter(s=>s[5].includes(m)).forEach(s=>ev.push({k:'s',r:s,s:D(s[2]),e:D(s[3])}));
+PEND.forEach(p=>{if(!/^Atul/.test(p[1])||'tm'.includes(m))ev.push({k:'p',p,s:D(p[0]),e:D(p[0])})});
+ev.sort((a,b)=>a.s-b.s);let h='<div class="mut" style="margin:6px 2px">Each block is one train or one stay. Blue is a train, purple is a stay, dashed is not booked yet.</div>',pe=null,n=0;
+ev.forEach(e=>{if(e.k!='p'){n++;if(pe){const g=e.s-pe;h+=g>0?`<div class="gap">⏱ ${dur(g)} before the next block</div>`:'<div class="gap">↧ overlaps the previous block (stay window continues)</div>'}pe=e.e;h+=legCard(e,n)}else h+=legCard(e,'')});
+return h||'<p class="mut">Nothing booked for this person.</p>'}
+function tripView(){const days={};const add=(d,g,h)=>{const k=d.slice(0,4);((days[k]=days[k]||{})[g]=days[k][g]||[]).push(h)};
+T.forEach((t,i)=>{const m=px(t[8]).find(x=>x[0]==me());add(t[4],'Travel',`<div class="card ${m?'mine':'dim'}"><div class="row"><b>${t[1]} ${TR[t[1]][0]}</b><span class="mut">${t[6]}</span></div><div>${t[2]} ${ft(D(t[4]))} → ${t[3]} ${ft(D(t[5]))} ${lateB(t)}</div>${m?`<span class="seat">You: ${sT(t,me())}</span>`:'<span class="mut">You are not on this ticket</span>'} ${pn(t[0])}<div class="btns"><button onclick="tcard(${i})">Ticket card</button><a href="tickets/${t[0]}.pdf" target="_blank"><button>Original PDF</button></a></div></div>`)});
+Object.entries(stayGroups()).forEach(([k,g])=>add(g.f,'Stay',`<div class="card ${g.r.some(s=>s[5].includes(me()))?'mine':'dim'}"><b>${g.c}</b><div class="mut">Check-in ${ft(D(g.f))} · check-out ${fd(D(g.o))} ${ft(D(g.o))}</div><div class="btns"><button onclick="scard('${k}')">Short card</button></div></div>`));
+SG.forEach(g=>add(g[0]+' 0900','Sightseeing',darshan(g)));
+PEND.forEach(p=>add(p[0],'To book or decide',`<div class="card pend"><b>${p[1]}</b><div class="mut">${p[2]}</div></div>`));
+const n=new Date(),keys=Object.keys(days).sort(),start=D('1127 1810'),openK=keys.find(k=>sameDay(dayOf(k),n))||(n<start?keys[0]:keys[keys.length-1]);
+let h=sceneHTML()+`<div class="hero"><span>Hello ${P[me()]}</span><b>${n<start?Math.ceil((start-n)/864e5)+' days to the yatra':n<new Date(2026,11,13)?'Yatra under way':'Yatra complete'}</b></div>
+<div class="btns"><button class="${ST.vw=='day'?'on':''}" onclick="ST.vw='day';save();render()">By day</button><button class="${ST.vw=='leg'?'on':''}" onclick="ST.vw='leg';save();render()">By train and stay</button><button onclick="shareImg('${me()}')">Share my trip image</button><button onclick="shareImg('all')">Share everyone's image</button><button onclick="ics()">Add alarms to calendar</button></div>`;
+if(ST.vw=='leg')return h+legView();
+keys.forEach(k=>{const d=days[k],o=sameDay(dayOf(k),n);h+=`<details class="d ${o?'today':''}" ${k==openK?'open':''}><summary><span>${fd(dayOf(k))}${o?' · today':''}</span><span class="mut">${Object.keys(d).length} groups</span></summary>${Object.entries(d).map(([g,x])=>`<div class="grp">${g}</div>${x.join('')}`).join('')}</details>`});
+return h}
+// ---------- trains ----------
+function groups(){const g={};T.forEach((t,i)=>{const k=t[1]+t[4].slice(0,4);(g[k]=g[k]||[]).push(i)});return g}
+function plan(c,cl,list){const sz=cl=='2A'?6:8,m=cl=='2A'?2:3,nb=cl=='2A'?9:cl=='3E'?11:9,bays=[...new Set(list.map(x=>x.z.bay))].sort((a,b)=>a-b);
+const cell=(n,ty)=>{const w=list.filter(x=>x.z.n==n);return `<div class="b ${w.length?'f':''} ${w.some(x=>x.p==me())?'me':''} ${ty[0]=='S'?'side':''}"><b>${n}</b><small>${ty}</small>${w.map(x=>`<i>${P[x.p]}</i>`).join('')}</div>`};
+return `<div class="coach"><b>${c}</b><div class="bays">${Array.from({length:nb},(_,b)=>`<div class="bay ${bays.includes(b+1)?'f':''}">${b+1}</div>`).join('')}</div></div>`+bays.map(b=>{const s0=(b-1)*sz,r1=Array.from({length:m},(_,i)=>cell(s0+1+i,sz==6?(i?'UB':'LB'):['LB','MB','UB'][i])).join(''),r2=Array.from({length:m},(_,i)=>cell(s0+m+1+i,sz==6?(i?'UB':'LB'):['LB','MB','UB'][i])).join('');
+return `<div class="plan"><div class="mut">Compartment ${b} · coach ${c}</div><div class="pr" style="--m:${m}">${r1}${cell(s0+sz-1,'SL')}</div><div class="pr" style="--m:${m}">${r2}${cell(s0+sz,'SU')}</div></div>`}).join('')}
+function swapUI(k){const g=groups()[k],opts=[];g.forEach(i=>{const t=T[i];PX(t).forEach(([p,s])=>{if(seat(t[6],s).c)opts.push([i,p,t[6],s])})});
+const o=`<option value="">Choose</option>`+opts.map(([i,p,c,s],j)=>`<option value="${i}|${p}">${P[p]} · ${seat(c,s).txt}</option>`).join('');
+show(`<h3>Swap seats</h3><p class="mut">Both people must be on this train in the same class. The ticket itself does not change, so tell the TTE or check with your coach attendant when you swap.</p><select id="sa">${o}</select><br><br><select id="sb">${o}</select><div class="btns"><button class="p" onclick="doSwap('${k}')">Swap these two</button><button onclick="resetSwap('${k}')">Undo all swaps on this train</button></div>`)}
+function doSwap(k){const[a,b]=['#sa','#sb'].map(x=>$(x).value.split('|'));if(!a[0]||!b[0]||(a[0]==b[0]&&a[1]==b[1]))return toast('Choose two different people');
+const ta=T[a[0]],tb=T[b[0]];if(ta[6]!=tb[6])return toast('Different classes cannot swap');const sa=eff(ta,a[1]),sb=eff(tb,b[1]);
+ST.swaps[ta[0]+a[1]]=sb;ST.swaps[tb[0]+b[1]]=sa;save('swaps');$('#md').classList.remove('show');render();toast('Swapped')}
+function resetSwap(k){groups()[k].forEach(i=>px(T[i][8]).forEach(([p])=>delete ST.swaps[T[i][0]+p]));save('swaps');$('#md').classList.remove('show');render()}
+function trainsView(){const g=groups(),ks=Object.keys(g).sort((a,b)=>D(T[g[a][0]][4])-D(T[g[b][0]][4])),first=ks.find(k=>g[k].some(i=>px(T[i][8]).some(x=>x[0]==me())));
+return '<h2 style="margin:12px 0">Trains</h2>'+ks.map(k=>{const ix=g[k],t0=T[ix[0]],no=t0[1],co={},rk=RAKE[no];
+ix.forEach(i=>{const t=T[i];PX(t).forEach(([p,s])=>{const z=seat(t[6],s);if(z.c)(co[z.c]=co[z.c]||[]).push({p,z,cl:t[6]})})});
+const all=[].concat(...Object.values(co)),mine=all.filter(x=>x.p==me());
+const guide=mine.length?all.filter(x=>x.p!=me()&&x.p!='v').map(x=>{const m=mine[0],same=m.z.c==x.z.c;let w;
+if(same)w=(m.z.bay==x.z.bay?'same compartment':Math.abs(m.z.bay-x.z.bay)+' compartments away')+' · '+x.z.c+' '+x.z.n+' '+BT[x.z.ty];
+else if(rk&&rk[m.z.c]&&rk[x.z.c]){const d=Math.abs(rk[m.z.c]-rk[x.z.c]);w=d+' coach'+(d>1?'es':'')+' away · '+x.z.c+' '+x.z.n}
+else w=(x.z.c[0]==m.z.c[0]?'about '+Math.abs(+m.z.c.slice(1)-+x.z.c.slice(1))+' coaches away':'different coach type')+' · '+x.z.c+' '+x.z.n;
+return `<div class="row"><b>${P[x.p]}</b><span class="mut">${w}</span></div>`}).join(''):'';
+const order=rk?`<div class="chipsr">${Object.entries(rk).sort((a,b)=>a[1]-b[1]).map(([c,pz])=>`<span class="${co[c]?'on':''}">${c}<small>${pz}</small></span>`).join('')}</div><div class="mut">Coach order from Where Is My Train (only these were visible).</div>`:'';
+return `<details class="d" ${k==first?'open':''}><summary><span>${no} ${TR[no][0]}</span><span class="mut">${fd(D(t0[4]))}</span></summary>
+<div class="card"><div class="row"><b>Start date in the app: ${TR[no][1]}</b><button onclick="wimt('${no}',${ix[0]})">Live status</button></div>
+<div class="row" style="margin-top:8px"><span>Running late (minutes)</span><input type="number" inputmode="numeric" min="0" style="width:80px" value="${lateM(t0)||''}" onchange="setLate('${no+t0[4].slice(0,4)}',this.value)"></div>
+${order}${Object.keys(co).sort().map(c=>plan(c,co[c][0].cl,co[c])).join('')}
+${guide?`<div class="grp">Where everyone is, compared with you</div>${guide}`:''}
+<div class="btns"><button onclick="swapUI('${k}')">Swap seats</button></div></div>
+${ix.map(i=>{const t=T[i],m=px(t[8]).find(x=>x[0]==me());return `<div class="card ${m?'mine':'dim'}"><div class="row"><b>${t[2]} → ${t[3]}</b><span class="mut">${t[6]}</span></div><div>${pn(t[0])}</div>${PX(t).map(([p])=>`<div class="row"><span class="${p=='v'?'x':''}">${P[p]}</span><span class="seat">${sT(t,p)}</span></div>`).join('')}<div class="row"><span class="mut">${inr(t[7])}</span>${pay(t[0])}</div><div class="btns"><button onclick="tcard(${i})">Ticket card</button><a href="tickets/${t[0]}.pdf" target="_blank"><button>Original PDF</button></a></div></div>`}).join('')}</details>`}).join('')}
+function staysView(){return '<h2 style="margin:12px 0">Stays</h2>'+Object.entries(stayGroups()).map(([k,g])=>{const tot=g.r.reduce((a,s)=>a+s[4],0),mine=g.r.some(s=>s[5].includes(me()));
+return `<details class="d" ${mine?'open':''}><summary><span>${g.c}</span><span class="mut">${inr(tot)}</span></summary><div class="mut" style="margin:0 4px">In ${fd(D(g.f))} ${ft(D(g.f))} → out ${fd(D(g.o))} ${ft(D(g.o))}</div>${g.r.map(s=>`<div class="card ${s[5].includes(me())?'mine':'dim'}"><b>${s[0]}</b><div class="mut">${s[6].replace(s[7],'')}</div><div>${pn(s[7])}</div><div>${s[5].split('').map(p=>P[p]).join(', ')}</div><div class="row"><b>${inr(s[4])}</b>${pay(s[7])}</div><div class="btns"><a href="stays/${s[7]}.pdf" target="_blank"><button>Detailed PDF</button></a></div></div>`).join('')}<div class="btns"><button onclick="scard('${k}')">Short card</button></div></details>`}).join('')+PEND.filter(p=>/stay/.test(p[1])).map(p=>`<div class="card pend"><b>${p[1]}</b><div class="mut">${p[2]}</div></div>`).join('')}
+// ---------- money ----------
+// ---------- account report: Excel and PDF ----------
+function items(){const o=[],nm=l=>l.split('').map(p=>P[p]).join(', ');
+T.forEach(t=>{const q=px(t[8]).map(x=>x[0]).join('');o.push({g:'train',bk:1,d:D(t[4]),c:[t[1]+' '+TR[t[1]][0],t[2]+' → '+t[3],t[0],t[6],nm(q)],lb:t[2]+' → '+t[3]+' · '+t[1],amt:t[7],ppl:q,pd:ST.paid[t[0]]||''})});
+S.forEach(s=>o.push({g:'stay',bk:1,d:D(s[2]),c:[s[1],s[0],s[7],nm(s[5])],lb:s[1]+' · '+s[0],amt:s[4],ppl:s[5],pd:ST.paid[s[7]]||''}));
+ST.exp.forEach(e=>{const g=e.cat=='Train ticket'?'train':e.cat=='Stay extra'?'stay':'other',n=e.note?': '+e.note:'',sp=e.sp.length==8?'All 8 travellers':nm(e.sp);
+o.push({g,d:new Date(e.date+'T00:00'),c:g=='train'?['Added: '+(e.note||e.cat),'—','Expense entry','—',sp]:g=='stay'?['—','Added: '+(e.note||e.cat),'Expense entry',sp]:[e.cat,e.note||'—',sp],lb:e.cat+n+' ('+e.date+')',amt:e.amt,ppl:e.sp,pd:e.by})});return o}
+function acct(){const sh={},pd={};'akshltudv'.split('').forEach(p=>{sh[p]=[];pd[p]=0});let ns=0,np=0;
+items().forEach(x=>{const n=x.ppl.length;x.ppl.split('').forEach(p=>sh[p]&&sh[p].push([x.lb,x.amt/n]));if(pd[x.pd]!==undefined)pd[x.pd]+=x.amt;else if(x.bk){if(x.pd=='x')np+=x.amt;else ns+=x.amt}});
+const sum=p=>sh[p].reduce((a,x)=>a+x[1],0);return{sh,pd,ns,np,sum}}
+const fdt=d=>d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+const PN=v=>v?(v=='x'?'Not paid yet':P[v]):'Not set';
+function report(p){const it=items().sort((a,b)=>a.d-b.d),A='akshltudv'.split(''),N=p?P[p]:'Everyone';
+const G={train:['Train expenses',['Date','Train','Route','PNR / reference','Class','Passengers'],[12,24,30,17,9,30]],stay:['Stay expenses',['Date','City','Room / item','Reference','Guests'],[12,20,34,17,32]],other:['Other expenses',['Date','Category','Note','Split between'],[12,20,34,34]]};
+const gs=(g,q)=>it.filter(x=>x.g==g&&x.ppl.includes(q)).reduce((a,x)=>a+x.amt/x.ppl.length,0),gp=(g,q)=>it.filter(x=>x.g==g&&x.pd==q).reduce((a,x)=>a+x.amt,0),K=['train','stay','other'];
+const sub=N+' · generated '+new Date().toLocaleString('en-GB')+' · all amounts in INR',out=[];
+const sr=(p?[p]:A).map(q=>{const a=gs('train',q),b=gs('stay',q),c=gs('other',q),d=K.reduce((s,g)=>s+gp(g,q),0);return[P[q],a,b,c,a+b+c,d,d-(a+b+c)]});
+const n6=[1,2,3,4,5,6].map(i=>({h:['Train share','Stays share','Other share','Total share','Paid','Balance (paid − share)'][i-1],w:16,n:1}));
+const grp=[['Suresh group: Suresh, Divya, Harmangal, Saloniya',GS],['Ashish group: Ashish, Krati, Shanti, Atul, Vinit',GA]].map(([n,g])=>{const s=g.split('').reduce((a,q)=>a+K.reduce((b,k)=>b+gs(k,q),0),0),d=g.split('').reduce((a,q)=>a+K.reduce((b,k)=>b+gp(k,q),0),0);return[n,s,d,d-s]});
+const bk=it.filter(x=>x.bk),np=bk.filter(x=>x.pd=='x').reduce((a,x)=>a+x.amt,0),ns=bk.filter(x=>!x.pd).reduce((a,x)=>a+x.amt,0);
+out.push({name:'Summary',title:'Yatra 2026 · Account summary',sub:sub+' · a positive balance means money is owed to that person',blocks:[
+{t:'Account by person',cols:[{h:'Person',w:24},...n6],rows:sr,total:['Total',...[1,2,3,4,5,6].map(i=>sr.reduce((a,r)=>a+r[i],0))]},
+{t:'Final settlement',cols:[{h:'Group',w:24},{h:'Share',w:16,n:1},{h:'Paid',w:16,n:1},{h:'Balance',w:16,n:1}],rows:grp},
+{t:'Open items',cols:[{h:'Item',w:24},{h:'Amount',w:16,n:1}],rows:[['Bookings marked not paid yet',np],['Bookings with payer not set',ns]]}]});
+Object.entries(G).forEach(([g,[t,h,w]])=>{const l=it.filter(x=>x.g==g&&(!p||x.ppl.includes(p)));
+const cols=[...h.map((x,i)=>({h:x,w:w[i]})),{h:'Amount (₹)',w:15,n:1},{h:'Paid by',w:15},...(p?[{h:'Share of '+N+' (₹)',w:17,n:1}]:[])];
+const rows=l.map(x=>[fdt(x.d),...x.c,x.amt,PN(x.pd),...(p?[x.amt/x.ppl.length]:[])]);
+const tot=['Total',...h.slice(1).map(()=>''),l.reduce((a,x)=>a+x.amt,0),'',...(p?[l.reduce((a,x)=>a+x.amt/x.ppl.length,0)]:[])];
+out.push({name:t,title:'Yatra 2026 · '+t,sub,blocks:[{t,cols,rows,total:tot}]})});return out}
+const cl=n=>{let s='';n++;while(n){s=String.fromCharCode(65+(n-1)%26)+s;n=Math.floor((n-1)/26)}return s};
+const xe=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])).replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g,'');
+function sheetXml(sh){let r=0,rows='';const mg=[],nc=Math.max(...sh.blocks.map(b=>b.cols.length)),wd=Array(nc).fill(10);
+const cell=(c,v,s,n)=>n&&typeof v=='number'?`<c r="${cl(c)}${r}" s="${s}"><v>${v}</v></c>`:v===''||v==null?`<c r="${cl(c)}${r}" s="${s}"/>`:`<c r="${cl(c)}${r}" s="${s}" t="inlineStr"><is><t xml:space="preserve">${xe(v)}</t></is></c>`;
+const row=(f,ht)=>{r++;rows+=`<row r="${r}"${ht?` ht="${ht}" customHeight="1"`:''}>${f()}</row>`};
+const band=(txt,s,ht)=>{row(()=>cell(0,txt,s)+Array.from({length:nc-1},(_,i)=>cell(i+1,'',s)).join(''),ht);mg.push(`A${r}:${cl(nc-1)}${r}`)};
+band(sh.title,1,28);band(sh.sub,2,18);r++;
+sh.blocks.forEach(b=>{band(b.t,9,22);b.cols.forEach((c,i)=>wd[i]=Math.max(wd[i],c.w));
+row(()=>b.cols.map((c,i)=>cell(i,c.h,3)).join(''),32);
+b.rows.forEach(v=>row(()=>b.cols.map((c,i)=>cell(i,v[i],c.n?5:4,c.n)).join('')));
+if(b.total)row(()=>b.cols.map((c,i)=>cell(i,b.total[i],c.n?7:6,c.n)).join(''));r++});
+return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><sheetViews><sheetView workbookViewId="0" showGridLines="0"/></sheetViews><sheetFormatPr defaultRowHeight="16"/><cols>${wd.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('')}</cols><sheetData>${rows}</sheetData><mergeCells count="${mg.length}">${mg.map(m=>`<mergeCell ref="${m}"/>`).join('')}</mergeCells><pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.3" footer="0.3"/><pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"/></worksheet>`}
+const XS='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',NS='xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"';
+const STY=XS+`<styleSheet ${NS}><fonts count="5"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="15"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font><font><sz val="10"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FF000000"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font></fonts><fills count="5"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF000000"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFD9D9D9"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF2F2F2"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FF000000"/></left><right style="thin"><color rgb="FF000000"/></right><top style="thin"><color rgb="FF000000"/></top><bottom style="thin"><color rgb="FF000000"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="10"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="center"/></xf><xf numFmtId="0" fontId="2" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="center"/></xf><xf numFmtId="0" fontId="3" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf><xf numFmtId="4" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="top"/></xf><xf numFmtId="0" fontId="3" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/><xf numFmtId="4" fontId="3" fillId="4" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="4" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="center"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+const CRC=(()=>{const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+const crc=u=>{let c=~0;for(const b of u)c=CRC[(c^b)&255]^(c>>>8);return(~c)>>>0};
+function zip(files,mime){const e=new TextEncoder(),parts=[],cd=[];let off=0;
+files.forEach(([n,s])=>{const nm=e.encode(n),d=e.encode(s),c=crc(d),h=new DataView(new ArrayBuffer(30));
+h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x800,true);h.setUint16(12,0x21,true);h.setUint32(14,c,true);h.setUint32(18,d.length,true);h.setUint32(22,d.length,true);h.setUint16(26,nm.length,true);
+parts.push(new Uint8Array(h.buffer),nm,d);
+const g=new DataView(new ArrayBuffer(46));g.setUint32(0,0x02014b50,true);g.setUint16(4,20,true);g.setUint16(6,20,true);g.setUint16(8,0x800,true);g.setUint16(14,0x21,true);g.setUint32(16,c,true);g.setUint32(20,d.length,true);g.setUint32(24,d.length,true);g.setUint16(28,nm.length,true);g.setUint32(42,off,true);
+cd.push(new Uint8Array(g.buffer),nm);off+=30+nm.length+d.length});
+const cs=cd.reduce((a,x)=>a+x.length,0),t=new DataView(new ArrayBuffer(22));t.setUint32(0,0x06054b50,true);t.setUint16(8,files.length,true);t.setUint16(10,files.length,true);t.setUint32(12,cs,true);t.setUint32(16,off,true);
+return new Blob([...parts,...cd,new Uint8Array(t.buffer)],{type:mime})}
+function xlsxBlob(sh){const n=sh.length;return zip([['[Content_Types].xml',XS+`<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sh.map((_,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>`],
+['_rels/.rels',XS+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'],
+['xl/workbook.xml',XS+`<workbook ${NS} xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sh.map((s,i)=>`<sheet name="${xe(s.name)}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('')}</sheets></workbook>`],
+['xl/_rels/workbook.xml.rels',XS+`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sh.map((_,i)=>`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join('')}<Relationship Id="rId${n+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
+['xl/styles.xml',STY],...sh.map((s,i)=>[`xl/worksheets/sheet${i+1}.xml`,sheetXml(s)])],'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
+function pdfStr(sheets){const pg=[],W=595,H=842,M=34,CW=W-2*M;let c,y;
+const E=s=>String(s).replace(/[^\x20-\x7e]/g,ch=>({'₹':'Rs.','→':'->','·':'-','–':'-','—':'-','−':'-','⇄':'<>'}[ch]||'?')).replace(/([\\()])/g,'\\$1');
+const Tx=(s,x,yy,b,fs,w)=>c.push(`BT /F${b?2:1} ${fs} Tf ${w?'1':'0'} g ${x.toFixed(1)} ${yy.toFixed(1)} Td (${E(s)}) Tj ET`);
+const R=(x,yy,w,h,g)=>c.push(`${g} g ${x.toFixed(1)} ${yy.toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)} re f`);
+const Ln=(x1,y1,x2)=>c.push(`0.5 w 0 G ${x1.toFixed(1)} ${y1.toFixed(1)} m ${x2.toFixed(1)} ${y1.toFixed(1)} l S`);
+const wrap=(s,w,fs,b)=>{s=String(s);const mx=Math.max(3,Math.floor((w-6)/(fs*(b?.58:.52)))),o=[];let l='';s.split(' ').forEach(wd=>{while(wd.length>mx){if(l){o.push(l);l=''}o.push(wd.slice(0,mx));wd=wd.slice(mx)}if((l+' '+wd).trim().length>mx){o.push(l);l=wd}else l=(l+' '+wd).trim()});if(l)o.push(l);return o.length?o:['']};
+const np=()=>{c=[];pg.push(c);y=H-M};
+const num=v=>v.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+sheets.forEach(sh=>{np();R(M,y-28,CW,28,0);Tx(sh.title,M+8,y-19,1,14,1);y-=28;R(M,y-16,CW,16,'0.2');Tx(sh.sub,M+8,y-11,0,7,1);y-=30;
+sh.blocks.forEach(b=>{const tw=b.cols.reduce((a,x)=>a+x.w,0),cw=b.cols.map(x=>x.w/tw*CW),cx=cw.reduce((a,w,i)=>(a.push(i?a[i-1]+cw[i-1]:M),a),[]);
+const hdr=()=>{const ls=b.cols.map((x,i)=>wrap(x.h,cw[i],8,1)),h=Math.max(...ls.map(l=>l.length))*10+8;R(M,y-h,CW,h,'0.85');ls.forEach((l,i)=>l.forEach((t,k)=>Tx(t,cx[i]+3,y-10-k*10,1,8)));Ln(M,y-h,M+CW);y-=h};
+if(y<M+90)np();R(M,y-18,CW,18,0);Tx(b.t,M+8,y-13,1,10,1);y-=18;hdr();
+const draw=(v,tot)=>{const ls=b.cols.map((x,i)=>wrap(x.n&&typeof v[i]=='number'?num(v[i]):v[i]??'',cw[i],8,tot)),h=Math.max(...ls.map(l=>l.length))*10+6;
+if(y-h<M+24){np();hdr()}if(tot)R(M,y-h,CW,h,'0.93');
+ls.forEach((l,i)=>l.forEach((t,k)=>{const xx=b.cols[i].n?cx[i]+cw[i]-4-t.length*8*(tot?.58:.54):cx[i]+3;Tx(t,xx,y-9-k*10,tot,8)}));Ln(M,y-h,M+CW);y-=h};
+b.rows.forEach(v=>draw(v,0));if(b.total)draw(b.total,1);y-=16})});
+pg.forEach((cc,i)=>{c=cc;Tx(`Page ${i+1} of ${pg.length}`,W-M-60,18,0,7);Tx('Yatra 2026 account report',M,18,0,7)});
+const o=['<</Type/Catalog/Pages 2 0 R>>',`<</Type/Pages/Kids[${pg.map((_,i)=>`${5+i*2} 0 R`).join(' ')}]/Count ${pg.length}>>`,'<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>','<</Type/Font/Subtype/Type1/BaseFont/Helvetica-Bold>>'];
+pg.forEach((cc,i)=>{const s=cc.join('\n');o.push(`<</Type/Page/Parent 2 0 R/MediaBox[0 0 ${W} ${H}]/Resources<</Font<</F1 3 0 R/F2 4 0 R>>>>/Contents ${6+i*2} 0 R>>`);o.push(`<</Length ${s.length}>>\nstream\n${s}\nendstream`)});
+let out='%PDF-1.4\n';const off=[];o.forEach((x,i)=>{off.push(out.length);out+=`${i+1} 0 obj\n${x}\nendobj\n`});const xr=out.length;
+return out+`xref\n0 ${o.length+1}\n0000000000 65535 f \n`+off.map(x=>String(x).padStart(10,'0')+' 00000 n \n').join('')+`trailer\n<</Size ${o.length+1}/Root 1 0 R>>\nstartxref\n${xr}\n%%EOF`}
+function dl(b,n){const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=n;a.click()}
+function expo(p,k){const r=report(p),n='yatra-account-'+(p?P[p]:'everyone');if(k=='x')dl(xlsxBlob(r),n+'.xlsx');else dl(new Blob([pdfStr(r)],{type:'application/pdf'}),n+'.pdf')}
+function moneyView(){const m=me(),a=acct(),sp=ST.sp||m,mv=ST.mv;
+const seg=`<div class="btns"><button class="${mv=='stmt'?'on':''}" onclick="ST.mv='stmt';render()">Statement</button><button class="${mv=='add'?'on':''}" onclick="ST.mv='add';render()">Add expense</button><button class="${mv=='list'?'on':''}" onclick="ST.mv='list';render()">All expenses</button></div>`;
+if(m=='v'){return `<div class="hero"><span>Your charges so far</span><b>${inr(a.sum('v'))}</b></div><table>${a.sh.v.map(([w,n])=>`<tr><td>${w}</td><td class="r">${inr(n)}</td></tr>`).join('')}</table><div class="btns"><button class="p" onclick="expo('v','x')">Excel: my charges</button><button onclick="expo('v','p')">PDF: my charges</button></div><p class="mut">Cancellation charges you owe will be added after the tickets are cancelled.</p>`}
+if(mv=='add')return seg+expForm();
+if(mv=='list')return seg+expList();
+const sh=a.sh[sp],tot=a.sum(sp),gs=g=>g.split('').reduce((x,p)=>x+a.sum(p),0),gp=g=>g.split('').reduce((x,p)=>x+a.pd[p],0);
+return seg+`<div class="btns"><select onchange="ST.sp=this.value;render()">${'akshltudv'.split('').map(p=>`<option value="${p}" ${sp==p?'selected':''}>${P[p]}'s statement</option>`).join('')}</select></div><div class="btns"><button class="p" onclick="expo('','x')">Excel: everyone</button><button class="p" onclick="expo('','p')">PDF: everyone</button><button onclick="expo('${sp}','x')">Excel: ${P[sp]}</button><button onclick="expo('${sp}','p')">PDF: ${P[sp]}</button></div>
+<div class="hero big2"><span>${P[sp]}: share ${inr(tot)}</span><b>${inr(a.pd[sp]-tot)}</b><span>Paid ${inr(a.pd[sp])} · positive means owed to ${P[sp]}</span></div>
+<table>${sh.map(([w,n])=>`<tr><td>${w}</td><td class="r">${inr(n)}</td></tr>`).join('')}</table>
+<h3 style="margin-top:18px">Everyone</h3><table><tr><th></th><th class="r">Share</th><th class="r">Paid</th><th class="r">Balance</th></tr>${'akshltudv'.split('').map(p=>`<tr><td>${P[p]}</td><td class="r">${inr(a.sum(p))}</td><td class="r">${inr(a.pd[p])}</td><td class="r">${inr(a.pd[p]-a.sum(p))}</td></tr>`).join('')}</table>
+<h3 style="margin-top:18px">Final settlement</h3><table><tr><th></th><th class="r">Share</th><th class="r">Paid</th><th class="r">Balance</th></tr><tr><td>Suresh's group: Suresh, Divya, Harmangal, Saloniya</td><td class="r">${inr(gs(GS))}</td><td class="r">${inr(gp(GS))}</td><td class="r">${inr(gp(GS)-gs(GS))}</td></tr><tr><td>Ashish's group: Ashish, Krati, Shanti, Atul, Vinit</td><td class="r">${inr(gs(GA))}</td><td class="r">${inr(gp(GA))}</td><td class="r">${inr(gp(GA)-gs(GA))}</td></tr></table>
+<p class="mut">Bookings not paid yet: ${inr(a.np)} · payer not set: ${inr(a.ns)}. Vinit's seats and the duplicate waitlist ticket are counted until cancelled.</p>`}
+let DR=[];
+function expForm(){const td=new Date(),z=n=>String(n).padStart(2,'0'),iso=`${td.getFullYear()}-${z(td.getMonth()+1)}-${z(td.getDate())}`;
+return `<h3 style="margin:10px 0">New expense</h3><div class="form"><label>Amount (₹)<input id="xa" type="number" inputmode="decimal" step="0.01" placeholder="0.00"></label>
+<label>For<select id="xc"><option>Food</option><option>Local travel</option><option>Temple and donation</option><option>Shopping</option><option>Train ticket</option><option>Stay extra</option><option>Other</option></select></label>
+<label>Note<input id="xn" type="text" placeholder="What was it?"></label><label>Date<input id="xd" type="date" value="${iso}"></label>
+<label>Paid by<select id="xb">${'akshltud'.split('').map(p=>`<option value="${p}" ${me()==p?'selected':''}>${P[p]}</option>`).join('')}</select></label>
+<div>Split between (everyone ticked by default; one person means only they pay)</div><div class="chk">${'akshltud'.split('').map(p=>`<label><input type="checkbox" class="xs" value="${p}" checked> ${P[p]}</label>`).join('')}</div>
+<label>Screenshots (up to 3)<input id="xi" type="file" accept="image/*" multiple onchange="pickImg(this)"></label><div id="xt" class="btns"></div>
+<button class="p" onclick="addExp()">Save expense</button></div>`}
+function pickImg(el){DR=[];$('#xt').innerHTML='';[...el.files].slice(0,3).forEach(f=>{const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,560/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);const u=c.toDataURL('image/jpeg',.5);DR.push(u);$('#xt').insertAdjacentHTML('beforeend',`<img src="${u}" style="height:56px;border-radius:6px">`)};im.src=r.result};r.readAsDataURL(f)})}
+function addExp(){const amt=+$('#xa').value,sp=[...document.querySelectorAll('.xs:checked')].map(x=>x.value).join('');if(!amt||!sp)return toast('Enter an amount and at least one person');
+const id='e'+Date.now();ST.exp.push({id,amt,cat:$('#xc').value,note:$('#xn').value.trim(),date:$('#xd').value,by:$('#xb').value,sp,who:me(),im:DR.length});
+if(DR.length){ST['img_'+id]=DR;save('img_'+id)}DR=[];save('exp');ST.mv='list';render();toast('Expense saved')}
+function delExp(id){if(!confirm('Delete this expense?'))return;ST.exp=ST.exp.filter(e=>e.id!=id);save('exp');render()}
+async function viewImg(id){let l=ST['img_'+id];if(!l&&SB.url){try{l=(await(await sbf('yatra_kv?select=val&key=eq.img_'+id)).json())[0].val;ST['img_'+id]=l}catch(e){}}
+l?show(l.map(u=>`<img src="${u}" style="width:100%;border-radius:8px;margin-bottom:8px">`).join('')):toast('Screenshots not available')}
+function expList(){const l=[...ST.exp].reverse();return `<h3 style="margin:10px 0">All expenses (${l.length})</h3>`+(l.length?l.map(e=>`<div class="card"><div class="row"><b>${e.cat}${e.note?' · '+e.note:''}</b><b>${inr(e.amt)}</b></div><div class="mut">${e.date} · paid by ${P[e.by]} · split ${e.sp.length==8?'by 8':e.sp.split('').map(p=>P[p]).join(', ')}</div><div class="btns">${e.im?`<button onclick="viewImg('${e.id}')">Screenshots (${e.im})</button>`:''}${(e.who==me()||'au'.includes(me()))?`<button onclick="delExp('${e.id}')">Delete</button>`:''}</div></div>`).join(''):'<p class="mut">No expenses yet. Use Add expense.</p>')}
+// ---------- chat ----------
+const chatHTML=()=>(ST.chatL||[]).map(c=>`<div class="msg ${c.who==me()?'mm':''}"><b>${P[c.who]||c.who}</b><div>${String(c.txt).replace(/</g,'&lt;')}</div><small>${new Date(c.ts).toLocaleString('en-IN',{hour:'2-digit',minute:'2-digit',day:'numeric',month:'short'})}</small></div>`).join('')||'<p class="mut">No messages yet.</p>';
+async function chatLoad(){if(!SB.url)return;try{ST.chatL=(await(await sbf('yatra_chat?select=id,who,txt,ts&order=id.desc&limit=80')).json()).reverse();const el=$('#cl');if(el){el.innerHTML=chatHTML();el.scrollTop=el.scrollHeight}}catch(e){}}
+async function chatSend(){const i=$('#ci'),v=i.value.trim();if(!v)return;i.value='';try{await sbf('yatra_chat',{method:'POST',body:JSON.stringify({who:me(),txt:v})})}catch(e){}chatLoad()}
+function chatView(){if(!SB.url)return '<h2 style="margin:12px 0">Group chat</h2><p>Chat starts working after the Supabase setup in the handover notes. Until then use the Share buttons to send tickets and images on WhatsApp.</p>';
+return `<h2 style="margin:12px 0">Group chat</h2><div id="cl" class="chat">${chatHTML()}</div><div class="btns"><input id="ci" type="text" placeholder="Message" style="flex:1;min-width:0" onkeydown="if(event.key=='Enter')chatSend()"><button class="p" onclick="chatSend()">Send</button></div>`}
+// ---------- people ----------
+async function sha(t){return[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t)))].map(b=>b.toString(16).padStart(2,'0')).join('')}
+let WID;function locOn(){if(!navigator.geolocation||WID)return;let last=0;WID=navigator.geolocation.watchPosition(p=>{if(Date.now()-last<3e4)return;last=Date.now();ST['loc_'+me()]={lat:p.coords.latitude,lng:p.coords.longitude,ts:Date.now()};save('loc_'+me())},()=>{},{enableHighAccuracy:true})}
+function locToggle(c){ST.loc=c?1:0;save();if(c)locOn();else if(WID){navigator.geolocation.clearWatch(WID);WID=0}render()}
+function saveLL(){const v=$('#ll').value.trim();if(v&&!/^https:\/\//.test(v))return toast('Paste the full link starting with https://');ST['ll_'+me()]=v;save('ll_'+me());render();toast('Saved')}
+function peopleView(){const ago=t=>{const m=Math.round((Date.now()-t)/6e4);return m<1?'just now':m<60?m+' min ago':Math.round(m/60)+' h ago'};
+return `<h2 style="margin:12px 0">People and live location</h2><div class="card mine"><b>Share your location until you turn it off</b><ol style="margin:6px 0;padding-left:20px"><li>Open Google Maps, tap your profile picture, then Location sharing.</li><li>Choose New share, set it to "Until you turn this off", and copy the link.</li><li>Paste the link here once. Google Maps keeps sharing in the background, even when this page is closed.</li></ol><input id="ll" type="url" placeholder="Paste your Google Maps share link" value="${ST['ll_'+me()]||''}" style="width:100%;margin:4px 0"><div class="btns"><button class="p" onclick="saveLL()">Save my link</button></div></div>`+'akshltud'.split('').map(p=>{const l=ST['loc_'+p],k=ST['ll_'+p];return `<div class="card"><div class="row"><b>${P[p]}</b><span class="mut">${k?'live link added':l?'seen '+ago(l.ts):'location not shared'}</span></div><div class="btns">${k?`<a href="${k}" target="_blank"><button class="p">Open live location</button></a>`:''}${l?`<a href="https://www.google.com/maps/dir/?api=1&destination=${l.lat},${l.lng}" target="_blank"><button>Directions to last seen spot</button></a>`:''}</div></div>`}).join('')+
+`<h3 style="margin-top:18px">Backup: share only while this page is open</h3><label class="t"><input type="checkbox" ${ST.loc?'checked':''} onchange="locToggle(this.checked)"><span>Send my position from this page (stops when the page is closed)</span></label>
+<h3 style="margin-top:18px">Photos and documents</h3><div class="btns">${LINKS.photos?`<a href="${LINKS.photos}" target="_blank"><button class="p">Open trip photo album</button></a>`:'<button disabled>Photo album link not added yet</button>'}${LINKS.drive?`<a href="${LINKS.drive}" target="_blank"><button class="p">Open documents folder</button></a>`:'<button disabled>Drive link not added yet</button>'}</div>
+<h3 style="margin-top:18px">PIN maker (owner)</h3><div class="btns"><input id="pp" type="password" inputmode="numeric" placeholder="PIN" style="width:110px"><button onclick="sha($('#pp').value).then(h=>{cp(h)})">Copy PIN code</button></div><div class="mut">Paste the copied code into PINS in index.html for that person, for example PINS={a:'…'}.</div>`}
+// ---------- share image and calendar ----------
+function legsOf(p){return[...T.filter(t=>px(t[8]).some(x=>x[0]==p)).map(t=>({s:D(t[4]),a:`${t[1]} ${TR[t[1]][0]}`,b:`${t[2]} ${ft(D(t[4]))} → ${t[3]} ${ft(D(t[5]))}  (${fd(D(t[4]))})`,c:`Seat ${sT(t,p)} · PNR ${t[0]}`})),...S.filter(s=>s[5].includes(p)).map(s=>({s:D(s[2]),a:`Stay: ${s[1]}`,b:s[0],c:`In ${fd(D(s[2]))} ${ft(D(s[2]))} · out ${fd(D(s[3]))} ${ft(D(s[3]))}`}))].sort((x,y)=>x.s-y.s)}
+function shareImg(p){const ps=p=='all'?'akshltud'.split(''):[p],lines=[];
+ps.forEach(q=>{lines.push({h:P[q]});legsOf(q).forEach(l=>{lines.push({t:l.a,b:1});lines.push({t:l.b});lines.push({t:l.c,g:1})})});
+const W=1080,c=document.createElement('canvas'),x=c.getContext('2d'),acc=getComputedStyle(document.body).getPropertyValue('--acc').trim()||'#9b1c3b';
+const hh=l=>l.h?84:l.b?40:34;c.width=W;c.height=130+lines.reduce((a,l)=>a+hh(l),0)+40;
+x.fillStyle='#fff';x.fillRect(0,0,W,c.height);x.fillStyle=acc;x.fillRect(0,0,W,100);x.fillStyle='#fff';x.font='700 44px Georgia,serif';x.fillText('Yatra 2026 · '+(p=='all'?'Everyone':P[p]),30,66);
+let y=130;lines.forEach(l=>{if(l.h){x.fillStyle=acc;x.fillRect(0,y,W,56);x.fillStyle='#fff';x.font='700 34px Georgia,serif';x.fillText(l.h,30,y+40)}else{x.fillStyle=l.g?'#555':'#222';x.font=(l.b?'700 30px':'26px')+' system-ui,sans-serif';x.fillText(l.t,30,y+26)}y+=hh(l)});
+c.toBlob(async b=>{const f=new File([b],'yatra-'+p+'.png',{type:'image/png'});if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:'Yatra 2026'});return}catch(e){}}const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=f.name;a.click()})}
+function ics(){const z=n=>String(n).padStart(2,'0'),f=d=>`2026${z(d.getMonth()+1)}${z(d.getDate())}T${z(d.getHours())}${z(d.getMinutes())}00`,out=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Yatra//EN'];
+const ev=(u,s,e,t,al)=>{out.push('BEGIN:VEVENT','UID:'+u+'@yatra','DTSTAMP:20261101T000000','DTSTART:'+f(s),'DTEND:'+f(e),'SUMMARY:'+t,...al.flatMap(m=>['BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+t,'TRIGGER:-PT'+m+'M','END:VALARM']),'END:VEVENT')};
+mineT().forEach(t=>{ev(t[0]+'d',D(t[4]),D(t[5]),`Train ${t[1]} ${t[2]} to ${t[3]} · ${sT(t,me())}`,[120,15]);ev(t[0]+'a',new Date(D(t[5])-9e5),D(t[5]),`Arriving ${t[3]} (${t[1]})`,[0])});
+S.filter(s=>s[5].includes(me())).forEach(s=>ev(s[7],D(s[2]),D(s[3]),`Stay: ${s[1]} · ${s[0]}`,[120]));out.push('END:VCALENDAR');
+const b=new Blob([out.join('\r\n')],{type:'text/calendar'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='yatra-alarms.ics';a.click()}
+function todoView(){return '<h2 style="margin:12px 0">To do</h2>'+TODO.map(([id,x])=>`<label class="t"><input type="checkbox" ${ST.todo.includes(id)?'checked':''} onchange="tg('${id}',this.checked)"><span>${x}</span></label>`).join('')}
+function tg(id,c){ST.todo=ST.todo.filter(x=>x!=id);if(c)ST.todo.push(id);save('todo')}
+let CT;
+function render(){const m=me(),tabs=m=='v'?[['money','Charges']]:m=='m'?[['trip','Trip'],['trains','Trains'],['stays','Stays'],['chat','Chat'],['people','People'],['todo','To do']]:[['trip','Trip'],['trains','Trains'],['stays','Stays'],['money','Money'],['chat','Chat'],['people','People'],['todo','To do']];
+if(!tabs.some(x=>x[0]==ST.tab))ST.tab=tabs[0][0];
+$('#nav').innerHTML=tabs.map(([k,n])=>`<button class="${k==ST.tab?'on':''}" onclick="ST.tab='${k}';save();render()">${n}</button>`).join('');
+$('#v').innerHTML=({trip:tripView,trains:trainsView,stays:staysView,money:moneyView,chat:chatView,people:peopleView,todo:todoView})[ST.tab]();
+clearInterval(CT);if(ST.tab=='chat'&&SB.url){CT=setInterval(chatLoad,6000);chatLoad()}wx()}
+async function pick(u){if(PINS[u]&&L.g('pin_'+u,'')!=PINS[u]){const p=prompt('PIN for '+P[u]);if(!p||await sha(p)!=PINS[u]){toast('Wrong PIN');$('#me').value=ST.me;return}L.s('pin_'+u,PINS[u])}ST.me=u;save();render()}
+document.body.insertAdjacentHTML('beforeend','<div id="toast"></div>');
+$('#me').innerHTML=Object.keys(P).map(k=>`<option value="${k}">${P[k]}</option>`).join('');$('#me').value=ST.me;
+$('#me').onchange=e=>pick(e.target.value);
+document.body.dataset.t=ST.th;$('#th').value=ST.th;
+$('#th').onchange=e=>{ST.th=e.target.value;document.body.dataset.t=ST.th;save()};
+$('#md').onclick=e=>{if(e.target.id=='md')$('#md').classList.remove('show')};
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull()});
+if(ST.loc)locOn();pull();render();
+</script></body></html>
