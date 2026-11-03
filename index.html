@@ -8,11 +8,11 @@ MONEY RULES: share = booking total / people on that booking (never pool). Expens
 DATA: T=tickets, S=stays, SG=sightseeing, PEND=to book/decide, TODO, TR=train info (TR[no][1] = date to pick in Where Is My Train = date the train starts at its origin), RAKE=coach order per train (only 11756 so far), DT=deity cards, FL=which original files exist (tickets/<PNR>.pdf, tickets/<PNR>.png, tickets/<PNR>-2.png; stays/<id>.pdf|png), LINKS (Photos album, Drive folder), XY=weather coordinates. Berth type is computed from the number: 3A/SL/3E 8 per compartment (1LB 2MB 3UB 4LB 5MB 6UB 7SL 8SU); 2A 6 per compartment.
 LOGIN: owner Ashish is admin. Each person registers once: name from dropdown, 4-6 digit PIN, recovery answer = grandmother's name (stored as salted SHA-256 in ST.auth, shared key "auth"). Forgot PIN uses the answer; admin can set or clear any PIN in People. Weak by design (static site); fine for family.
 SHARED STATE (Supabase project yatra-portal-2026 ref brsvownxzmdvmiqmutuj, ap-south-1, SB filled in v5; tables created): keys links (Photos album + Drive folder, admin editable in People), auth, paid, todo, swaps, delay, exp, pm, img_<id>, loc_<p>, ll_<p>, rd_<p>, ty_<p> in table yatra_kv; chat in table yatra_chat. Without Supabase everything works per phone only. SQL: create table public.yatra_kv(key text primary key, val jsonb, updated_at timestamptz default now()); create table public.yatra_chat(id bigserial primary key, who text, txt text, ts timestamptz default now(), rep bigint, kind text default 't', data text, rx jsonb default '{}', del boolean default false); alter table public.yatra_kv enable row level security; alter table public.yatra_chat enable row level security; create policy "all" on public.yatra_kv for all to anon using(true) with check(true); create policy "all" on public.yatra_chat for all to anon using(true) with check(true); grant select,insert,update,delete on public.yatra_kv to anon; grant select,insert,update on public.yatra_chat to anon; grant usage,select on sequence public.yatra_chat_id_seq to anon;  (explicit grants needed after the 30 Oct 2026 Data API change). Then fill SB.url and SB.key.
-DONE (v5): SB filled; animated place-theme band under the header for all 6 themes; Trip tab Flowchart and Route map views; Who-pays-whom flow in Expenses. DONE (v4): splash and Tirumala emblems (namam, shankh, chakra) animated; six place themes (Tirumala, Madurai, Rameswaram, Kanyakumari, Padmanabhaswamy, Kovalam); login/register/forgot PIN/admin reset; Today landing page with only the current activity expanded and two buttons (Photos, Chat with unread badge); pages Today, Trip, Expenses/Payments, Trains, Stays, People, To do, then Drive link; trains as cards with nearby co-passengers and detailed coach/compartment view with station segments and break-journey halts; stays as cards with detailed room view; ticket card shares only that image; complete ticket list share at top and bottom of Trains; multi-payer expenses, equal/individual split, payments between people; Excel (.xlsx built in browser) and PDF account reports with place colours and green payment rows; chat with replies, reactions, photos, voice notes, location, search, read ticks, typing, unread count (needs Supabase); live location by Google Maps share links; seat swap; calendar alarms.
+DONE (v6): originals open in an in-app viewer using scanner-style cropped images in scans/ (screenshots) and page images of every PDF; PWA (manifest.webmanifest, sw.js, icons/) with install card; Web Push through Supabase edge functions notify and tick (pg_cron every minute) with tables yatra_push and yatra_secrets (VAPID keys, notify key); chat mute; change/delay/chat notifications; Alarms page (auto per-user alarms with editable time, admin priority and normal alarms); admin list (only Ashish grants admin; only admins change who-paid); Hindi toggle (post-pass dictionary HI/HIR/HIT); history/back button; opens on Today; 3-day weather; Today-only scene, thin theme strip elsewhere; flowchart first with pending nodes and tap-through cards; NOW/NEXT highlighting. DONE (v5): SB filled; animated place-theme band under the header for all 6 themes; Trip tab Flowchart and Route map views; Who-pays-whom flow in Expenses. DONE (v4): splash and Tirumala emblems (namam, shankh, chakra) animated; six place themes (Tirumala, Madurai, Rameswaram, Kanyakumari, Padmanabhaswamy, Kovalam); login/register/forgot PIN/admin reset; Today landing page with only the current activity expanded and two buttons (Photos, Chat with unread badge); pages Today, Trip, Expenses/Payments, Trains, Stays, People, To do, then Drive link; trains as cards with nearby co-passengers and detailed coach/compartment view with station segments and break-journey halts; stays as cards with detailed room view; ticket card shares only that image; complete ticket list share at top and bottom of Trains; multi-payer expenses, equal/individual split, payments between people; Excel (.xlsx built in browser) and PDF account reports with place colours and green payment rows; chat with replies, reactions, photos, voice notes, location, search, read ticks, typing, unread count (needs Supabase); live location by Google Maps share links; seat swap; calendar alarms.
 NOT DONE: Supabase switched on and tested; real push notifications (needs server; calendar alarms instead); Hindi; fetching photos from Google Photos (Google does not allow it for shared albums: the button opens the album); WhatsApp-only features (calls, end-to-end encryption, status); family info cards with verified Hindi video links; food stops; coach orders for other trains (owner will send screenshots); detailed itinerary (owner will send); NITR voucher 6006386739 PDF (upload was overwritten, ask owner to re-send); unverified Where Is My Train package name com.whereismytrain.android.
 OPEN DECISIONS: TVC to Kanyakumari (16649 or road); Madurai to Rameswaram (16343 or 56711); Tirupati to Kanchipuram (16204, or Arakkonam by train then road); accommodation for TVC night 30 Nov, Madurai, Rameswaram, Tirupati, Kanchipuram; Atul Jabalpur to Itarsi ticket; Vinit cancellations; one duplicate Trichy to Tirupati set.
 -->
-<html lang="en"><head><meta charset="utf-8">
+<html lang="en"><head><meta charset="utf-8"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#8c1c2b"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Yatra 2026"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Yatra Portal 2026</title>
 <style>
@@ -200,10 +200,130 @@ nav{overflow-x:auto}nav button,nav a.nl{flex:0 0 auto;min-width:78px;white-space
 .lgd{display:flex;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--mut);margin:4px 2px}
 .lgd i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:4px;vertical-align:-1px}
 @media(prefers-reduced-motion:reduce){.tband *,.flowbox *{animation:none!important}}
+
+/* ===== v6: professional layer ===== */
+:root{--f:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;--shadow:0 1px 2px #0001,0 4px 14px #0000000d}
+[data-t]{--f:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;--r:16px}
+body{font:15.5px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,'Noto Sans','Noto Sans Devanagari',sans-serif;-webkit-font-smoothing:antialiased;padding-bottom:calc(78px + env(safe-area-inset-bottom));padding-top:0}
+h1,h2,h3,.day{letter-spacing:.1px}
+header.top{position:sticky;top:0;z-index:25;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:calc(8px + env(safe-area-inset-top)) 12px 8px;background:var(--acc);background:linear-gradient(135deg,var(--acc),color-mix(in srgb,var(--acc) 72%,#000));border-bottom:3px solid var(--gold);box-shadow:0 2px 10px #0003}
+.brand{display:flex;align-items:center;gap:8px;min-width:0}.brand .orn svg:nth-child(n+2){display:none}.brand .orn svg{width:30px;height:30px}
+.brand h1{font-size:17px;flex:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff;font-weight:700}
+.tools{display:flex;align-items:center;gap:8px}
+header.top select{background:#ffffff26;color:#fff;border:1px solid #ffffff55;border-radius:20px;padding:6px 8px;font-size:13px;max-width:118px}
+header.top .ic{width:40px;height:36px;border-radius:18px;border-radius:50%;padding:0;background:#ffffff26;color:#fff;border:1px solid #ffffff55;font-weight:700;font-size:13px}
+header.top .av{width:36px;height:36px;border-radius:50%;padding:0;background:var(--gold);color:#2a1a00;border:2px solid #fff;font-weight:800;font-size:15px}
+.tband{height:42px;border-bottom:0;margin-bottom:6px}.tband svg{height:100%}
+main{padding:0 12px;max-width:760px}
+.card,.ev,details.d>summary,.leg,.flowbox{box-shadow:var(--shadow)}
+.card{border-radius:var(--r)}
+button,select,input,textarea{font-family:inherit}
+button{cursor:pointer;transition:transform .08s,box-shadow .15s}button:active{transform:scale(.97)}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid color-mix(in srgb,var(--acc) 45%,transparent);outline-offset:1px}
+button.p,a.btn.p{background:var(--acc);color:var(--on);border:0;box-shadow:0 2px 6px #0003}
+.btn,.btns button,.btns a.btn{border-radius:12px;font-weight:600}
+a.btn{display:inline-flex;align-items:center;gap:4px}
+.orh{font-size:20px;margin:16px 2px 8px}.orh.sub{font-size:16px;margin-top:20px}
+input[type=text],input[type=number],input[type=date],input[type=time],input[type=datetime-local],input[type=search],input[type=password],select{border:1px solid color-mix(in srgb,var(--ink) 18%,transparent);border-radius:12px;padding:10px 12px;background:var(--card);color:var(--ink);font-size:16px;max-width:100%}
+.form input,.form select{width:100%;margin:5px 0}
+.seg{display:flex;gap:4px;background:var(--soft);padding:4px;border-radius:14px;margin:6px 0 10px;overflow-x:auto}
+.seg button{flex:1 0 auto;border:0;background:transparent;border-radius:10px;padding:8px 10px;font-weight:600;font-size:13px;white-space:nowrap}
+.seg button.on{background:var(--card);color:var(--acc);box-shadow:0 1px 4px #0002}
+/* nav */
+nav{display:flex;gap:2px;padding:6px 6px calc(6px + env(safe-area-inset-bottom));background:var(--card);border-top:1px solid color-mix(in srgb,var(--ink) 12%,transparent);box-shadow:0 -6px 20px #0001;overflow-x:auto;scrollbar-width:none;z-index:25}
+nav::-webkit-scrollbar{display:none}
+nav button,nav a.nl{flex:0 0 auto;min-width:64px;display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 6px;border:0;border-radius:14px;background:none;font-size:10.5px;color:var(--mut);box-shadow:none;position:relative;text-decoration:none;font-weight:600}
+nav i{font-style:normal;font-size:20px;line-height:1.1}
+nav button.on{background:var(--soft);color:var(--acc);box-shadow:none}
+nav button span,nav a.nl span{white-space:nowrap;max-width:74px;overflow:hidden;text-overflow:ellipsis}
+nav em.ub{position:absolute;top:0;right:10px;min-width:17px;height:17px;border-radius:9px;background:#e11d2e;color:#fff;font:700 10px/17px system-ui;text-align:center;padding:0 4px;font-style:normal}nav em.ub:empty{display:none}
+.two .ub{background:#e11d2e;color:#fff;border-radius:9px;padding:0 6px;font-size:13px}.two .ub:empty{display:none}
+/* today scene compact */
+.scene{height:118px;margin:8px 0 4px}
+details.scn{margin:2px 0}details.scn>summary{list-style:none;font-size:12.5px;color:var(--mut);cursor:pointer;padding:2px 4px}
+details.scn .chips{padding-top:4px}
+.wx{margin:6px 0}
+.wxh{display:flex;justify-content:space-between;align-items:baseline;margin:2px 2px 6px}.wxh span{font-size:12.5px;color:var(--mut)}
+.wx3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.wd{background:var(--card);border-radius:14px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;gap:1px;box-shadow:var(--shadow);border:1px solid transparent}.wd b{font-size:26px;line-height:1.2}.wd span{font-weight:700;font-size:14px}.wd small{color:var(--mut);font-size:11.5px}
+.wd.warn{border-color:#e8590c;background:#fff4e8;color:#5a2500}.wd.warn small{color:#8a4a1a}
+.wxw{margin-top:8px;background:#fff1d6;color:#6b3a00;border:1px solid #f0b04a;border-radius:12px;padding:8px 10px;font-weight:600;font-size:13.5px}
+.hero{border-radius:var(--r);padding:14px 16px;box-shadow:var(--shadow)}
+/* now / next strip */
+.nowstrip{display:flex;flex-direction:column;gap:6px;margin:6px 0 10px}
+.ns{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:14px;flex-wrap:wrap;box-shadow:var(--shadow)}
+.ns b{font-size:11px;letter-spacing:.8px;padding:2px 8px;border-radius:8px}.ns .nt{font-weight:700;flex:1 1 140px}.ns small{color:inherit;opacity:.8}
+.ns.now{background:linear-gradient(90deg,#e11d2e,#b3121f);color:#fff}.ns.now b{background:#fff;color:#e11d2e}
+.ns.nxt{background:var(--card);border:1.5px dashed var(--acc)}.ns.nxt b{background:var(--acc);color:var(--on)}
+.dot{width:10px;height:10px;border-radius:50%;background:#fff;animation:ping 1.4s ease-out infinite}
+/* phase highlighting */
+.ph{position:relative;border-radius:var(--r);margin:10px 0}
+.phb{position:absolute;z-index:2;top:-8px;right:10px;font-size:10.5px;font-weight:800;letter-spacing:.7px;padding:3px 9px;border-radius:10px;color:#fff;background:#6b7a6b}
+.shh .phb{position:static;display:inline-block;margin-bottom:4px}
+.phb.now{background:#e11d2e;animation:pulse 1.6s infinite}.phb.today{background:#d98b00}.phb.next{background:#0a8a7a}.phb.done{background:#6b7a6b}.phb.later{background:#d98b00}
+.ph-now{box-shadow:0 0 0 3px #e11d2e,0 8px 24px #e11d2e40;background:linear-gradient(180deg,#e11d2e14,transparent 60%)}
+.ph-today{box-shadow:0 0 0 2px #d98b00}
+.ph-next{box-shadow:0 0 0 2px #0a8a7a;border-radius:var(--r)}
+.ph-done{opacity:.62}.ph-done .card{filter:saturate(.7)}
+.ph>.card,.ph>details>summary{margin-top:0}
+.ev.cur{background:linear-gradient(90deg,#e11d2e18,var(--card) 40%);border-left:6px solid #e11d2e;box-shadow:0 0 0 2px #e11d2e66,var(--shadow);animation:none}
+.ev.cur .now{background:#e11d2e;animation:pulse 1.6s infinite}
+.ev.nxt{border-left:6px solid #0a8a7a;box-shadow:0 0 0 2px #0a8a7a55}.nxtb{background:#0a8a7a;color:#fff;border-radius:8px;padding:0 8px;font-size:12px;margin-left:auto}
+.grp.todayg{color:#e11d2e}
+.flowbox .fnode:hover rect:first-of-type{fill-opacity:.2}
+.ringp{animation:ringp 1.6s ease-out infinite;transform-box:fill-box;transform-origin:center}@keyframes ringp{from{opacity:.9}to{opacity:.1;transform:scale(1.04)}}
+.seatbox{background:var(--soft);border-radius:14px;padding:10px 14px;margin:8px 0}.seatbox small{display:block;color:var(--mut)}.seatbox b{font-size:22px;color:var(--acc)}
+.mini{margin:14px 0 4px;font-size:13px;color:var(--mut);text-transform:uppercase;letter-spacing:.6px}
+.card.tk{margin:6px 0}.card.tk.mine{border-left-color:var(--acc)}.cpr{padding:3px 0;border-bottom:1px dashed var(--soft)}.cpr.me{font-weight:800;color:var(--acc)}
+.btns.col{flex-direction:column}.btns.col button{padding:12px}
+.steps{padding-left:20px}.steps li{margin:8px 0}
+.small{font-size:12.5px;line-height:1.45}
+.okb,.warnb,.admtag{font-size:10.5px;font-weight:800;border-radius:8px;padding:2px 8px;margin-left:6px}.okb{background:#2a7d45;color:#fff}.warnb{background:#d98b00;color:#fff}.admtag{background:var(--acc);color:var(--on)}
+.payro{font-size:13px;font-weight:600;background:var(--soft);padding:4px 10px;border-radius:10px}.payro.warn{background:#fde2e2;color:#900}
+.pushc,.inst{border-left-color:var(--gold)}
+/* alarms */
+.alr{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:14px;padding:10px 12px;margin:6px 0;box-shadow:var(--shadow)}
+.alr .ai{font-size:22px}.alr .am{flex:1;min-width:0}.alr .am b{display:block;line-height:1.25}.alr .am small{color:var(--mut)}
+.alr input[type=time]{width:104px;padding:7px 8px;font-size:15px;font-weight:700}
+.alr.off{opacity:.5}.alr.today{border-left:5px solid #e11d2e}
+.alr.adm.prio{border-left:5px solid #e11d2e;background:linear-gradient(90deg,#e11d2e14,var(--card))}.alr.adm.norm{border-left:5px solid #d98b00}
+.alr .ic{border-radius:10px;padding:6px 8px}.lock{opacity:.6}
+.sw{position:relative;width:46px;height:26px;flex:none}.sw input{opacity:0;position:absolute;inset:0;width:100%;height:100%;margin:0;z-index:2}.sw i{position:absolute;inset:0;background:#b8bfc7;border-radius:13px;transition:.2s}.sw i:after{content:'';position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px #0004}.sw input:checked+i{background:var(--acc)}.sw input:checked+i:after{transform:translateX(20px)}
+.adf input,.adf select{display:block;width:100%;margin:6px 0}
+/* viewer, ring, banner */
+.vw{position:fixed;inset:0;z-index:60;background:#111;display:none;flex-direction:column}.vw.show{display:flex}
+.vwt{display:flex;align-items:center;gap:6px;padding:calc(8px + env(safe-area-inset-top)) 8px 8px;background:#1b1b1b;color:#fff}.vwt b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}.vwt .sp{flex:1}
+.vwt button,.vwt a.btn{background:#333;color:#fff;border:0;padding:7px 11px;border-radius:10px;font-size:14px;text-decoration:none}
+.vwb{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding:8px;background:#2b2b2b}.vwb figure{margin:0 0 14px;background:#fff;border-radius:6px;overflow:hidden;width:max-content;min-width:100%}.vwb img{display:block;max-width:none;height:auto}.vwb figcaption{background:#1b1b1b;color:#bbb;font-size:12.5px;padding:6px 10px}.vwb figcaption a{color:#9cd0ff}
+#ring{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;background:#000d;padding:20px}#ring.show{display:flex}#ring.prio{animation:flashbg .55s infinite alternate}@keyframes flashbg{to{background:#b00000ee}}
+.rb{background:var(--card);color:var(--ink);border-radius:24px;padding:26px 22px;text-align:center;max-width:360px;width:100%;box-shadow:0 20px 60px #0008}.rbell{font-size:60px;animation:ringb .5s ease-in-out infinite alternate}@keyframes ringb{from{transform:rotate(-14deg)}to{transform:rotate(14deg)}}.rb h2{margin:6px 0}.rb button.big{width:100%;padding:16px;font-size:20px;margin-top:10px}
+#bn{position:fixed;left:10px;right:10px;top:calc(10px + env(safe-area-inset-top));z-index:90;background:#1c1c1c;color:#fff;border-radius:16px;padding:10px 14px;display:flex;flex-direction:column;box-shadow:0 8px 30px #0006;transform:translateY(-140%);transition:transform .3s;max-width:560px;margin:auto}#bn.show{transform:none}#bn span{opacity:.85;font-size:14px}
+/* chat immersive */
+body.chatmode{padding:0}body.chatmode header,body.chatmode nav,body.chatmode .tband{display:none}body.chatmode main{padding:0;max-width:none}
+.chatfs{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;background:var(--bg);background-image:var(--pat),radial-gradient(circle at 20% 10%,color-mix(in srgb,var(--acc) 10%,transparent),transparent 55%)}
+.chh{display:flex;align-items:center;gap:8px;padding:calc(8px + env(safe-area-inset-top)) 8px 8px;background:var(--acc);color:#fff;box-shadow:0 2px 8px #0003}
+.chh .ic{background:none;border:0;color:#fff;font-size:20px;padding:6px 8px;box-shadow:none}
+.cav{width:40px;height:40px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:22px}
+.cht{flex:1;min-width:0}.cht b{display:block;font-size:16px}.cht small{display:block;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px}
+.csw{display:none;padding:6px 8px;background:var(--card)}.csw.show{display:block}.csw input{width:100%}
+.chatfs .chat{flex:1;height:auto;background:transparent;border-radius:0;padding:10px 10px 4px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.chatfs .msg{background:var(--card);color:var(--ink);box-shadow:0 1px 2px #0003;border-radius:6px 16px 16px 16px;padding:7px 11px 5px;margin:4px 0;max-width:82%}
+.chatfs .msg.mm{background:color-mix(in srgb,var(--acc) 92%,#fff);color:#fff;border-radius:16px 6px 16px 16px}
+.msg .snd{display:block;font-size:12.5px;margin-bottom:1px}.msg.mm .snd{display:none}
+.msg small{display:block;text-align:right;font-size:10.5px}
+.chatfs .dsep{align-self:center;background:#0000001a;color:var(--ink);padding:2px 10px;border-radius:10px;display:table;margin:10px auto;font-size:12px}
+#cq2{padding:0 10px}.quote{background:var(--card);color:var(--ink);border-left:3px solid var(--acc)}
+.chatfs .comp{display:flex;align-items:center;gap:8px;padding:6px 8px calc(8px + env(safe-area-inset-bottom));margin:0}
+.cin{flex:1;display:flex;align-items:center;background:var(--card);border-radius:26px;padding:2px 6px 2px 14px;box-shadow:0 1px 4px #0003}
+.cin input{flex:1;min-width:0;border:0;outline:0;background:transparent;font-size:16px;padding:11px 4px;box-shadow:none}
+.cin .ib{border:0;background:none;font-size:20px;padding:8px 6px;box-shadow:none}
+.send{width:48px;height:48px;border-radius:50%;border:0;background:var(--acc);color:#fff;font-size:20px;box-shadow:0 2px 8px #0004;flex:none}
+@media(min-width:760px){.chatfs{max-width:560px;left:50%;transform:translateX(-50%);border-left:1px solid #0002;border-right:1px solid #0002}}
+@media(prefers-reduced-motion:reduce){.dot,.phb.now,.ringp,.rbell,#ring.prio{animation:none!important}}
 </style></head><body>
-<header><div class="hrow"><span id="orn0"></span><h1>Yatra Portal 2026</h1></div><div class="hrow"><span id="who" class="who"></span><button onclick="logout()">Log out</button><select id="th" aria-label="Theme"><option value="tirumala">Tirumala</option><option value="madurai">Madurai Meenakshi</option><option value="rameswaram">Rameswaram</option><option value="kanyakumari">Kanyakumari</option><option value="padmanabha">Padmanabhaswamy</option><option value="kovalam">Kovalam beach</option></select></div></header><div class="tband" id="tband" aria-hidden="true"></div>
+<header class="top"><div class="brand"><span id="orn0"></span><h1>Yatra Portal 2026</h1></div><div class="tools"><button id="langb" class="ic" onclick="setLang()" aria-label="Language">हिं</button><select id="th" aria-label="Theme"><option value="tirumala">Tirumala</option><option value="madurai">Madurai</option><option value="rameswaram">Rameswaram</option><option value="kanyakumari">Kanyakumari</option><option value="padmanabha">Padmanabha</option><option value="kovalam">Kovalam</option></select><button id="acct" class="av" onclick="acctMenu()" aria-label="Account"><span id="avl">A</span></button></div></header><div class="tband" id="tband" aria-hidden="true"></div>
 <main id="v"></main><nav id="nav"></nav>
-<div class="lgo" id="lg"></div><div class="modal" id="md"><div class="sheet" id="sh"></div></div>
+<div class="lgo" id="lg"></div><div class="vw" id="vw"></div><div id="ring"></div><div id="bn"></div><div class="modal" id="md"><div class="sheet" id="sh"></div></div>
 <script>
 
 const SB={url:'https://brsvownxzmdvmiqmutuj.supabase.co',key:'sb_publishable_nV64wL2v0Zw6m1VgzWvNRg_qfbGczCz'}; // fill after Supabase setup (see handover notes)
@@ -284,8 +404,8 @@ function pull(){if(!SB.url)return;sbf('yatra_kv?select=key,val&key=not.like.img_
 const $=s=>document.querySelector(s),px=s=>s.split('|').map(x=>x.split('='));
 const D=s=>new Date(2026,+s.slice(0,2)-1,+s.slice(2,4),+s.slice(5,7),+s.slice(7,9));
 const inr=n=>'₹'+Math.round(n).toLocaleString('en-IN');
-const fd=d=>d.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'});
-const ft=d=>d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:false});
+const fd=d=>d.toLocaleDateString(LOC(),{weekday:'short',day:'numeric',month:'short'});
+const ft=d=>d.toLocaleTimeString(LOC(),{hour:'2-digit',minute:'2-digit',hour12:false});
 const sameDay=(a,b)=>a.toDateString()===b.toDateString();
 const dayOf=k=>new Date(2026,+k.slice(0,2)-1,+k.slice(2,4));
 const me=()=>ST.me,mineT=()=>T.filter(t=>px(t[8]).some(x=>x[0]==me()));
@@ -347,8 +467,7 @@ const CK='<svg viewBox="0 0 100 100" class="ck"><circle cx="50" cy="50" r="46" f
 const orn=`<span class="orn">${CK}${NM}${SK}</span>`;
 // original files that exist in the package: pdf = tickets/<id>.pdf, png = tickets/<id>.png, png2 = tickets/<id>-2.png (stays use stays/)
 const FL={'2960090113':['pdf'],'2960088762':['pdf'],'6110315961':['pdf'],'5000185849':['pdf'],'7000185872':['pdf'],'5000310311':['pdf'],'7000336150':['pdf'],'3000338331':['pdf'],'2844718725':['png'],'4558077754':['png'],'4345862055':['png'],'4245860618':['png'],'1000311064':['png','png2'],'3000338219':['png'],'1000336810':['png'],'4346288445':['png'],'4146288690':['png'],'2264030172':['png'],'7000312579':['png'],'4765819105':['png'],'4346288740':['png'],'4558483258':['png'],'4446336186':['png'],'6006367012':['pdf'],'6006367157':['pdf'],'6006367120':['pdf'],'6006386713':['pdf'],'GH25020279147548':['pdf'],'RE0990':['png']};
-const orig=id=>{const st=S.some(s=>s[7]==id),f=FL[id];if(!f)return '<span class="mut">Original not added yet</span>';return f.map(k=>`<a class="btn" href="${st?'stays/':'tickets/'}${id}${k=='pdf'?'.pdf':k=='png'?'.png':'-2.png'}" target="_blank" rel="noopener">${k=='pdf'?'Original PDF':k=='png'?'Screenshot':'Screenshot 2'}</a>`).join('')};
-const payBy=id=>{const v=ST.paid[id]||'';return `<select class="${v?'':'warn'}" onchange="setPaid('${id}',this.value)" aria-label="Who paid"><option value="">Paid by: not set</option>${'aukshltdv'.split('').map(p=>`<option value="${p}" ${v==p?'selected':''}>Paid by ${P[p]}</option>`).join('')}<option value="x" ${v=='x'?'selected':''}>Not paid yet</option></select>`};
+const payBy=id=>{const v=ST.paid[id]||'';if(!isAdm())return `<span class="payro ${v?'':'warn'}">${v=='x'?'Not paid yet':v?'Paid by '+P[v]:'Payer not set'}</span>`;return `<select class="${v?'':'warn'}" onchange="setPaid('${id}',this.value)" aria-label="Who paid"><option value="">Paid by: not set</option>${'aukshltdv'.split('').map(p=>`<option value="${p}" ${v==p?'selected':''}>Paid by ${P[p]}</option>`).join('')}<option value="x" ${v=='x'?'selected':''}>Not paid yet</option></select>`};
 function show(h,act){$('#sh').innerHTML=h+`<div class="btns">${act?`<button class="p" onclick="${act}">Share this image</button>`:''}<button onclick="$('#md').classList.remove('show')">Close</button></div>`;$('#md').classList.add('show')}
 function cardImg(title,lines,name){const W=1080,c=document.createElement('canvas'),x=c.getContext('2d'),acc=getComputedStyle(document.body).getPropertyValue('--acc').trim()||'#8c1c2b',out=[];
 lines.forEach(l=>{const b=l[0]=='*',t=b?l.slice(1):l;x.font=(b?'700 30px':'28px')+' system-ui,sans-serif';let cur='';t.split(' ').forEach(w=>{const n=cur?cur+' '+w:w;if(x.measureText(n).width>W-70&&cur){out.push([cur,b]);cur=w}else cur=n});out.push([cur,b])});
@@ -369,7 +488,7 @@ Object.entries(stayGroups()).forEach(([k,g])=>ev.push({k:'Stay',s:D(g.f),e:D(g.o
 SG.forEach(g=>{const s=dayOf(g[0]);s.setHours(9);const e=new Date(s);e.setHours(17);ev.push({k:'Sightseeing',s,e,mine:1,tt:g[1],sub:g[3]||'',html:()=>dBody(g)})});
 PEND.forEach(p=>{const s=D(p[0]);ev.push({k:'To book or decide',s,e:s,mine:0,tt:p[1],sub:p[2],html:()=>''})});
 return ev.sort((a,b)=>a.s-b.s)}
-const evCard=(e,open)=>{const n=new Date(),cur=e.k!='To book or decide'&&e.s<=n&&n<=e.e;return `<details class="ev ${e.mine?'mine':'dim'} ${cur?'cur':''} ${e.k=='To book or decide'?'pend':''}" ${open?'open':''}><summary><span class="tm">${e.k=='To book or decide'?'—':ft(e.s)}</span><b>${e.tt}</b>${cur?'<span class="now">NOW</span>':''}</summary><div class="evb">${e.sub?`<div>${e.sub}</div>`:''}${e.html()}</div></details>`};
+const evCard=(e,open)=>{const n=new Date(),cur=e.k!='To book or decide'&&e.s<=n&&n<=e.e;return `<details class="ev ${e.mine?'mine':'dim'} ${cur?'cur':''} ${isNext(e)?'nxt':''} ${e.k=='To book or decide'?'pend':''}" ${open?'open':''}><summary><span class="tm">${e.k=='To book or decide'?'—':ft(e.s)}</span><b>${e.tt}</b>${cur?'<span class="now">NOW</span>':isNext(e)?'<span class="nxtb">NEXT</span>':''}</summary><div class="evb">${e.sub?`<div>${e.sub}</div>`:''}${e.html()}</div></details>`};
 function dayHTML(list,focusOn){const n=new Date();let fi=-1;if(focusOn){fi=list.findIndex(e=>e.k!='To book or decide'&&e.s<=n&&n<=e.e);if(fi<0)fi=list.findIndex(e=>e.s>n&&e.k!='To book or decide');if(fi<0)fi=0}
 const gr={};list.forEach((e,i)=>(gr[e.k]=gr[e.k]||[]).push([e,i]));
 return ['Travel','Stay','Sightseeing','To book or decide'].filter(k=>gr[k]).map(k=>`<div class="grp">${k}</div>`+gr[k].map(([e,i])=>evCard(e,i==fi)).join('')).join('')}
@@ -576,12 +695,12 @@ function bub(c,i,l){const mine=c.who==me(),sep=!i||new Date(l[i-1].ts).toDateStr
 if(c.del)b='<i class="mut">🚫 This message was deleted</i>';else{const q=c.rep&&cmsg(c.rep),qh=q?`<div class="quote"><b>${P[q.who]||q.who}</b><br>${q.del?'deleted':q.kind=='i'?'📷 Photo':q.kind=='a'?'🎤 Voice message':esc(q.txt||'').slice(0,90)}</div>`:'';
 b=qh+(c.kind=='i'?`<img src="${c.data}" class="cimg" onclick="cimg(${c.id})">`:c.kind=='a'?`<audio controls src="${c.data}"></audio>`:c.kind=='l'?`<a href="${c.txt}" target="_blank" rel="noopener">📍 Shared location</a>`:esc(c.txt||''))}
 const rx=Object.entries(c.rx||{}).filter(([e,a])=>a.length).map(([e,a])=>`<span class="rxc">${e} ${a.length}</span>`).join('');
-return sep+`<div class="msg ${mine?'mm':''}" onclick="cact(${c.id})"><b>${P[c.who]||c.who}</b>${ST.star[c.id]?' ⭐':''}<div>${b}</div><small>${new Date(c.ts).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})} ${mine&&!c.del?tick(c):''}</small>${rx?`<div>${rx}</div>`:''}</div>`}
+return sep+`<div class="msg ${mine?'mm':''}" onclick="cact(${c.id})"><b class="snd" style="color:${SNDC(c.who)}">${P[c.who]||c.who}</b>${ST.star[c.id]?' ⭐':''}<div>${b}</div><small>${new Date(c.ts).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})} ${mine&&!c.del?tick(c):''}</small>${rx?`<div>${rx}</div>`:''}</div>`}
 function chatHTML(){let l=ST.chatL||[];if(CH.q)l=l.filter(c=>(c.txt||'').toLowerCase().includes(CH.q.toLowerCase()));return l.map((c,i)=>bub(c,i,l)).join('')||'<p class="mut">No messages yet.</p>'}
 function paintChat(){const el=$('#cl');if(!el||ST.tab!='chat')return;const end=el.scrollHeight-el.scrollTop-el.clientHeight<90;el.innerHTML=chatHTML();if(end)el.scrollTop=el.scrollHeight;
 const ty=Object.entries(CH.ty).filter(([p,t])=>p!=me()&&Date.now()-t<6000).map(([p])=>P[p]);const t=$('#ct');if(t)t.textContent=ty.length?ty.join(', ')+' typing…':'';
 const q=$('#cq2');if(q)q.innerHTML=CH.rep&&cmsg(CH.rep)?`<div class="quote">Replying to <b>${P[cmsg(CH.rep).who]}</b>: ${esc(cmsg(CH.rep).txt||'media').slice(0,60)} <a onclick="CH.rep=0;paintChat()">✕</a></div>`:''}
-const cpost=o=>SB.url?sbf('yatra_chat',{method:'POST',body:JSON.stringify({who:me(),...o})}).then(cget).catch(()=>toast('Could not send')):toast('Chat needs Supabase');
+const cpost=o=>SB.url?sbf('yatra_chat',{method:'POST',body:JSON.stringify({who:me(),...o})}).then(()=>{chatNotify(o);return cget()}).catch(()=>toast('Could not send')):toast('Chat needs Supabase');
 async function csend(){const i=$('#ci'),v=i.value.trim();if(!v)return;i.value='';const r=CH.rep;CH.rep=0;await cpost({txt:v,rep:r||null})}
 function ctype(){if(Date.now()-CH.tt>3000){CH.tt=Date.now();kv('ty_'+me(),Date.now())}}
 function cphoto(el){const f=el.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,640/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);cpost({kind:'i',data:c.toDataURL('image/jpeg',.55)})};im.src=r.result};r.readAsDataURL(f);el.value=''}
@@ -589,7 +708,7 @@ async function cvoice(){if(CH.rec){CH.rec.stop();return}try{const s=await naviga
 mr.onstop=()=>{s.getTracks().forEach(t=>t.stop());CH.rec=null;$('#cv').textContent='🎤';const r=new FileReader();r.onload=()=>cpost({kind:'a',data:r.result});r.readAsDataURL(new Blob(ch,{type:mr.mimeType}))};mr.start();$('#cv').textContent='⏹';setTimeout(()=>CH.rec&&CH.rec.stop(),60000)}catch(e){toast('Microphone not allowed')}}
 function cloc(){navigator.geolocation?navigator.geolocation.getCurrentPosition(p=>cpost({kind:'l',txt:`https://www.google.com/maps?q=${p.coords.latitude},${p.coords.longitude}`}),()=>toast('Location not allowed')):toast('Location not available')}
 function cimg(id){const c=cmsg(id);show(`<img src="${c.data}" style="width:100%;border-radius:10px">`)}
-function cact(id){const c=cmsg(id);if(!c)return;show(`<div class="btns">${RX.map(e=>`<button onclick="crx(${id},'${e}')">${e}</button>`).join('')}</div><div class="btns"><button onclick="CH.rep=${id};$('#md').classList.remove('show');paintChat()">↩ Reply</button><button onclick="cp(${JSON.stringify(c.txt||'').replace(/"/g,'&quot;')})">Copy</button><button onclick="window.open('https://wa.me/?text='+encodeURIComponent(${JSON.stringify(c.txt||'').replace(/"/g,'&quot;')}))">Send on WhatsApp</button><button onclick="ST.star[${id}]=ST.star[${id}]?0:1;save();$('#md').classList.remove('show');paintChat()">⭐ Star</button>${c.who==me()||me()=='a'?`<button onclick="cdel(${id})">🗑 Delete for everyone</button>`:''}</div>`)}
+function cact(id){const c=cmsg(id);if(!c)return;show(`<div class="btns">${RX.map(e=>`<button onclick="crx(${id},'${e}')">${e}</button>`).join('')}</div><div class="btns"><button onclick="CH.rep=${id};$('#md').classList.remove('show');paintChat()">↩ Reply</button><button onclick="cp(${JSON.stringify(c.txt||'').replace(/"/g,'&quot;')})">Copy</button><button onclick="window.open('https://wa.me/?text='+encodeURIComponent(${JSON.stringify(c.txt||'').replace(/"/g,'&quot;')}))">Send on WhatsApp</button><button onclick="ST.star[${id}]=ST.star[${id}]?0:1;save();$('#md').classList.remove('show');paintChat()">⭐ Star</button>${c.who==me()||isAdm()?`<button onclick="cdel(${id})">🗑 Delete for everyone</button>`:''}</div>`)}
 async function crx(id,e){const c=cmsg(id),r={...(c.rx||{})};const a=new Set(r[e]||[]);a.has(me())?a.delete(me()):a.add(me());r[e]=[...a];c.rx=r;$('#md').classList.remove('show');paintChat();try{await sbf('yatra_chat?id=eq.'+id,{method:'PATCH',body:JSON.stringify({rx:r})})}catch(x){}}
 async function cdel(id){const c=cmsg(id);c.del=true;$('#md').classList.remove('show');paintChat();try{await sbf('yatra_chat?id=eq.'+id,{method:'PATCH',body:JSON.stringify({del:true,txt:null,data:null})})}catch(x){}}
 function chatView(){if(!SB.url)return '<h2 class="orh">Group chat</h2><div class="card"><p>The family chat starts working once Supabase is switched on (setup SQL is in the notes at the top of this file).</p><p class="mut">Until then, use the Share buttons to send tickets and images on WhatsApp.</p></div>';
@@ -619,7 +738,7 @@ function locToggle(c){ST.loc=c?1:0;save();if(c)locOn();else if(WID){navigator.ge
 function peopleView(){const ago=t=>{const m=Math.round((Date.now()-t)/6e4);return m<1?'just now':m<60?m+' min ago':Math.round(m/60)+' h ago'};
 return `<h2 class="orh">People and live location</h2><div class="card mine"><b>Share your location until you turn it off</b><ol style="margin:6px 0;padding-left:20px"><li>Open Google Maps, tap your profile picture, then Location sharing.</li><li>Choose New share, set it to "Until you turn this off", and copy the link.</li><li>Paste the link here once. Google Maps keeps sharing in the background, even when this page is closed.</li></ol><input id="ll" type="url" placeholder="Paste your Google Maps share link" value="${ST['ll_'+me()]||''}" style="width:100%;margin:4px 0"><div class="btns"><button class="p" onclick="saveLL()">Save my link</button></div></div>`+'akshltud'.split('').map(p=>{const l=ST['loc_'+p],k=ST['ll_'+p];return `<div class="card"><div class="row"><b>${P[p]}</b><span class="mut">${k?'live link added':l?'seen '+ago(l.ts):'location not shared'}</span></div><div class="btns">${k?`<a class="btn p" href="${k}" target="_blank" rel="noopener">Open live location</a>`:''}${l?`<a class="btn" href="https://www.google.com/maps/dir/?api=1&destination=${l.lat},${l.lng}" target="_blank" rel="noopener">Directions to last seen spot</a>`:''}</div></div>`}).join('')+
 `<h3 class="orh" style="margin-top:18px">Backup: share only while this page is open</h3><label class="t"><input type="checkbox" ${ST.loc?'checked':''} onchange="locToggle(this.checked)"><span>Send my position from this page (stops when the page is closed)</span></label>`+
-(ST.sess=='a'?`<h3 class="orh" style="margin-top:18px">Admin: shared links</h3><label class="form"><b>Google Photos shared album</b><input id="lkp" type="url" value="${LK().photos}" style="width:100%"></label><label class="form"><b>Google Drive folder</b><input id="lkd" type="url" value="${LK().drive}" style="width:100%"></label><div class="btns"><button class="p" onclick="saveLinks()">Save links for everyone</button></div><h3 class="orh" style="margin-top:18px">Admin: logins</h3>${NAMES.map(u=>`<div class="row" style="padding:6px 0;border-bottom:1px solid var(--soft)"><span>${P[u]} <span class="mut">${ST.auth[u]?'registered':'not registered'}</span></span><span class="btns" style="margin:0"><button onclick="admSet('${u}')">Set PIN</button>${ST.auth[u]?`<button onclick="admClr('${u}')">Clear</button>`:''}<button onclick="viewAs('${u}')">View as</button></span></div>`).join('')}`:'');}
+(isAdm()?`<h3 class="orh" style="margin-top:18px">Admin: shared links</h3><label class="form"><b>Google Photos shared album</b><input id="lkp" type="url" value="${LK().photos}" style="width:100%"></label><label class="form"><b>Google Drive folder</b><input id="lkd" type="url" value="${LK().drive}" style="width:100%"></label><div class="btns"><button class="p" onclick="saveLinks()">Save links for everyone</button></div><h3 class="orh" style="margin-top:18px">Admin: logins</h3>${NAMES.map(u=>`<div class="row" style="padding:6px 0;border-bottom:1px solid var(--soft)"><span>${P[u]} <span class="mut">${ST.auth[u]?'registered':'not registered'}</span>${u=='a'||(ST.adm||[]).includes(u)?'<span class="admtag">ADMIN</span>':''}</span><span class="btns" style="margin:0">${ST.sess=='a'&&u!='a'?`<button onclick="admTog('${u}')">${(ST.adm||[]).includes(u)?'Remove admin':'Make admin'}</button>`:''}<button onclick="admSet('${u}')">Set PIN</button>${ST.auth[u]?`<button onclick="admClr('${u}')">Clear</button>`:''}<button onclick="viewAs('${u}')">View as</button></span></div>`).join('')}`:'');}
 // ---------- share image, calendar, to do ----------
 function legsOf(p){return[...T.filter(t=>px(t[8]).some(x=>x[0]==p)).map(t=>({s:D(t[4]),a:`${t[1]} ${TR[t[1]][0]}`,b:`${t[2]} ${ft(D(t[4]))} → ${t[3]} ${ft(D(t[5]))}  (${fd(D(t[4]))})`,c:`Seat ${sT(t,p)} · PNR ${t[0]}`})),...S.filter(s=>s[5].includes(p)).map(s=>({s:D(s[2]),a:`Stay: ${s[1]}`,b:s[0],c:`In ${fd(D(s[2]))} ${ft(D(s[2]))} · out ${fd(D(s[3]))} ${ft(D(s[3]))}`}))].sort((x,y)=>x.s-y.s)}
 function shareImg(p){const ps=p=='all'?'akshltud'.split(''):[p],lines=[];ps.forEach(q=>{lines.push({h:P[q]});legsOf(q).forEach(l=>{lines.push({t:l.a,b:1});lines.push({t:l.b});lines.push({t:l.c,g:1})})});
@@ -683,7 +802,7 @@ kovalam:()=>`<svg viewBox="0 0 720 124" preserveAspectRatio="xMidYMid slice"><de
 ${[[205,112],[520,112],[565,108]].map(([x,y],i)=>`<g class="palm" style="transform-origin:${x}px ${y}px;animation-delay:${i*.6}s"><path d="M${x} ${y}Q${x+6} ${y-26} ${x+2} ${y-48}" stroke="#7a4a2a" stroke-width="4" fill="none"/>${[-60,-30,0,30,60].map(a=>`<path d="M${x+2} ${y-48}q${a>0?22:-22} ${a==0?-8:-4} ${a*.5} ${14+Math.abs(a)/6}" stroke="#2a7d45" stroke-width="5" fill="none" stroke-linecap="round"/>`).join('')}</g>`).join('')}
 <g><path d="M0 0l26 0l-5 9l-16 0z" fill="#e0453a"/><path d="M13 0V-20l12 18z" fill="#fff"/><animateTransform attributeName="transform" type="translate" values="760 80;-60 80" dur="26s" repeatCount="indefinite"/></g>
 </svg>`};
-function paintBand(){const e=$('#tband');if(e)e.innerHTML=(BAND[ST.th]||BAND.tirumala)()}
+function paintBand(){const e=$('#tband');if(e)e.innerHTML=(BAND[ST.th]||BAND.tirumala)().replace('xMidYMid slice','xMidYMax slice')}
 
 // ===== v5: flowchart and route map of my journey =====
 const escx=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
@@ -722,6 +841,291 @@ if(m=='v')ST.tab='money';else if(ST.tab!='chat'&&!tabs.some(x=>x[0]==ST.tab))ST.
 $('#nav').innerHTML=tabs.map(([k,n])=>`<button class="${k==ST.tab?'on':''}" onclick="ST.tab='${k}';save();render()">${n}</button>`).join('')+(m=='v'?'':LK().drive?`<a class="nl" href="${LK().drive}" target="_blank" rel="noopener">Drive folder</a>`:`<button onclick="toast('Drive folder link is not added yet')">Drive folder</button>`);
 $('#v').innerHTML=({today:todayView,trip:tripView,money:moneyView,trains:trainsView,stays:staysView,people:peopleView,todo:todoView,chat:chatView})[ST.tab]();
 clearInterval(CT);if(SB.url){CT=setInterval(cget,ST.tab=='chat'?4000:20000);cget()}wx()}
+
+// ================= v6 =================
+const NK='2lzor-dsMZQrJUxy9UJu5_Fd',VAPID='BKfNJS6KRHgGhGmNEXUbKaPA9t3wESk6TwqIrci9eYqRsHZcxSRwZOgGPo4-2UiD4GEqXrVxJf2_rh23PlBmJxc';
+const SCANS={"1000311064":["scans/1000311064.jpg","scans/1000311064-2.jpg"],"1000336810":["scans/1000336810.jpg"],"2264030172":["scans/2264030172.jpg"],"2844718725":["scans/2844718725.jpg"],"3000338219":["scans/3000338219.jpg"],"4146288690":["scans/4146288690.jpg"],"4245860618":["scans/4245860618.jpg"],"4345862055":["scans/4345862055.jpg"],"4346288445":["scans/4346288445.jpg"],"4346288740":["scans/4346288740.jpg"],"4446336186":["scans/4446336186.jpg"],"4558077754":["scans/4558077754.jpg"],"4558483258":["scans/4558483258.jpg"],"4765819105":["scans/4765819105.jpg"],"7000312579":["scans/7000312579.jpg"],"RE0990":["scans/RE0990.jpg"],"pilgrimage-itinerary":["scans/pilgrimage-itinerary-p1.jpg","scans/pilgrimage-itinerary-p2.jpg","scans/pilgrimage-itinerary-p3.jpg"],"6006367012":["scans/6006367012-p1.jpg"],"6006367120":["scans/6006367120-p1.jpg"],"6006367157":["scans/6006367157-p1.jpg"],"6006386713":["scans/6006386713-p1.jpg","scans/6006386713-p2.jpg"],"GH25020279147548":["scans/GH25020279147548-p1.jpg","scans/GH25020279147548-p2.jpg","scans/GH25020279147548-p3.jpg","scans/GH25020279147548-p4.jpg"],"2960088762":["scans/2960088762-p1.jpg","scans/2960088762-p2.jpg"],"2960090113":["scans/2960090113-p1.jpg","scans/2960090113-p2.jpg"],"3000338331":["scans/3000338331-p1.jpg","scans/3000338331-p2.jpg"],"5000185849":["scans/5000185849-p1.jpg","scans/5000185849-p2.jpg"],"5000310311":["scans/5000310311-p1.jpg","scans/5000310311-p2.jpg"],"6110315961":["scans/6110315961-p1.jpg","scans/6110315961-p2.jpg"],"7000185872":["scans/7000185872-p1.jpg","scans/7000185872-p2.jpg"],"7000336150":["scans/7000336150-p1.jpg","scans/7000336150-p2.jpg"],"ref-coach":["scans/ref-coach-11756-B3-layout.jpg"],"ref-tvc-kk":["scans/ref-tvc-to-kanyakumari-trains.jpg"],"ref-mdu-rmm-avail":["scans/ref-madurai-to-rameswaram-availability.jpg"],"ref-mdu-rmm-time":["scans/ref-madurai-to-rameswaram-timetable.jpg"],"ref-22101":["scans/ref-train-22101-diversion-news.jpg"]};
+ST=Object.assign({adm:[],aladm:[],lang:'en',mute:0},ST);
+SHARED.push('adm','aladm');
+if(!ST.v6){ST.vw='flow';ST.mv='add';ST.v6=1}
+const LOC=()=>ST.lang=='hi'?'hi-IN':'en-IN';
+const isAdm=(u)=>{u=u||ST.sess;return u=='a'||(ST.adm||[]).includes(u)};
+const IOS=/iPhone|iPad|iPod/.test(navigator.userAgent),ANDROID=/Android/.test(navigator.userAgent);
+const isStandalone=()=>{try{return matchMedia('(display-mode: standalone)').matches||navigator.standalone===true}catch(e){return false}};
+const MS=36e5;
+let NXT=null;
+const phaseOf=(s,e)=>{const n=new Date();if(s<=n&&n<=e)return'now';if(e<n)return'done';if(sameDay(s,n))return'today';if(NXT&&+NXT.s==+s)return'next';return'later'};
+const PHL={now:'● NOW',today:'TODAY',next:'NEXT',done:'✓ DONE'};
+const phBadge=p=>PHL[p]?`<span class="phb ${p}">${PHL[p]}</span>`:'';
+const isNext=e=>!!NXT&&NXT.tt==e.tt&&+NXT.s==+e.s;
+function mineEvents(){const m=me();return allEv().filter(e=>(e.k=='Travel'||e.k=='Stay')&&e.mine)}
+function calcNext(){const n=new Date(),l=mineEvents();NXT=l.filter(e=>e.s>n).sort((a,b)=>a.s-b.s)[0]||null}
+const until=ms=>{const m=Math.max(0,Math.round(ms/6e4)),d=Math.floor(m/1440),h=Math.floor(m%1440/60);return d?d+'d '+h+'h':h?h+'h '+(m%60)+'m':m+' min'};
+function nowStrip(){if(me()=='v')return '';calcNext();const n=new Date(),l=mineEvents(),cur=l.filter(e=>e.s<=n&&n<=e.e).sort((a,b)=>(a.k=='Travel'?0:1)-(b.k=='Travel'?0:1))[0];
+let h='';if(cur)h+=`<div class="ns now"><span class="dot"></span><b>NOW</b><span class="nt">${cur.tt}</span><small>${cur.k=='Travel'?'until '+ft(cur.e):'check-out '+fd(cur.e)+' '+ft(cur.e)}</small></div>`;
+if(NXT)h+=`<div class="ns nxt"><b>NEXT</b><span class="nt">${NXT.tt}</span><small>${fd(NXT.s)} ${ft(NXT.s)} · in ${until(NXT.s-n)}</small></div>`;
+return h?`<div class="nowstrip">${h}</div>`:''}
+
+// ---------- history / back button ----------
+const HS={last:'',pop:0,ign:0};
+const stKey=()=>ST.tab+'|'+(ST.vw||'')+'|'+(ST.mv||'');
+const pgState=()=>({tab:ST.tab,vw:ST.vw,mv:ST.mv});
+function go(tab){ST.tab=tab;if(tab=='money')ST.mv='add';save();render()}
+function histSync(){if(HS.pop){HS.last=stKey();return}if(stKey()!=HS.last){try{history.pushState(pgState(),'','#'+ST.tab)}catch(e){}HS.last=stKey();window.scrollTo(0,0)}}
+addEventListener('popstate',e=>{if(HS.ign>0){HS.ign--;return}const s=e.state||{};
+if($('#vw').classList.contains('show')&&!s.vwo){closeVw(true);return}
+if($('#md').classList.contains('show')&&!s.modal){$('#md').classList.remove('show');return}
+if(!ST.sess)return;HS.pop=1;if(s.tab){ST.tab=s.tab;ST.vw=s.vw;ST.mv=s.mv}else{ST.tab='today'}render();HS.pop=0});
+new MutationObserver(()=>{const open=$('#md').classList.contains('show'),st=history.state||{};if(open&&!st.modal){try{history.pushState({...pgState(),modal:1},'')}catch(e){}}else if(!open&&st.modal){HS.ign++;history.back()}}).observe($('#md'),{attributes:true,attributeFilter:['class']});
+
+// ---------- originals viewer ----------
+const pdfPath=id=>S.some(s=>s[7]==id)?'stays/'+id+'.pdf':/^pilgrimage/.test(id)?'reference/'+id+'.pdf':'tickets/'+id+'.pdf';
+const orig=id=>{const f=FL[id];if(!f||!SCANS[id])return '<span class="mut">Original not added yet</span>';
+return `<button class="btn p" onclick="viewOrig('${id}')">📄 Open original</button>`+(f.includes('pdf')?`<a class="btn" href="${pdfPath(id)}" target="_blank" rel="noopener">PDF file</a>`:'')};
+let VWZ=1;
+function viewOrig(id,title,pdf){const pg=SCANS[id]||[];if(!pg.length)return toast('Original not added yet');VWZ=1;
+const hasPdf=pdf||(FL[id]&&FL[id].includes('pdf')?pdfPath(id):'');
+$('#vw').innerHTML=`<div class="vwt"><button onclick="history.back()" aria-label="Back">←</button><b>${title||id}</b><span class="sp"></span>${hasPdf?`<a class="btn" href="${hasPdf}" target="_blank" rel="noopener">PDF</a>`:''}<button onclick="vwZoom(-1)">−</button><button onclick="vwZoom(1)">+</button><button onclick="vwShare('${id}')">Share</button></div><div class="vwb" id="vwb">${pg.map((p,i)=>`<figure><img src="${p}" alt="${id} page ${i+1}" loading="lazy" style="width:calc(${VWZ*100}vw - 16px)"><figcaption>${pg.length>1?'Page '+(i+1)+' of '+pg.length+' · ':''}<a href="${p}" download>Save image</a></figcaption></figure>`).join('')}</div>`;
+$('#vw').classList.add('show');try{history.pushState({...pgState(),vwo:1},'')}catch(e){}}
+function vwZoom(d){VWZ=Math.min(3.2,Math.max(1,VWZ+d*.6));document.querySelectorAll('#vwb img').forEach(i=>i.style.width='calc('+VWZ*100+'vw - 16px)')}
+async function vwShare(id){const p=(SCANS[id]||[])[0];if(!p)return;try{const b=await(await fetch(p)).blob(),f=new File([b],id+'.jpg',{type:'image/jpeg'});if(navigator.canShare&&navigator.canShare({files:[f]}))return navigator.share({files:[f],title:'Ticket '+id});}catch(e){}
+if(navigator.share)navigator.share({title:'Ticket '+id,url:new URL(p,location.href).href}).catch(()=>{});else toast('Use Save image')}
+function closeVw(fromPop){$('#vw').classList.remove('show');if(!fromPop&&(history.state||{}).vwo){HS.ign++;history.back()}}
+
+// ---------- live status (Where is my Train) ----------
+const WIMT_AND='intent://#Intent;package=com.whereismytrain.android;S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dcom.whereismytrain.android;end';
+const WIMT_IOS='https://apps.apple.com/in/app/where-is-my-train-by-google/id6738965857',WIMT_WEB='https://play.google.com/store/apps/details?id=com.whereismytrain.android';
+function wimt(no,i){const t=T[i];cp(no);
+const open=ANDROID?`<a href="${WIMT_AND}" onclick="cp('${no}')"><button class="p">Open Where is my Train</button></a>`:IOS?`<a href="${WIMT_IOS}" onclick="cp('${no}')"><button class="p">Open Where is my Train</button></a>`:`<a class="btn p" href="${WIMT_WEB}" target="_blank" rel="noopener">Android app</a><a class="btn p" href="${WIMT_IOS}" target="_blank" rel="noopener">iPhone app</a>`;
+show(`<h3>Live status</h3><p>In <b>Where is my Train</b> search:</p><p class="big">Train ${no} · ${TR[no][0]}</p><p class="big">Date: ${TR[no][1]}</p><p class="mut">The app uses the day the train starts from its first station, not the day you board (${fd(D(t[4]))}). The train number is already copied.</p><div class="btns">${open}<button onclick="cp('${no}')">Copy train number</button></div>${IOS?'<p class="mut">iPhone: this opens the app page in the App Store. If the app is already installed, tap Open there.</p>':''}`)}
+
+// ---------- push / notifications ----------
+const PUSH={on:false,sub:null,supported:('serviceWorker' in navigator)&&('PushManager' in window)&&('Notification' in window)};
+const u8=b=>{const p='='.repeat((4-b.length%4)%4),s=(b+p).replace(/-/g,'+').replace(/_/g,'/'),r=atob(s);return Uint8Array.from([...r].map(c=>c.charCodeAt(0)))};
+const secure=()=>location.protocol=='https:'||location.hostname=='localhost';
+async function swInit(){if(!('serviceWorker' in navigator)||!secure())return;try{const r=await navigator.serviceWorker.register('sw.js');
+if(PUSH.supported&&Notification.permission=='granted'){const reg=await navigator.serviceWorker.ready;PUSH.sub=await reg.pushManager.getSubscription();PUSH.on=!!PUSH.sub;if(PUSH.on)pushSync()}}catch(e){}}
+async function enablePush(){if(!secure())return toast('Notifications need the https site');
+if(IOS&&!isStandalone())return show('<h3>Install first</h3><p>iPhone allows notifications only for apps added to the Home Screen. Tap the Share button, choose <b>Add to Home Screen</b>, open Yatra from the new icon and tap this button again.</p>');
+if(!PUSH.supported)return toast('This browser cannot show notifications');
+try{const p=await Notification.requestPermission();if(p!='granted')return toast('Notifications are blocked in the browser settings');
+const reg=await navigator.serviceWorker.ready;PUSH.sub=await reg.pushManager.getSubscription()||await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(VAPID)});PUSH.on=true;await pushSync(true);render();toast('Notifications are on')}catch(e){toast('Could not turn on notifications')}}
+const muteISO=()=>ST.mute==-1?'9999-12-31T00:00:00Z':ST.mute>Date.now()?new Date(ST.mute).toISOString():null;
+const isMuted=()=>ST.mute==-1||ST.mute>Date.now();
+function upAlarms(){const n=Date.now();return ALM().filter(a=>!a.off&&+a.at>n&&+a.at<n+14*864e5).slice(0,80).map(a=>({id:a.id,at:a.at.toISOString(),title:a.title}))}
+let PT=0;function pushSync(now){clearTimeout(PT);const run=()=>{if(!SB.url||!PUSH.sub||!ST.sess)return;sbf('yatra_push?on_conflict=endpoint',{method:'POST',headers:{Prefer:'resolution=merge-duplicates'},body:JSON.stringify({endpoint:PUSH.sub.endpoint,who:ST.sess,sub:PUSH.sub.toJSON(),lang:ST.lang,mute_until:muteISO(),alarms:upAlarms(),updated_at:new Date().toISOString()})}).catch(()=>{})};now?run():PT=setTimeout(run,1500)}
+function notifyAll(o){if(!SB.url||!ST.sess)return;fetch(SB.url+'/functions/v1/notify',{method:'POST',headers:{'Content-Type':'application/json','x-yatra-key':NK},body:JSON.stringify({from:ST.sess,...o})}).catch(()=>{})}
+function chatNotify(o){const body=o.kind=='i'?'📷 Photo':o.kind=='a'?'🎤 Voice message':o.kind=='l'?'📍 Location':(o.txt||'');notifyAll({kind:'chat',title:'💬 '+P[me()],body:body.slice(0,140),tag:'chat',url:'./index.html#chat'})}
+function banner(p){const e=$('#bn');if(!e)return;e.innerHTML=`<b>${escx(p.title||'Yatra')}</b><span>${escx(p.body||'')}</span>`;e.className='show';e.onclick=()=>{e.className='';if(p.kind=='chat')go('chat');else if(p.kind=='alarm')go('alarms')};clearTimeout(banner.t);banner.t=setTimeout(()=>e.className='',6000)}
+function localNote(m){if(document.hidden&&'Notification' in window&&Notification.permission=='granted'&&navigator.serviceWorker)navigator.serviceWorker.ready.then(r=>r.showNotification(m.title,{body:m.body,tag:m.tag,icon:'icons/icon-192.png',vibrate:[200,100,200]}));else banner(m)}
+if('serviceWorker' in navigator)navigator.serviceWorker.addEventListener('message',e=>{const d=e.data||{};if(d.type=='push')banner(d.payload||{});if(d.type=='open'){const h=(d.url||'').split('#')[1];if(h&&ST.sess)go(h)}});
+function pushCard(full){if(PUSH.on&&!full)return '';
+const st=PUSH.on?'<span class="okb">ON</span>':typeof Notification!='undefined'&&Notification.permission=='denied'?'<span class="warnb">BLOCKED</span>':'<span class="warnb">OFF</span>';
+return `<div class="card pushc"><div class="row"><b>🔔 Notifications ${st}</b></div><div class="mut">Get expense, trip, train-delay, chat and alarm alerts in the notification bar, even when the phone is locked.${IOS&&!isStandalone()?' On iPhone, first add this page to the Home Screen.':''}</div>${PUSH.on?`<div class="btns"><button onclick="testPush()">Send test notification</button></div>`:`<div class="btns"><button class="p" onclick="enablePush()">Turn on notifications</button></div>`}</div>`}
+function testPush(){notifyAll({kind:'info',title:'Yatra test',body:'Notifications work on your phone.',tag:'test',to:[ST.sess]});toast('Test sent')}
+
+// ---------- change notifications ----------
+const NOTIFY=['exp','pm','paid','swaps','delay','links'],SNAP={};let SNAPREADY=false;
+const snap=()=>NOTIFY.forEach(k=>SNAP[k]=JSON.stringify(ST[k]===undefined?null:ST[k]));
+const lbl=id=>{const t=T.find(x=>x[0]==id);if(t)return `${t[1]} ${t[2]}→${t[3]}`;const s=S.find(x=>x[7]==id);return s?`Stay ${s[1]}`:id};
+function changeMsg(k,o,n){o=o||(Array.isArray(n)?[]:{});n=n||(Array.isArray(o)?[]:{});
+if(k=='exp'){const oi=new Set(o.map(e=>e.id)),ni=new Set(n.map(e=>e.id)),a=n.filter(e=>!oi.has(e.id)),r=o.filter(e=>!ni.has(e.id));
+if(a.length)return{title:'💸 New expense',body:`${P[a[0].who]||'Someone'} added ₹${Math.round(a[0].amt)} · ${a[0].cat}${a[0].note?' · '+a[0].note:''}`,tag:'exp'};if(r.length)return{title:'💸 Expense removed',body:`₹${Math.round(r[0].amt)} · ${r[0].cat}${r[0].note?' · '+r[0].note:''}`,tag:'exp'}}
+if(k=='pm'){const oi=new Set(o.map(e=>e.id)),a=n.filter(e=>!oi.has(e.id));if(a.length)return{title:'💸 New payment',body:`${P[a[0].f]} paid ${P[a[0].t]} ₹${Math.round(a[0].amt)}`,tag:'pm'};if(n.length<o.length)return{title:'💸 Payment removed',body:'A payment entry was deleted',tag:'pm'}}
+if(k=='paid'){const ks=Object.keys({...o,...n}).filter(x=>o[x]!==n[x]);if(ks.length){const v=n[ks[0]];return{title:'🧾 Payer updated',body:`${lbl(ks[0])}: ${v=='x'?'not paid yet':v?'paid by '+P[v]:'not set'}`,tag:'paid'}}}
+if(k=='swaps'){const ks=Object.keys({...o,...n}).filter(x=>o[x]!==n[x]);if(ks.length){const pnr=ks[0].slice(0,-1),p=ks[0].slice(-1);return{title:'🔁 Seat swap',body:`${P[p]||''} · ${lbl(pnr)}${ks.length>1?' (+'+(ks.length-1)+' more)':''}`,tag:'swaps'}}}
+if(k=='delay'){const ks=Object.keys({...o,...n}).filter(x=>(o[x]||0)!==(n[x]||0));if(ks.length){const no=ks[0].slice(0,-4),v=n[ks[0]]||0;return{title:'🚆 Train '+no+(v?' delayed':' on time'),body:v?`${TR[no]?TR[no][0]:no} is running ${v} min late`:`${TR[no]?TR[no][0]:no} is back on time`,tag:'delay-'+no,kind:'delay'}}}
+if(k=='links'&&JSON.stringify(o)!==JSON.stringify(n))return{title:'🔗 Links updated',body:'Photos album or Drive folder link changed',tag:'links'};return null}
+const _save=save;save=function(k){const was=SNAP[k]===undefined?null:JSON.parse(SNAP[k]);_save(k);if(k&&NOTIFY.includes(k)){const m=changeMsg(k,was,ST[k]);SNAP[k]=JSON.stringify(ST[k]===undefined?null:ST[k]);if(m)notifyAll({kind:m.kind||'change',title:m.title,body:m.body,tag:m.tag,url:'./index.html#today'})}if(k&&/^alm_|^mute/.test(k))pushSync()};
+function pull(){if(!SB.url)return Promise.resolve();return sbf('yatra_kv?select=key,val&key=not.like.img_*').then(r=>r.json()).then(r=>{if(!Array.isArray(r))return;const old={...SNAP};r.forEach(x=>{if(SHARED.includes(x.key)||/^(loc|ll|alm)_/.test(x.key))ST[x.key]=x.val});
+let ch=false;if(SNAPREADY)NOTIFY.forEach(k=>{if(JSON.stringify(ST[k]===undefined?null:ST[k])!==old[k]){ch=true;if(!PUSH.on){const m=changeMsg(k,old[k]?JSON.parse(old[k]):null,ST[k]);if(m)localNote(m)}}});
+snap();SNAPREADY=true;L.s('yatra',JSON.stringify(ST));PULLCH=ch}).catch(()=>{})}
+let PULLCH=false;
+setInterval(()=>{if(document.hidden||!ST.sess)return;pull().then(()=>{const a=document.activeElement;if(PULLCH&&ST.tab!='chat'&&ST.mv!='add'&&!(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName))&&!$('#md').classList.contains('show')){PULLCH=false;render()}})},25000);
+
+// ---------- alarms ----------
+function ALM(){const m=me(),ov=ST['alm_'+m]||{},out=[],seen={};
+const add=(id,title,at,kind,sub)=>{const o=ov[id]||{};let a=new Date(at);if(o.t){const[h,mi]=o.t.split(':');a=new Date(a.getFullYear(),a.getMonth(),a.getDate(),+h,+mi)}const key=title+'|'+(+new Date(at));if(seen[key])return;seen[key]=1;out.push({id,title,at:a,def:new Date(at),kind,sub:sub||'',off:!!o.off,custom:!!o.t})};
+mineT().forEach(t=>{const dep=D(t[4]),arr=D(t[5]),nm=`${t[1]} ${TR[t[1]][0]}`;
+add('t'+t[0]+'a','Leave for the station · '+nm,new Date(dep-3*MS),'train',`${t[2]} · departs ${ft(dep)}`);
+add('t'+t[0]+'b','Board '+nm+' · '+sT(t,m),new Date(dep-30*6e4),'train',`${t[2]} · departs ${ft(dep)}`);
+add('t'+t[0]+'c','Get ready to get down at '+t[3],new Date(arr-45*6e4),'train',`${t[3]} · arrives ${ft(arr)}`)});
+S.filter(s=>s[5].includes(m)).forEach(s=>{add('s'+s[7]+'i','Check-in · '+s[1],new Date(D(s[2])-30*6e4),'stay',s[0]);add('s'+s[7]+'o','Check-out · '+s[1],new Date(D(s[3])-60*6e4),'stay',s[0])});
+SG.forEach((g,i)=>{const d=dayOf(g[0]);d.setHours(6,30);add('g'+g[0]+i,'Darshan day · '+g[1],d,'day',g[3]||'')});
+return out.sort((a,b)=>a.at-b.at)}
+function setAlm(id,patch){const k='alm_'+me();ST[k]=ST[k]||{};ST[k][id]={...(ST[k][id]||{}),...patch};if(ST[k][id].t==null)delete ST[k][id].t;save(k);pushSync();render()}
+const almTime=(id,v)=>{if(!v)return;setAlm(id,{t:v})},almOn=(id,on)=>setAlm(id,{off:on?0:1}),almReset=id=>{const k='alm_'+me();if(ST[k])delete ST[k][id];save(k);pushSync();render()};
+function addAdminAlarm(){const t=$('#aat').value.trim(),d=$('#aad').value,ty=$('#aay').value;if(!t||!d)return toast('Enter a title and a date and time');
+ST.aladm=[...(ST.aladm||[]),{id:'a'+Date.now(),type:ty,title:t,at:new Date(d).toISOString(),by:ST.sess}];save('aladm');notifyAll({kind:'info',title:'⏰ New admin alarm',body:t+' · '+fd(new Date(d))+' '+ft(new Date(d)),tag:'aladm'});render();toast('Alarm added')}
+function delAdminAlarm(id){if(!confirm('Delete this alarm?'))return;ST.aladm=(ST.aladm||[]).filter(a=>a.id!=id);save('aladm');render()}
+function alarmsView(){const n=new Date(),list=ALM(),up=list.filter(a=>a.at>=new Date(n-6e5)),past=list.filter(a=>a.at<new Date(n-6e5)),ad=[...(ST.aladm||[])].sort((a,b)=>new Date(a.at)-new Date(b.at));
+const z=n=>String(n).padStart(2,'0'),hm=d=>z(d.getHours())+':'+z(d.getMinutes());
+const row=a=>{const ph=sameDay(a.at,n)?'today':'';return `<div class="alr ${a.off?'off':''} ${ph}"><div class="ai">${a.kind=='train'?'🚆':a.kind=='stay'?'🛏️':'🛕'}</div><div class="am"><b>${escx(a.title)}</b><small>${escx(a.sub)}${a.custom?' · <i>your time</i>':''}</small></div><input type="time" value="${hm(a.at)}" onchange="almTime('${a.id}',this.value)" aria-label="Alarm time">${a.custom?`<button class="ic" onclick="almReset('${a.id}')" title="Reset to default">↺</button>`:''}<label class="sw"><input type="checkbox" ${a.off?'':'checked'} onchange="almOn('${a.id}',this.checked)"><i></i></label></div>`};
+const gr={};up.forEach(a=>(gr[a.at.toDateString()]=gr[a.at.toDateString()]||[]).push(a));
+return `<h2 class="orh">Alarms</h2>${nowStrip()}${pushCard(true)}
+<h3 class="orh sub">Admin alarms</h3><div class="mut" style="margin:0 2px 6px">Set by the trip admins for everyone. You cannot change or switch these off.</div>
+${ad.length?ad.map(a=>`<div class="alr adm ${a.type}"><div class="ai">${a.type=='prio'?'🔴':'🔔'}</div><div class="am"><b>${escx(a.title)}</b><small>${a.type=='prio'?'PRIORITY · loud, cannot be muted':'Scheduled by admin'} · ${fd(new Date(a.at))} ${ft(new Date(a.at))}</small></div>${isAdm()?`<button class="ic" onclick="delAdminAlarm('${a.id}')" aria-label="Delete">🗑</button>`:'<span class="lock">🔒</span>'}</div>`).join(''):'<div class="card dim mut">No admin alarms yet.</div>'}
+${isAdm()?`<div class="card form adf"><b>New admin alarm</b><input id="aat" type="text" placeholder="Title, e.g. Everyone at the station"><input id="aad" type="datetime-local"><select id="aay"><option value="prio">Priority (loudest, cannot be muted)</option><option value="norm">Normal (scheduled alert)</option></select><div class="btns"><button class="p" onclick="addAdminAlarm()">Add alarm for everyone</button></div></div>`:''}
+<h3 class="orh sub">My alarms</h3><div class="mut" style="margin:0 2px 6px">Created automatically from your trains, stays and darshan days. Change the time or switch off any alarm. Only you see these changes.</div>
+${Object.entries(gr).map(([d,l])=>`<div class="grp ${sameDay(new Date(d),n)?'todayg':''}">${fd(new Date(d))}${sameDay(new Date(d),n)?' · today':''}</div>`+l.map(row).join('')).join('')||'<div class="card dim mut">No upcoming alarms.</div>'}
+${past.length?`<details class="dv"><summary>Past alarms (${past.length})</summary>${past.map(row).join('')}</details>`:''}
+<div class="btns"><button onclick="ics()">Add all to phone calendar</button><button onclick="testAlarm(1)">Test priority alarm</button><button onclick="testAlarm(0)">Test normal alarm</button></div>
+<p class="mut small">How alarms ring: with notifications on, alarms arrive as high-priority notifications even when the phone is locked. While this app is open, priority alarms also play a full-volume siren. A phone's silent or Do Not Disturb mode is controlled by the phone, so a website cannot override it. For that, use the calendar button above and set the calendar app's alerts to ring as alarms.</p>`}
+let AC=null,SIR=null,VIB=null;
+function unlockAudio(){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state=='suspended')AC.resume()}catch(e){}}
+addEventListener('pointerdown',unlockAudio,{once:false,passive:true});
+function beep(freq,dur,vol,type){try{unlockAudio();const o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.value=freq;g.gain.value=vol;o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+dur)}catch(e){}}
+function stopRing(){clearInterval(SIR);clearInterval(VIB);SIR=VIB=null;if(navigator.vibrate)navigator.vibrate(0);$('#ring').classList.remove('show')}
+function ring(a){const prio=!!a.prio;$('#ring').className='show '+(prio?'prio':'norm');
+$('#ring').innerHTML=`<div class="rb"><div class="rbell">${prio?'🚨':'⏰'}</div><h2>${escx(a.title)}</h2><p>${prio?'PRIORITY ALARM':'Alarm'} · ${ft(new Date())}</p><button class="p big" onclick="stopRing()">Stop</button></div>`;
+if(prio){let k=0;const s=()=>{beep(k%2?660:988,.34,1,'square');k++};s();SIR=setInterval(s,360);if(navigator.vibrate){navigator.vibrate([500,150,500,150,500]);VIB=setInterval(()=>navigator.vibrate([500,150,500,150,500]),2200)}}
+else{beep(880,.25,.6,'sine');setTimeout(()=>beep(1175,.35,.6,'sine'),300);setTimeout(()=>beep(880,.25,.6,'sine'),800);if(navigator.vibrate)navigator.vibrate([300,100,300]);setTimeout(()=>{if($('#ring').classList.contains('norm'))stopRing()},12000)}
+if('Notification' in window&&Notification.permission=='granted'&&document.hidden&&navigator.serviceWorker)navigator.serviceWorker.ready.then(r=>r.showNotification((prio?'🔴 ':'⏰ ')+a.title,{body:'Yatra alarm',tag:'ring-'+a.id,requireInteraction:true,vibrate:[500,150,500,150,500],icon:'icons/icon-192.png',renotify:true}))}
+function testAlarm(p){ring({id:'test',title:p?'Test priority alarm':'Test normal alarm',prio:p})}
+function checkAlarms(){if(!ST.sess||ST.me=='v')return;const now=Date.now(),F=JSON.parse(L.g('yfired','{}'));let ch=0;
+[...ALM().filter(a=>!a.off).map(a=>({...a,prio:0})),...(ST.aladm||[]).map(a=>({id:'A'+a.id,title:a.title,at:new Date(a.at),prio:a.type=='prio'}))].forEach(a=>{const k=a.id+'@'+(+a.at);if(+a.at<=now&&now-a.at<9e5&&!F[k]){F[k]=1;ch=1;ring(a)}});
+if(ch){const ks=Object.keys(F).slice(-300),o={};ks.forEach(k=>o[k]=1);L.s('yfired',JSON.stringify(o))}}
+setInterval(checkAlarms,10000);
+
+// ---------- mute chat ----------
+function muteMenu(){show(`<h3>Mute chat notifications</h3><div class="btns col"><button onclick="setMute(8)">8 hours</button><button onclick="setMute(168)">1 week</button><button onclick="setMute(-1)">Always</button>${isMuted()?'<button class="p" onclick="setMute(0)">Unmute</button>':''}</div><p class="mut">Muted chats stay silent in the notification bar. You still see messages here. Alarms and trip alerts are not affected.</p>`)}
+function setMute(h){ST.mute=h==-1?-1:h?Date.now()+h*MS:0;save();$('#md').classList.remove('show');pushSync(true);render();toast(h?'Chat muted':'Chat unmuted')}
+
+// ---------- weather, 3 days ----------
+async function wx(){const el=$('#wx');if(!el)return;const[pl,,lb]=focus(),c=XY[pl];if(!c){el.textContent='';return}
+const paint=j=>{const lab=['Today','Tomorrow','Day after tomorrow'],d=j.daily;let w=[];
+const cards=d.time.map((x,i)=>{const r=d.precipitation_probability_max[i],mx=Math.round(d.temperature_2m_max[i]),mn=Math.round(d.temperature_2m_min[i]),cd=d.weather_code[i],bad=r>=60||cd>=95,hot=mx>=38;if(bad)w.push(lab[i]+': '+(cd>=95?'thunderstorm risk':'rain likely ('+r+'%)'));else if(hot)w.push(lab[i]+': very hot ('+mx+'°C)');
+return `<div class="wd ${bad||hot?'warn':''}"><small>${lab[i]}</small><b>${WM(cd)}</b><span>${mn}–${mx}°C</span><small>🌧 ${r}%</small></div>`}).join('');
+el.innerHTML=`<div class="wxh"><b>${lb} ${pl}</b><span>3-day forecast</span></div><div class="wx3">${cards}</div>${w.length?`<div class="wxw">⚠ ${w.join(' · ')}</div>`:''}`};
+try{const j=await(await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${c[0]}&longitude=${c[1]}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FKolkata&forecast_days=3`)).json();if(!j.daily)throw 0;L.s('ywx|'+pl,JSON.stringify(j));paint(j)}
+catch(e){const c2=L.g('ywx|'+pl,'');if(c2)try{paint(JSON.parse(c2));return}catch(x){}el.innerHTML=`<div class="wxh"><b>${lb} ${pl}</b><span>Forecast unavailable offline</span></div>`}}
+function sceneHTML(){const a=auto(),s=ST.sc=='auto'?a:ST.sc,g=todayG()||SG.find(x=>dt(x[1])),d=g&&dt(g[1]);
+return `<div class="scene" style="--tc:${d?d[4]:'#ff9a4d'}" aria-label="${SN[s]}">${SC[s]}<span class="lb">${SN[s]}</span></div><details class="scn"><summary>Change scene</summary><div class="chips">${['auto','train','station','hotel','temple','beach'].map(k=>`<button class="${ST.sc==k?'on':''}" onclick="ST.sc='${k}';save();render()">${k=='auto'?'Auto ('+SN[a]+')':SN[k]}</button>`).join('')}</div></details><div class="wx" id="wx"></div>`}
+
+// ---------- install shortcut ----------
+let DIP=null;addEventListener('beforeinstallprompt',e=>{e.preventDefault();DIP=e;if(ST.tab=='today'&&ST.sess)render()});
+addEventListener('appinstalled',()=>{L.s('yinst','1');DIP=null;if(ST.sess)render()});
+if(navigator.getInstalledRelatedApps)navigator.getInstalledRelatedApps().then(a=>{if(a&&a.length){L.s('yinst','1')}}).catch(()=>{});
+function installCard(){if(isStandalone()||L.g('yinst','')=='1')return '';return `<div class="card inst"><div class="row" style="flex-wrap:nowrap;gap:12px;align-items:center"><img src="icons/icon-192.png" alt="" width="52" height="52" style="border-radius:12px"><div><b>Add Yatra to your home screen</b><div class="mut">Opens full-screen like an app, works offline and enables lock-screen alerts.</div></div></div><div class="btns"><button class="p" onclick="doInstall()">Create app shortcut</button></div></div>`}
+async function doInstall(){if(DIP){DIP.prompt();try{const r=await DIP.userChoice;if(r.outcome=='accepted')L.s('yinst','1')}catch(e){}DIP=null;render();return}
+show(IOS?`<h3>Add to Home Screen</h3><ol class="steps"><li>Tap the <b>Share</b> button (square with an arrow) at the bottom of Safari.</li><li>Scroll and tap <b>Add to Home Screen</b>.</li><li>Tap <b>Add</b>. Open Yatra from the new icon.</li></ol><p class="mut">This card disappears once the app is opened from the Home Screen.</p>`:`<h3>Install the app</h3><ol class="steps"><li>Tap the browser menu <b>⋮</b> (top right).</li><li>Tap <b>Install app</b> or <b>Add to Home screen</b>.</li><li>Confirm. Open Yatra from the new icon.</li></ol>`)}
+
+// ---------- roles ----------
+function admTog(u){if(ST.sess!='a')return;const a=new Set(ST.adm||[]);a.has(u)?a.delete(u):a.add(u);ST.adm=[...a];save('adm');render();toast(P[u]+(a.has(u)?' is now an admin':' is no longer an admin'))}
+const _setPaid=setPaid;setPaid=function(id,v){if(!isAdm())return toast('Only admins can change who paid');_setPaid(id,v)};
+
+// ---------- account / language ----------
+function acctMenu(){show(`<h3>${P[ST.sess]||''}</h3><p class="mut">${isAdm()?'Admin':'Member'}${ST.me!=ST.sess?' · viewing as '+P[ST.me]:''}</p><div class="btns col"><button onclick="setLang();$('#md').classList.remove('show')">${ST.lang=='hi'?'Switch to English':'हिन्दी में बदलें'}</button>${ST.me!=ST.sess?`<button onclick="viewAs('${ST.sess}');$('#md').classList.remove('show')">Back to my own view</button>`:''}<button class="p" onclick="$('#md').classList.remove('show');logout()">Log out</button></div>`)}
+const _logout=logout;logout=function(){if(PUSH.sub&&SB.url)sbf('yatra_push?endpoint=eq.'+encodeURIComponent(PUSH.sub.endpoint),{method:'DELETE'}).catch(()=>{});PUSH.sub=null;PUSH.on=false;stopRing();_logout()};
+const _enter=enter;enter=function(u){_enter(u);ST.tab='today';ST.mv='add';swInit();render()};
+function setLang(){ST.lang=ST.lang=='hi'?'en':'hi';save();document.documentElement.lang=ST.lang=='hi'?'hi':'en';render();pushSync();hiPass(document.body)}
+
+// ---------- trip: flowchart first ----------
+let FLI=[];
+function flowItems(){const m=me(),ev=[];
+T.forEach((t,i)=>{if(px(t[8]).some(x=>x[0]==m))ev.push({k:'t',i,s:D(t[4]),e:D(t[5])})});
+Object.entries(stayGroups()).forEach(([k,g])=>{if(g.r.some(s=>s[5].includes(m)))ev.push({k:'s',key:k,g,s:D(g.f),e:D(g.o)})});
+PEND.forEach((p,j)=>{if(!/^Atul/.test(p[1])||'tm'.includes(m)){const s=D(p[0]);ev.push({k:'p',j,p,s,e:s})}});
+return ev.sort((a,b)=>a.s-b.s)}
+function flowSVG(){calcNext();FLI=flowItems();const W=360,G=36,x0=14,w=W-28;let y=12,s='';if(!FLI.length)return '<p class="mut">No bookings for this person yet.</p>';
+FLI.forEach((e,idx)=>{const tr=e.k=='t',st=e.k=='s',pd=e.k=='p',c=tr?'#1d6fb8':st?'#7b3fc4':'#d98b00',H=tr?98:st?82:72,ph=pd?'later':phaseOf(e.s,e.e);
+let l1,l2,l3,l4='';
+if(tr){const t=T[e.i];l1=`🚆 ${t[1]} ${TR[t[1]][0]}`;l2=`${t[2]} → ${t[3]}`;l3=`${fd(e.s)} ${ft(e.s)} → ${fd(e.e)} ${ft(e.e)}`;l4=px(t[8]).some(x=>x[0]==me())?'Seat '+sT(t,me())+(lateM(t)?'  ·  +'+lateM(t)+' min late':''):'';}
+else if(st){const r=e.g.r.filter(x=>x[5].includes(me()))[0]||e.g.r[0];l1='🛏 '+e.g.c;l2=r[0];l3=`In ${fd(e.s)} ${ft(e.s)} · out ${fd(e.e)} ${ft(e.e)}`}
+else{l1='⏳ '+e.p[1];l2=e.p[2];l3='Not booked / not decided yet · tap for options'}
+if(idx){const pv=FLI[idx-1],dot=pd||pv.k=='p';s+=`<path d="M${W/2} ${y-G+2} V${y-9}" stroke="${dot?'#d98b00':c}" stroke-width="3" fill="none" ${dot?'stroke-dasharray="2 6" stroke-linecap="round"':'class="fl"'}/><polygon points="${W/2-6},${y-9} ${W/2+6},${y-9} ${W/2},${y}" fill="${dot?'#d98b00':c}"/>${dot?'':`<circle r="4" fill="${c}"><animateMotion dur="1.6s" repeatCount="indefinite" path="M${W/2} ${y-G+2} V${y}"/></circle>`}`}
+const now=ph=='now',op=ph=='done'?.55:1;
+s+=`<g class="node fnode ${ph}" style="animation-delay:${Math.min(idx,8)*.08}s;cursor:pointer" opacity="${op}" onclick="flowOpen(${idx})" role="button" tabindex="0" onkeydown="if(event.key=='Enter')flowOpen(${idx})">
+${now?`<rect x="${x0-5}" y="${y-5}" width="${w+10}" height="${H+10}" rx="18" fill="none" stroke="#e11d2e" stroke-width="3" class="ringp"/>`:''}
+<rect x="${x0}" y="${y}" width="${w}" height="${H}" rx="14" fill="${now?'#e11d2e':c}" fill-opacity="${now?.14:.1}" stroke="${c}" stroke-width="${now?3:2}" ${pd?'stroke-dasharray="6 5"':''}/><rect x="${x0}" y="${y}" width="8" height="${H}" rx="4" fill="${c}"/>
+<text x="${x0+20}" y="${y+24}" font-size="15" font-weight="700" fill="${c}">${escx(cut(l1,tr?32:34))}</text><text x="${x0+20}" y="${y+44}" font-size="13" fill="currentColor">${escx(cut(l2,46))}</text><text x="${x0+20}" y="${y+62}" font-size="11.5" fill="currentColor" opacity=".78">${escx(cut(l3,52))}</text>${l4?`<text x="${x0+20}" y="${y+82}" font-size="12.5" font-weight="700" fill="${c}">${escx(l4)}</text>`:''}
+${PHL[ph]?`<g><rect x="${W-x0-64}" y="${y+8}" width="56" height="18" rx="9" fill="${ph=='now'?'#e11d2e':ph=='done'?'#6b7a6b':ph=='next'?'#0a8a7a':'#d98b00'}"/><text x="${W-x0-36}" y="${y+21}" font-size="10.5" font-weight="700" fill="#fff" text-anchor="middle">${PHL[ph]}</text></g>`:''}</g>`;
+y+=H+G});
+return `<svg viewBox="0 0 ${W} ${y-G+14}" role="img" aria-label="Journey flowchart">${s}</svg>`}
+function flowOpen(i){const e=FLI[i];if(!e)return;if(e.k=='t')openT(e.i);else if(e.k=='s')openS(e.key);else openPend(e.j)}
+function openT(i){const t=T[i],m=me(),k=t[1]+t[4].slice(0,4),g=groups()[k]||[i],ph=phaseOf(D(t[4]),D(t[5])),mine=px(t[8]).find(x=>x[0]==m);
+const tk=j=>{const x=T[j],me2=px(x[8]).some(p=>p[0]==m);return `<div class="card tk ${me2?'mine':''}"><div class="row"><span>${pn(x[0])}</span><span class="mut">${x[6]} · ${inr(x[7])}</span></div>${PX(x).map(([p,s])=>`<div class="row cpr ${p==m?'me':''}"><span class="${p=='v'?'x':''}">${P[p]}${p==m?' (you)':''}</span><span class="seat">${sT(x,p)}</span></div>`).join('')}<div class="btns">${orig(x[0])}<button onclick="tcard(${j})">Ticket card</button></div></div>`};
+show(`<div class="shh">${phBadge(ph)}<h3>${t[1]} ${TR[t[1]][0]}</h3></div><p class="big">${t[2]} ${ft(D(t[4]))} → ${t[3]} ${ft(D(t[5]))}</p><p class="mut">${fd(D(t[4]))} ${lateB(t)}</p>
+<div class="seatbox">${mine?`<small>Your seat</small><b>${sT(t,m)}</b>`:'<small>You are not on this ticket</small>'}</div>
+<h4 class="mini">All tickets on this train (you and co-passengers)</h4>${g.map(tk).join('')}
+<div class="btns"><button class="p" onclick="wimt('${t[1]}',${i})">Live status</button><button onclick="$('#md').classList.remove('show');go('trains')">Trains page</button></div>`)}
+function openS(k){const g=stayGroups()[k],m=me(),ph=phaseOf(D(g.f),D(g.o));
+show(`<div class="shh">${phBadge(ph)}<h3>${g.c}</h3></div><p class="mut">In ${fd(D(g.f))} ${ft(D(g.f))} → out ${fd(D(g.o))} ${ft(D(g.o))}</p>${g.r.map(s=>`<div class="card tk ${s[5].includes(m)?'mine':''}"><b>${s[0]}</b><div class="mut">${s[6].replace(s[7],'')}</div><div>${pn(s[7])}</div><div><b>Guests:</b> ${s[5].split('').map(p=>p==m?P[p]+' (you)':P[p]).join(', ')}</div><div class="row"><b>${inr(s[4])}</b><span>${payBy(s[7])}</span></div><div class="btns">${orig(s[7])}</div></div>`).join('')}<div class="btns"><button onclick="sImg('${k}')">Share image</button></div>`)}
+const REFS={itin:['Detailed itinerary','pilgrimage-itinerary','reference/pilgrimage-itinerary.pdf'],coach:['Coach layout 11756 · B3','ref-coach'],tvk:['Trivandrum → Kanyakumari trains','ref-tvc-kk'],mra:['Madurai → Rameswaram availability','ref-mdu-rmm-avail'],mrt:['Madurai → Rameswaram timetable','ref-mdu-rmm-time'],n22:['Train 22101 diversion news','ref-22101']};
+const refBtn=k=>{const r=REFS[k];return `<button class="btn" onclick="viewOrig('${r[1]}','${r[0]}'${r[2]?",'"+r[2]+"'":''})">📄 ${r[0]}</button>`};
+function openPend(j){const p=PEND[j],ref=/Kanyakumari/.test(p[1])?['tvk']:/Rameswaram/.test(p[1])&&/→/.test(p[1])?['mra','mrt']:/Kanchipuram/.test(p[1])&&/→/.test(p[1])?['n22']:[];
+show(`<div class="shh"><span class="phb later">NOT DECIDED</span><h3>${p[1]}</h3></div><p class="mut">${fd(D(p[0]))} ${ft(D(p[0]))}</p><div class="card pend"><b>${p[2]}</b></div>${ref.length?'<h4 class="mini">Reference documents</h4><div class="btns">'+ref.map(refBtn).join('')+'</div>':''}<div class="btns"><button onclick="$('#md').classList.remove('show');go('todo')">Open to-do list</button></div>`)}
+function tripView(){const all=allEv(),n=new Date(),days={};all.forEach(e=>{const k=e.s.toDateString();(days[k]=days[k]||[]).push(e)});
+const keys=Object.keys(days).sort((a,b)=>new Date(a)-new Date(b)),openK=keys.find(k=>sameDay(new Date(k),n))||keys.find(k=>new Date(k)>n)||keys[keys.length-1],vw=ST.vw;
+const tab=(k,l)=>`<button class="${vw==k?'on':''}" onclick="ST.vw='${k}';save();render()">${l}</button>`;
+let h=`<h2 class="orh">Trip</h2>${nowStrip()}<div class="seg">${tab('flow','Flowchart')}${tab('day','By day')}${tab('leg','By train and stay')}${tab('map','Route map')}</div>`;
+if(vw=='flow')return h+`<div class="lgd"><span><i style="background:#1d6fb8"></i>Train</span><span><i style="background:#7b3fc4"></i>Stay</span><span><i style="background:#d98b00"></i>Not booked / not decided (dotted)</span></div><div class="flowbox">${flowSVG()}</div><div class="mut" style="margin:2px 4px 8px">Tap any box to see the full card, co-passengers' seats and the original ticket.</div><h3 class="orh sub">Reference documents</h3><div class="btns">${Object.keys(REFS).map(refBtn).join('')}</div><div class="btns"><button onclick="shareImg('${me()}')">Share my trip image</button><button onclick="shareImg('all')">Share everyone's image</button><button onclick="ics()">Add alarms to calendar</button></div>`;
+if(vw=='leg')return h+legView();if(vw=='map')return h+'<div class="flowbox">'+mapSVG()+'</div>';
+keys.forEach(k=>{const d=new Date(k),o=sameDay(d,n);h+=`<details class="d ${o?'today':''}" ${k==openK?'open':''}><summary><span>${fd(d)}${o?' · today':''}</span><span class="mut">${days[k].length} items</span></summary>${dayHTML(days[k],o)}</details>`});return h}
+
+// ---------- trains / stays highlighting ----------
+const _legCard=legCard;legCard=function(e,n){const h=_legCard(e,n);if(e.k=='p')return h;const ph=phaseOf(e.s,e.e);return `<div class="ph ph-${ph}">${phBadge(ph)}${h}</div>`};
+const _trainCard=trainCard;trainCard=function(k,ix,first){const h=_trainCard(k,ix,first),t0=T[ix[0]],ph=phaseOf(D(t0[4]),D(t0[5]));return `<div class="ph ph-${ph}">${phBadge(ph)}${h}</div>`};
+const _trainsView=trainsView;trainsView=function(){calcNext();return nowStrip()+_trainsView()};
+function staysView(){calcNext();const gs=stayGroups(),m=me();return '<h2 class="orh">Stays</h2>'+nowStrip()+Object.entries(gs).map(([k,g])=>{const tot=g.r.reduce((a,s)=>a+s[4],0),mine=g.r.filter(s=>s[5].includes(m)),guests=[...new Set(g.r.flatMap(s=>s[5].split('')))].map(p=>P[p]).join(', '),ph=phaseOf(D(g.f),D(g.o));
+return `<div class="ph ph-${ph}">${phBadge(ph)}<details class="d" ${mine.length?'open':''}><summary><span>${g.c}</span><span class="mut">${inr(tot)}</span></summary><div class="card ${mine.length?'mine':'dim'}"><div class="mut">In ${fd(D(g.f))} ${ft(D(g.f))} → out ${fd(D(g.o))} ${ft(D(g.o))}</div><div>${g.r.length} room${g.r.length>1?'s':''}/booking${g.r.length>1?'s':''}</div><div>${mine.length?'<b>Your room:</b> '+mine.map(s=>s[0]).join('; '):'You are not staying here'}</div><div class="mut">Guests: ${guests}</div><div class="btns"><button onclick="scard('${k}')">Stay card</button><button onclick="sImg('${k}')">Share image</button></div>
+<details class="dv"><summary>Detailed view · every room and who is in it</summary>${g.r.map(s=>`<div class="card ${s[5].includes(m)?'mine':'dim'}"><b>${s[0]}</b><div class="mut">${s[6].replace(s[7],'')}</div><div>${pn(s[7])}</div><div><b>Guests:</b> ${s[5].split('').map(p=>P[p]).join(', ')}</div><div class="row"><b>${inr(s[4])}</b>${payBy(s[7])}</div><div class="btns">${orig(s[7])}</div></div>`).join('')}</details></div></details></div>`}).join('')+PEND.filter(p=>/stay/.test(p[1])).map(p=>`<div class="card pend"><b>${p[1]}</b><div class="mut">${p[2]}</div></div>`).join('')}
+
+// ---------- today ----------
+function todayView(){const n=new Date(),all=allEv();let list=all.filter(e=>sameDay(e.s,n)||(e.k!='To book or decide'&&e.s<n&&e.e>=n)),head='Today';
+if(!list.length){const nx=all.find(e=>e.s>n&&e.k!='To book or decide');if(nx){list=all.filter(e=>sameDay(e.s,nx.s));head='Next up · '+fd(nx.s)}}
+calcNext();
+return sceneHTML()+hero()+nowStrip()+`<h2 class="orh">${head}</h2>`+(list.length?dayHTML(list,true):'<p class="mut">No plans today.</p>')+`<div class="two"><button class="bigb" onclick="photos()">📷<br>Google Photos</button><button class="bigb" onclick="go('chat')">💬<br>Chat <span class="ub"></span></button></div>`+pushCard(false)+installCard()}
+
+// ---------- chat ----------
+const SNDC=w=>`hsl(${(w||'?').split('').reduce((a,c)=>a*31+c.charCodeAt(0),7)%360} 55% 38%)`;
+function chatView(){if(!SB.url)return '<h2 class="orh">Group chat</h2><div class="card"><p>The family chat starts working once Supabase is switched on.</p></div>';
+return `<div class="chatfs"><div class="chh"><button class="ic" onclick="history.back()" aria-label="Back">←</button><div class="cav">🪷</div><div class="cht"><b>Yatra family</b><small id="ct">${Object.keys(P).filter(k=>k!='v').map(k=>P[k].split(' ')[0]).join(', ')}</small></div><button class="ic" onclick="$('#csw').classList.toggle('show')" aria-label="Search">🔍</button><button class="ic" onclick="muteMenu()" aria-label="Mute">${isMuted()?'🔕':'🔔'}</button></div><div id="csw" class="csw"><input id="cs" type="search" placeholder="Search messages" oninput="CH.q=this.value;paintChat()"></div><div id="cl" class="chat">${chatHTML()}</div><div id="cq2"></div>
+<div class="comp"><div class="cin"><input id="ci" type="text" placeholder="Message" autocomplete="off" oninput="ctype();ctog()" onkeydown="if(event.key=='Enter')csend()"><label class="ib" aria-label="Photo">📷<input type="file" accept="image/*" hidden onchange="cphoto(this)"></label><button class="ib" onclick="cloc()" aria-label="Location">📍</button></div><button class="send" id="cv" onclick="csnd()" aria-label="Send or record">🎤</button></div></div>`}
+function ctog(){const b=$('#cv');if(!b||CH.rec)return;b.textContent=$('#ci').value.trim()?'➤':'🎤'}
+function csnd(){if($('#ci').value.trim()){csend();ctog()}else cvoice()}
+const _csend=csend;csend=async function(){await _csend();ctog()};
+
+// ---------- hindi ----------
+const HI={'Today':'आज','Trip':'यात्रा','Trains':'ट्रेनें','Stays':'ठहराव','Expenses / Payments':'खर्च / भुगतान','Expenses':'खर्च','Alarms':'अलार्म','Chat':'चैट','People':'लोग','To do':'करने योग्य कार्य','Drive folder':'ड्राइव फ़ोल्डर','Charges':'शुल्क',
+'Log out':'लॉग आउट','Log in':'लॉग इन','Register':'रजिस्टर करें','Forgot PIN':'PIN भूल गए','Back':'वापस','Close':'बंद करें','Save':'सहेजें','Delete':'हटाएँ','Send':'भेजें','Copy':'कॉपी','Reply':'जवाब','Star':'तारांकित',
+'Statement':'विवरण','Add expense':'खर्च जोड़ें','Add payment':'भुगतान जोड़ें','All entries':'सभी प्रविष्टियाँ','Save expense':'खर्च सहेजें','New expense':'नया खर्च','Total amount (₹)':'कुल राशि (₹)','For':'किसलिए','Note':'टिप्पणी','Date':'तारीख','Food':'भोजन','Local travel':'स्थानीय यात्रा','Temple and donation':'मंदिर और दान','Shopping':'खरीदारी','Train ticket':'ट्रेन टिकट','Stay extra':'ठहराव अतिरिक्त','Other':'अन्य',
+'Who paid (tick everyone who paid and enter their amounts)':'किसने भुगतान किया (भुगतान करने वालों को चुनें और राशि लिखें)','Screenshots (up to 3)':'स्क्रीनशॉट (अधिकतम 3)','Everyone':'सभी','Who pays whom':'कौन किसे देगा','If someone has not paid':'अगर किसी ने भुगतान नहीं किया','Share':'हिस्सा','Paid':'भुगतान','Sent':'भेजा','Received':'प्राप्त','Balance':'शेष',
+'Excel: everyone':'एक्सेल: सभी','PDF: everyone':'PDF: सभी','Payment saved':'भुगतान सहेजा गया','Expense saved':'खर्च सहेजा गया','Enter the total amount':'कुल राशि लिखें','Tick who paid':'भुगतान करने वाले चुनें','Tick who shares the cost':'खर्च बाँटने वाले चुनें',
+'Flowchart':'फ्लोचार्ट','By day':'दिन के अनुसार','By train and stay':'ट्रेन और ठहराव के अनुसार','Route map':'मार्ग नक्शा','Reference documents':'संदर्भ दस्तावेज़','Share my trip image':'मेरी यात्रा की तस्वीर भेजें',"Share everyone's image":'सभी की तस्वीर भेजें','Add alarms to calendar':'अलार्म कैलेंडर में जोड़ें','Add all to phone calendar':'सभी फ़ोन कैलेंडर में जोड़ें',
+'Train':'ट्रेन','Stay':'ठहराव','Not booked / not decided (dotted)':'बुक नहीं / तय नहीं (बिंदीदार)','Tap any box to see the full card, co-passengers\' seats and the original ticket.':'किसी भी बॉक्स को दबाएँ: पूरा कार्ड, सह-यात्रियों की सीटें और मूल टिकट दिखेगा।',
+'Original ticket':'मूल टिकट','Open original':'मूल टिकट खोलें','PDF file':'PDF फ़ाइल','Ticket card':'टिकट कार्ड','Stay card':'ठहराव कार्ड','Share image':'तस्वीर भेजें','Live status':'लाइव स्थिति','Your seat':'आपकी सीट','You are not on this ticket':'आप इस टिकट पर नहीं हैं','Trains page':'ट्रेन पेज','Open to-do list':'कार्य सूची खोलें','Original not added yet':'मूल अभी जोड़ा नहीं गया',
+'All tickets on this train (you and co-passengers)':'इस ट्रेन के सभी टिकट (आप और सह-यात्री)','NOT DECIDED':'तय नहीं','● NOW':'● अभी','TODAY':'आज','NEXT':'अगला','✓ DONE':'✓ पूर्ण','NOW':'अभी','Running late (minutes)':'देरी से चल रही (मिनट)','Guests:':'अतिथि:','Your room:':'आपका कमरा:','You are not staying here':'आप यहाँ नहीं रुक रहे','Save image':'तस्वीर सहेजें',
+'Notifications':'सूचनाएँ','Turn on notifications':'सूचनाएँ चालू करें','Send test notification':'परीक्षण सूचना भेजें','Admin alarms':'एडमिन अलार्म','My alarms':'मेरे अलार्म','New admin alarm':'नया एडमिन अलार्म','Add alarm for everyone':'सबके लिए अलार्म जोड़ें','Test priority alarm':'प्राथमिकता अलार्म जाँचें','Test normal alarm':'सामान्य अलार्म जाँचें','Stop':'रोकें','Past alarms':'पिछले अलार्म','No admin alarms yet.':'अभी कोई एडमिन अलार्म नहीं।','No upcoming alarms.':'कोई आगामी अलार्म नहीं।',
+'Set by the trip admins for everyone. You cannot change or switch these off.':'यात्रा एडमिन द्वारा सबके लिए तय। आप इन्हें बदल या बंद नहीं कर सकते।','Created automatically from your trains, stays and darshan days. Change the time or switch off any alarm. Only you see these changes.':'आपकी ट्रेन, ठहराव और दर्शन के दिनों से अपने-आप बने। समय बदलें या बंद करें। बदलाव सिर्फ़ आपको दिखेंगे।',
+'Install the app':'ऐप इंस्टॉल करें','Add Yatra to your home screen':'यात्रा को होम स्क्रीन पर जोड़ें','Create app shortcut':'ऐप शॉर्टकट बनाएँ','Add to Home Screen':'होम स्क्रीन पर जोड़ें','Mute chat notifications':'चैट सूचनाएँ म्यूट करें','8 hours':'8 घंटे','1 week':'1 सप्ताह','Always':'हमेशा','Unmute':'अनम्यूट','Group chat':'समूह चैट','Yatra family':'यात्रा परिवार','Message':'संदेश','Search messages':'संदेश खोजें','Photo':'फ़ोटो','Location':'स्थान',
+'Admin: shared links':'एडमिन: साझा लिंक','Admin: logins':'एडमिन: लॉगिन','Google Photos shared album':'गूगल फ़ोटोज़ साझा एल्बम','Google Drive folder':'गूगल ड्राइव फ़ोल्डर','Save links for everyone':'सबके लिए लिंक सहेजें','Set PIN':'PIN सेट करें','Clear':'हटाएँ','View as':'इस रूप में देखें','registered':'रजिस्टर्ड','not registered':'रजिस्टर नहीं','Make admin':'एडमिन बनाएँ','Remove admin':'एडमिन हटाएँ','ADMIN':'एडमिन','Admin':'एडमिन','Member':'सदस्य',
+'Name':'नाम','Choose a PIN (4 to 6 digits)':'PIN चुनें (4 से 6 अंक)','Repeat the PIN':'PIN दोहराएँ','PIN':'PIN','Recovery: your grandmother\'s name':'रिकवरी: आपकी दादी/नानी का नाम','Set new PIN':'नया PIN सेट करें','Wrong PIN':'गलत PIN','Yatra Portal 2026':'यात्रा पोर्टल 2026','Paid by: not set':'भुगतानकर्ता: तय नहीं','Not paid yet':'अभी भुगतान नहीं','Payer not set':'भुगतानकर्ता तय नहीं',
+'Group chat':'समूह चैट','Photos':'फ़ोटो','Google Photos':'गूगल फ़ोटोज़','Yatra under way':'यात्रा जारी है','Yatra complete':'यात्रा पूर्ण','No plans today.':'आज कोई कार्यक्रम नहीं।','Travel':'यात्रा','Sightseeing':'दर्शन','To book or decide':'बुक या तय करना बाकी','Change scene':'दृश्य बदलें','3-day forecast':'3 दिन का पूर्वानुमान','Tomorrow':'कल','Day after tomorrow':'परसों','On the train':'ट्रेन में','At the station':'स्टेशन पर','At the stay':'ठहराव पर','Temple day':'मंदिर दिवस','Beach day':'समुद्र तट दिवस',
+'Opens full-screen like an app, works offline and enables lock-screen alerts.':'ऐप की तरह फ़ुल-स्क्रीन खुलता है, ऑफ़लाइन चलता है और लॉक-स्क्रीन अलर्ट देता है।','Get expense, trip, train-delay, chat and alarm alerts in the notification bar, even when the phone is locked.':'खर्च, यात्रा, ट्रेन-देरी, चैट और अलार्म की सूचनाएँ नोटिफ़िकेशन बार में पाएँ, फ़ोन लॉक होने पर भी।','ON':'चालू','OFF':'बंद','BLOCKED':'बंद (ब्लॉक)','Not paid yet':'अभी भुगतान नहीं','Nearby co-passengers':'पास के सह-यात्री','Detailed view · coach and compartment':'विस्तृत दृश्य · कोच और कंपार्टमेंट','Detailed view · every room and who is in it':'विस्तृत दृश्य · हर कमरा और कौन उसमें है','Send complete ticket list (image)':'पूरी टिकट सूची भेजें (तस्वीर)','Send as text / WhatsApp':'टेक्स्ट / व्हाट्सऐप से भेजें',"Everyone's list (image)":'सबकी सूची (तस्वीर)','Tickets and payment':'टिकट और भुगतान','Start date in the app':'ऐप में आरंभ तिथि','Copy train number':'ट्रेन नंबर कॉपी करें','Open Where is my Train':'व्हेयर इज़ माई ट्रेन खोलें','Android app':'एंड्रॉयड ऐप','iPhone app':'आईफ़ोन ऐप','Hello':'नमस्ते','Reference documents':'संदर्भ दस्तावेज़','Detailed itinerary':'विस्तृत कार्यक्रम','Train 22101 diversion news':'ट्रेन 22101 मार्ग-परिवर्तन समाचार','Coach layout 11756 · B3':'कोच लेआउट 11756 · B3','Leave for the station':'स्टेशन के लिए निकलें','Check-in':'चेक-इन','Check-out':'चेक-आउट','Darshan day':'दर्शन दिवस','Cancel Vinit’s seat: 5000185849, 2960090113, 2264030172, 4245860618':'विनीत की सीट रद्द करें: 5000185849, 2960090113, 2264030172, 4245860618','Book Atul’s Jabalpur → Itarsi ticket (12 Dec)':'अतुल का जबलपुर → इटारसी टिकट बुक करें (12 दिसंबर)',
+'Set who paid for every booking (Trains and Stays tabs)':'हर बुकिंग का भुगतानकर्ता तय करें (ट्रेन और ठहराव टैब)','Send bogie arrangement screenshots for each train':'हर ट्रेन के कोच क्रम के स्क्रीनशॉट भेजें','Send the detailed day-by-day itinerary':'दिन-प्रतिदिन का विस्तृत कार्यक्रम भेजें','Create PINs for people (People tab) if wanted':'ज़रूरत हो तो लोगों के PIN बनाएँ (लोग टैब)','Optional: add deity photos as images/<name>.jpg':'वैकल्पिक: देवता की फ़ोटो images/<नाम>.jpg में जोड़ें'};
+const HIR=[[/^check-out (.+)$/,'चेक-आउट $1'],[/^until (.+)$/,'तक $1'],[/^(.+) · in (.+)$/,'$1 · $2 में'],[/^Check-in (.+)$/,'चेक-इन $1'],[/^In (.+) · out (.+)$/,'आगमन $1 · प्रस्थान $2'],[/^(At|On the way to) (.+)$/,(m,a,b)=>(a=='At'?'स्थान: ':'जा रहे हैं: ')+b],[/^(\d+) days to the yatra$/,'यात्रा में $1 दिन बाकी'],[/^Hello (.+)$/,'नमस्ते $1'],[/^(\d+) items$/,'$1 प्रविष्टियाँ'],[/^Next up · (.+)$/,'अगला · $1'],[/^In (\S+) → out/,'In $1 → out'],[/^Page (\d+) of (\d+)/,'पृष्ठ $1 / $2'],[/^Seat (.+)$/,'सीट $1'],[/\+(\d+) min late/,'+$1 मिनट देरी'],[/^Past alarms \((\d+)\)$/,'पिछले अलार्म ($1)'],[/^(.+)'s statement$/,'$1 का विवरण'],[/^(.+) · today$/,'$1 · आज'],[/^(.+): share (.+)$/,'$1: हिस्सा $2'],[/^Paid by (.+)$/,'भुगतानकर्ता: $1'],[/^Excel: (.+)$/,'एक्सेल: $1'],[/^PDF: (.+)$/,'PDF: $1'],[/^Total (.+)$/,'कुल $1']];
+const HIT=[['Ashish','आशीष'],['Krati','कृति'],['Shanti','शांति'],['Harmangal','हरमंगल'],['Saloniya','सलोनिया'],['Atul','अतुल'],['Suresh','सुरेश'],['Divya','दिव्या'],['Vinit','विनीत'],['Maa (Abha)','माँ (आभा)'],['NSC Bose Itwari','एनएससी बोस इतवारी'],['Jajpur Keonjhar Rd','जाजपुर केंदुझर रोड'],['Thiruvananthapuram','तिरुवनंतपुरम'],['Tiruchirappalli','तिरुचिरापल्ली'],['Kanyakumari','कन्याकुमारी'],['Rameswaram','रामेश्वरम'],['Kanchipuram','कांचीपुरम'],['Vijayawada','विजयवाड़ा'],['Bhubaneswar','भुवनेश्वर'],['Madurai','मदुरै'],['Tirupati','तिरुपति'],['Tirumala','तिरुमला'],['Nagpur','नागपुर'],['Itarsi','इटारसी'],['Satna','सतना'],['Jabalpur','जबलपुर'],['Chennai','चेन्नई'],['Trichy','त्रिची'],['Lower','नीचे'],['Middle','बीच'],['Upper','ऊपर'],['Side lower','साइड लोअर'],['Side upper','साइड अपर'],['Leave for the station','स्टेशन के लिए निकलें'],['Board ','सवार हों '],['Get ready to get down at','उतरने की तैयारी:'],['Check-in ·','चेक-इन ·'],['Check-out ·','चेक-आउट ·'],['Darshan day ·','दर्शन दिवस ·'],['departs','प्रस्थान'],['arrives','आगमन'],['Padmanabhaswamy Temple','पद्मनाभस्वामी मंदिर'],['Shankhumukham Beach','शंखुमुखम समुद्र तट'],['Vivekananda Rock','विवेकानंद शिला'],['Kumari Amman Temple','कुमारी अम्मन मंदिर'],['Suchindram','सुचींद्रम'],['Meenakshi Amman Temple','मीनाक्षी अम्मन मंदिर'],['Thirupparankundram','तिरुप्परंकुंद्रम'],['Ramanathaswamy Temple','रामनाथस्वामी मंदिर'],['Dhanushkodi','धनुषकोडी'],['Rockfort Ucchi Pillayar','रॉकफोर्ट उच्ची पिल्लैयार'],['Thiruvanaikaval','तिरुवनैकावल'],['Samayapuram','समयपुरम'],['Tiruchanoor','तिरुचानूर'],['Srikalahasti','श्रीकालहस्ती'],['Not booked','बुक नहीं']];
+HIT.sort((a,b)=>b[0].length-a[0].length);
+let HIBUSY=false;
+function hiText(s){const m=/^(\s*)([\s\S]*?)(\s*)$/.exec(s),t=m[2];if(!t)return s;if(HI[t])return m[1]+HI[t]+m[3];let r=t;for(const[re,to]of HIR){if(re.test(r)){r=r.replace(re,to);break}}for(const[a,b]of HIT){if(r.includes(a))r=r.split(a).join(b)}return m[1]+r+m[3]}
+function hiPass(root){if(ST.lang!='hi'||!root||HIBUSY)return;HIBUSY=true;try{if(root.nodeType==3){const p=root.parentElement;if(p&&!p.closest('script,style,textarea,.msg>div,.nohi')){const v=hiText(root.nodeValue);if(v!==root.nodeValue)root.nodeValue=v}}
+else if(root.nodeType==1){const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:n=>n.parentElement&&n.parentElement.closest('script,style,textarea,.msg>div,.nohi')?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT});let n;while(n=w.nextNode()){const v=hiText(n.nodeValue);if(v!==n.nodeValue)n.nodeValue=v}
+root.querySelectorAll('[placeholder],[title],[aria-label]').forEach(e=>['placeholder','title','aria-label'].forEach(a=>{const x=e.getAttribute(a);if(x&&HI[x.trim()])e.setAttribute(a,HI[x.trim()])}))}}finally{HIBUSY=false}}
+new MutationObserver(ms=>{if(ST.lang!='hi'||HIBUSY)return;ms.forEach(m=>m.addedNodes.forEach(n=>hiPass(n)))}).observe(document.body,{childList:true,subtree:true});
+
+// ---------- render ----------
+function render(){if(!ST.sess){loginUI('in');return}$('#lg').classList.remove('show');
+const m=me();document.body.classList.toggle('chatmode',ST.tab=='chat');$('#avl').textContent=(P[ST.sess]||'?')[0];$('#langb').textContent=ST.lang=='hi'?'EN':'हिं';$('#orn0').style.display='';
+const T0=[['today','Today','🏠'],['trip','Trip','🧭'],['trains','Trains','🚆'],['stays','Stays','🛏️'],['money','Expenses / Payments','💰'],['alarms','Alarms','⏰'],['chat','Chat','💬'],['people','People','👥'],['todo','To do','✅']],
+tabs=m=='v'?[['money','Charges','💰']]:m=='m'?T0.filter(x=>x[0]!='money'):T0;
+if(m=='v')ST.tab='money';else if(!tabs.some(x=>x[0]==ST.tab))ST.tab=tabs[0][0];
+$('#nav').innerHTML=tabs.map(([k,n,ic])=>`<button class="${k==ST.tab?'on':''}" onclick="go('${k}')"><i>${ic}</i><span>${n}</span>${k=='chat'?'<em class="ub"></em>':''}</button>`).join('')+(m=='v'?'':LK().drive?`<a class="nl" href="${LK().drive}" target="_blank" rel="noopener"><i>📁</i><span>Drive folder</span></a>`:`<button onclick="toast('Drive folder link is not added yet')"><i>📁</i><span>Drive folder</span></button>`);
+const tb=$('#tband');tb.style.display=ST.tab=='today'?'none':'';
+$('#v').innerHTML=({today:todayView,trip:tripView,money:moneyView,trains:trainsView,stays:staysView,alarms:alarmsView,people:peopleView,todo:todoView,chat:chatView})[ST.tab]();
+const cur=$('#nav .on');if(cur&&cur.scrollIntoView)try{cur.scrollIntoView({inline:'center',block:'nearest'})}catch(e){}
+clearInterval(CT);if(SB.url){CT=setInterval(cget,ST.tab=='chat'?4000:20000);cget()}wx();histSync();hiPass(document.body)}
+
 document.body.insertAdjacentHTML('beforeend',`<div id="toast"></div><div id="sp"><div class="sp-in"><div class="sp-ck">${CK}</div><div class="sp-nm">${NM}</div><div class="sp-sk">${SK}</div><h1>ॐ नमो वेंकटेशाय</h1><p>Om Namo Venkatesaya</p><small>Yatra Portal 2026</small></div></div><div class="wm">${CK}</div>`);
 $('#orn0').innerHTML=orn;$('#th').value=ST.th;document.body.dataset.t=ST.th;
 $('#th').onchange=e=>{ST.th=e.target.value;document.body.dataset.t=ST.th;save();paintBand()};paintBand();
@@ -729,5 +1133,5 @@ $('#md').onclick=e=>{if(e.target.id=='md')$('#md').classList.remove('show')};
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull().then(()=>ST.sess&&ST.tab!='chat'&&render())});
 if(ST.loc)locOn();
 setTimeout(()=>{const s=$('#sp');if(s)s.classList.add('out')},2600);setTimeout(()=>{const s=$('#sp');if(s)s.remove()},3300);
-(async()=>{await pull();if(ST.sess&&!P[ST.sess])ST.sess='';if(ST.sess)ST.me=ST.me||ST.sess;render()})();
+(async()=>{const h=location.hash.slice(1);await pull();snap();SNAPREADY=true;if(ST.sess&&!P[ST.sess])ST.sess='';if(ST.sess)ST.me=ST.me||ST.sess;ST.tab=(ST.sess&&['chat','alarms'].includes(h))?h:'today';ST.mv='add';if(ST.lang=='hi')document.documentElement.lang='hi';try{history.replaceState(pgState(),'','#'+ST.tab)}catch(e){}HS.last=stKey();swInit();render();setTimeout(checkAlarms,1500)})();
 </script></body></html>
