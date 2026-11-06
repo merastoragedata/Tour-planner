@@ -549,7 +549,7 @@ let ST=Object.assign({me:L.g('me','a'),th:L.g('th','maroon'),tab:'trip',vw:'day'
 const SHARED=['paid','todo','swaps','delay','exp'];
 const H={apikey:SB.key,Authorization:'Bearer '+SB.key,'Content-Type':'application/json'};
 const sbf=(p,o)=>fetch(SB.url+'/rest/v1/'+p,{...o,headers:{...H,...(o&&o.headers)}});
-const AUTHSEEN={};let PULLOK=false;let MGSAVE,MGON=false;const persist=()=>L.s('yatra',JSON.stringify(ST,function(a,b){if(a=='chatL')return undefined;if(a=='th'&&this===ST&&MGSAVE!==undefined)return MGSAVE;return b}));
+const AUTHSEEN={};let PULLOK=false;let MGSAVE,MGON=false;const persist=()=>L.s('yatra',JSON.stringify(ST,function(a,b){if(a=='chatL'||(this===ST&&/^img_med_/.test(a)))return undefined;if(a=='th'&&this===ST&&MGSAVE!==undefined)return MGSAVE;return b}));
 function save(k){persist();if(k=='auth'&&SB.url){Object.keys(ST.auth||{}).forEach(u=>{const v=JSON.stringify(ST.auth[u]);if(AUTHSEEN[u]===v)return;AUTHSEEN[u]=v;sbf('yatra_kv?on_conflict=key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates'},body:JSON.stringify({key:'auth_'+u,val:ST.auth[u]})}).catch(()=>{delete AUTHSEEN[u]})});return}if(k&&SB.url)sbf('yatra_kv?on_conflict=key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates'},body:JSON.stringify({key:k,val:ST[k]})}).catch(()=>{})}
 function pull(){if(!SB.url)return;sbf('yatra_kv?select=key,val&key=not.like.img_*').then(r=>r.json()).then(r=>{r.forEach(x=>{if(SHARED.includes(x.key)||x.key.startsWith('loc_')||x.key.startsWith('ll_'))ST[x.key]=x.val});persist();if(ST.tab!='chat')render()}).catch(()=>{})}
 const $=s=>document.querySelector(s),px=s=>s.split('|').map(x=>x.split('='));
@@ -1546,7 +1546,7 @@ const GCSS=`#gm{position:fixed;inset:0;z-index:90;background:linear-gradient(#bf
 .bush{background:#c8e6c9}.road{background:linear-gradient(#9be0ff 50%,#616161 50%)}.lite{position:absolute;left:12px;top:12px;background:#222;border-radius:14px;padding:8px;display:flex;flex-direction:column;gap:8px}.lite i{width:38px;height:38px;border-radius:50%;background:#555}.lite i.r{background:#f44336}.lite i.y{background:#ffeb3b}.lite i.g{background:#4caf50}#car{position:absolute;bottom:14%;left:2%;font-size:calc(64px*var(--fs,1));transition:left .25s}.bigb{position:absolute;left:12px;right:12px;bottom:14px;height:72px;border:0;border-radius:36px;background:var(--acc);color:#fff;font:700 calc(28px*var(--fs,1)) var(--f)}
 .dsv{position:absolute;inset:0;width:100%;height:100%}.pz .pt{aspect-ratio:1;border:0;border-radius:18px;font:700 calc(44px*var(--fs,1)) var(--f);color:#fff}.pz .pt.em{background:#0001}.sim{min-height:150px;opacity:.75}.sim.on{opacity:1;filter:brightness(1.4)}
 .trk{position:absolute;inset:0 0 100px;display:flex;flex-direction:column;justify-content:center;gap:20px}.ln{position:relative;height:90px;background:#757575;border-radius:12px}.ln i{position:absolute;right:6px;top:20px;font-style:normal;font-size:calc(40px*var(--fs,1))}.cr{position:absolute;left:0;top:14px;font-size:calc(56px*var(--fs,1));transition:left .35s}
-.cvs{width:100%;height:calc(100% - 70px);background:#fff;border-radius:18px;touch-action:none;box-shadow:0 4px 0 #0002}.pal{display:flex;gap:8px;margin-top:8px;overflow:auto}.pc{flex:none;width:48px;height:48px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 4px #0004;font-size:calc(22px*var(--fs,1))}
+.cvs{width:100%;height:calc(100% - 70px);background:#fff;border-radius:18px;touch-action:none;box-shadow:0 4px 0 #0002}.pal{display:flex;gap:8px;margin-top:8px;overflow:auto}.pal .pc{flex:none;width:48px;height:48px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 4px #0004;font-size:calc(22px*var(--fs,1))}
 .gg{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;margin:10px 0}.gcard{border:0;border-radius:22px;background:var(--card);box-shadow:var(--shadow);padding:14px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:calc(15px*var(--fs,1));color:var(--ink)}.gcard span{font-size:calc(48px*var(--fs,1))}.gcard small{opacity:.65}.gcard.rec{outline:3px solid var(--gold)}.kh{display:flex;align-items:center;gap:14px;background:var(--acc);color:var(--on);border-radius:22px;padding:14px 16px;margin:6px 0}.kh .mut{color:#fff;opacity:.92}.kh span{font-size:calc(56px*var(--fs,1))}.kh b{font:700 calc(24px*var(--fs,1)) var(--f)}
 body.kidmode #th,body.kidmode nav,body.kidmode .tband,body.kidmode #fzb,body.kidmode .simp{display:none!important}body.kidmode main{padding-bottom:30px}`;
 document.head.insertAdjacentHTML('beforeend','<style>'+GCSS+'</style>');
@@ -1829,6 +1829,7 @@ function themeUI(){const cur=ST.autoTh===false?ST.th:'auto';const Ls=[['auto','A
 function setTheme(v){const th=$('#th');th.value=v;th.dispatchEvent(new Event('change'));$('#md').classList.remove('show')}
 
 /* ===== v7.0 Pilgrim information (shared keys pil_<id>, img_med_<id>) ===== */
+const _pl0=pull;pull=function(){return Promise.resolve(_pl0()).then(()=>SB.url?sbf('yatra_kv?select=key,val&key=like.pil_*').then(r=>r.json()).then(r=>{if(Array.isArray(r)){r.forEach(x=>{if(!(PIL.ed&&x.key=='pil_'+PIL.ed))ST[x.key]=x.val});persist()}}).catch(()=>{}):0)};
 const PIL={ed:0,tmp:null,mi:[],v:null,mc:[],asked:0};
 const pK=u=>'pil_'+u,pR=u=>ST[pK(u)]||{};
 const pAdm=()=>{try{return typeof isAdm=='function'?isAdm():!!isAdm}catch(e){return ST.sess=='a'}};
@@ -1839,12 +1840,12 @@ const pMaskA=a=>a?'XXXX XXXX '+String(a).replace(/\D/g,'').slice(-4):'—';
 const pCall=(p,t)=>p?`<a class="pcall" href="tel:${pTel(p)}">${t||'📞 '+escx(p)}</a>`:'';
 const PCSS=`.pil{padding:2px 0 90px}.pilh{padding:20px 16px;border-radius:24px;margin-bottom:14px;color:#fff;background:linear-gradient(135deg,#6b240a,#e8731a 62%,#ffc857);box-shadow:var(--shadow)}.pilh h2{margin:0;font-size:23px}.pilh p{margin:4px 0 0;opacity:.92;font-size:13px}
 .pilw{background:#fff4d6;color:#7a4a00;border:1px solid #f2c14e;border-radius:16px;padding:13px 14px;margin-bottom:12px;font-weight:600;cursor:pointer}
-.pc{background:var(--card);border-radius:24px;padding:16px;margin-bottom:16px;box-shadow:var(--shadow)}.pc.me{outline:2px solid #e8731a}
+.pgc{background:var(--card);border-radius:24px;padding:16px;margin-bottom:16px;box-shadow:var(--shadow)}.pgc.me{outline:2px solid #e8731a}
 .pct{display:flex;align-items:center;gap:12px}.pct h3{margin:0;font-size:18px}.pct em{font-size:11px;background:#e8731a;color:#fff;border-radius:99px;padding:2px 8px;font-style:normal;vertical-align:middle}.pct small{opacity:.75}
 .pav{width:68px;height:68px;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,#e8731a,#ffc857);display:grid;place-items:center;font-size:30px;color:#fff;font-weight:700;flex:none;box-shadow:0 0 0 3px #ffffff55}.pav img{width:100%;height:100%;object-fit:cover}
 .pe{margin-left:auto;border:0;background:#ffffff1c;border-radius:12px;padding:8px 10px;font-size:16px}
 .pcall{display:inline-block;background:linear-gradient(135deg,#1f9d55,#46c97c);color:#fff!important;text-decoration:none;border-radius:99px;padding:9px 16px;font-weight:700;font-size:14px;margin:10px 0 4px}
-.pc dl{margin:8px 0}.pc dt{font-size:11px;letter-spacing:.06em;text-transform:uppercase;opacity:.65;margin-top:10px}.pc dd{margin:2px 0 0;font-size:15px}.pc h4{margin:14px 0 6px}
+.pgc dl{margin:8px 0}.pgc dt{font-size:11px;letter-spacing:.06em;text-transform:uppercase;opacity:.65;margin-top:10px}.pgc dd{margin:2px 0 0;font-size:15px}.pgc h4{margin:14px 0 6px}
 .pre{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#ff3b3b14;border-radius:14px;padding:6px 12px;margin-bottom:6px}.pre .pcall{margin:4px 0;padding:6px 12px}
 .pmb{width:100%;margin-top:12px;border:0;border-radius:14px;padding:12px;font-weight:700;background:#8a5cf61f;color:inherit}
 .pf label{display:block;font-size:12px;opacity:.8;margin:10px 0 0}.pf input,.pf select,.pf textarea{width:100%;box-sizing:border-box;margin-top:4px;padding:12px;border-radius:12px;border:1px solid #8884;background:#ffffff12;color:inherit;font-size:16px}
@@ -1857,7 +1858,7 @@ function pilShrink(f,max,q){return new Promise((ok,no)=>{const r=new FileReader(
 function pilCard(u){const r=pR(u),mine=u==ST.sess,can=mine||pAdm();
 const av=r.ph?`<img src="${r.ph}" alt="" onclick="pilView(pR('${u}').ph,'${P[u].split(' ')[0]}')">`:`<span>${P[u][0]}</span>`;
 const em=[r.e1,r.e2].filter(x=>x&&x.p).map(x=>`<div class="pre"><b>${escx(x.n||'Contact')}</b>${pCall(x.p)}</div>`).join('')||'<small style="opacity:.6">No emergency contacts added yet</small>';
-return `<article class="pc ${mine?'me':''}"><div class="pct"><div class="pav">${av}</div><div><h3>${escx(P[u])}${mine?' <em>You</em>':''}</h3><small>${r.age?escx(r.age)+' yrs':'Age —'}${r.bg?' · '+escx(r.bg):''}</small></div>${can?`<button class="pe" onclick="pilEdit('${u}')">✏️</button>`:''}</div>
+return `<article class="pgc ${mine?'me':''}"><div class="pct"><div class="pav">${av}</div><div><h3>${escx(P[u])}${mine?' <em>You</em>':''}</h3><small>${r.age?escx(r.age)+' yrs':'Age —'}${r.bg?' · '+escx(r.bg):''}</small></div>${can?`<button class="pe" onclick="pilEdit('${u}')">✏️</button>`:''}</div>
 ${r.mob?pCall(r.mob,'📞 Call '+escx(r.mob)):'<div style="opacity:.6;margin:10px 0">Mobile number not added</div>'}
 <dl><dt>Permanent address</dt><dd>${escx(r.addr||'—')}</dd><dt>Aadhaar</dt><dd>${can?escx(pFmtA(r.aa)||'—'):pMaskA(r.aa)}</dd><dt>Allergies / health notes</dt><dd>${escx(r.cond||'—')}</dd></dl>
 <h4>🚨 Emergency contacts</h4>${em}<button class="pmb" onclick="pilMeds('${u}')">💊 Regular medicines (${(r.meds||[]).length})</button></article>`}
@@ -2007,6 +2008,6 @@ function phRe(){const e=$('#phl');if(e)e.innerHTML=phCards(phList())}
 const _vv0=videoView;videoView=function(){let pl='';try{pl=wxPlan()[0].pl.replace(/\(.*\)/,'').trim()}catch(e){}const ps=[...new Set([pl,'Tirumala','Madurai','Rameswaram','Kanyakumari','Padmanabhaswamy','Kovalam','Kanchipuram'].filter(Boolean))];
 return `<div class="chips" style="display:flex;gap:6px;overflow-x:auto;padding:6px 0">${ps.map(p=>`<button class="${(ST.vq||'')==p?'on':''}" onclick="ST.vq=(ST.vq=='${p}'?'':'${p}');render()">📍 ${p}</button>`).join('')}<a class="pcall" style="margin:0;background:#e53935;white-space:nowrap" target="_blank" rel="noopener" href="https://www.youtube.com/results?search_query=${encodeURIComponent((ST.vq||pl)+' temple travel guide')}">🔎 Top on YouTube</a></div>`+_vv0()};
 
-document.head.insertAdjacentHTML('beforeend','<style>'+PCSS+'</style>');
+document.head.insertAdjacentHTML('beforeend','<style>'+PCSS+'.top .brand{min-width:0;flex:1 1 auto;overflow:hidden}.top .brand h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:calc(17px*var(--fs,1))}.top .tools{flex:none}.g2c .pc{width:auto;height:auto}</style>');
 (async()=>{const h=location.hash.slice(1);await pull();snap();SNAPREADY=true;if(ST.sess&&!P[ST.sess])ST.sess='';if(ST.sess)ST.me=ST.me||ST.sess;ST.tab=(ST.sess&&['chat','alarms'].includes(h))?h:'today';ST.mv='add';if(ST.lang=='hi')document.documentElement.lang='hi';try{history.replaceState(pgState(),'','#'+ST.tab)}catch(e){}HS.last=stKey();swInit();render();setTimeout(checkAlarms,1500)})();
 </script></body></html>
