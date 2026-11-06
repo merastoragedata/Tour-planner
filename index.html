@@ -9,7 +9,7 @@ DATA: T=tickets, S=stays, SG=sightseeing, PEND=to book/decide, TODO, TR=train in
 LOGIN: owner Ashish is admin. Each person registers once: name from dropdown, 4-6 digit PIN, recovery answer = grandmother's name (stored as salted SHA-256 in ST.auth, shared key "auth"). Forgot PIN uses the answer; admin can set or clear any PIN in People. Weak by design (static site); fine for family.
 SHARED STATE (Supabase project yatra-portal-2026 ref brsvownxzmdvmiqmutuj, ap-south-1, SB filled in v5; tables created): keys links (Photos album + Drive folder, admin editable in People), auth, paid, todo, swaps, delay, exp, pm, img_<id>, loc_<p>, ll_<p>, rd_<p>, ty_<p> in table yatra_kv; chat in table yatra_chat. Without Supabase everything works per phone only. SQL: create table public.yatra_kv(key text primary key, val jsonb, updated_at timestamptz default now()); create table public.yatra_chat(id bigserial primary key, who text, txt text, ts timestamptz default now(), rep bigint, kind text default 't', data text, rx jsonb default '{}', del boolean default false); alter table public.yatra_kv enable row level security; alter table public.yatra_chat enable row level security; create policy "all" on public.yatra_kv for all to anon using(true) with check(true); create policy "all" on public.yatra_chat for all to anon using(true) with check(true); grant select,insert,update,delete on public.yatra_kv to anon; grant select,insert,update on public.yatra_chat to anon; grant usage,select on sequence public.yatra_chat_id_seq to anon;  (explicit grants needed after the 30 Oct 2026 Data API change). Then fill SB.url and SB.key.
 DONE (v6): originals open in an in-app viewer using scanner-style cropped images in scans/ (screenshots) and page images of every PDF; PWA (manifest.webmanifest, sw.js, icons/) with install card; Web Push through Supabase edge functions notify and tick (pg_cron every minute) with tables yatra_push and yatra_secrets (VAPID keys, notify key); chat mute; change/delay/chat notifications; Alarms page (auto per-user alarms with editable time, admin priority and normal alarms); admin list (only Ashish grants admin; only admins change who-paid); Hindi toggle (post-pass dictionary HI/HIR/HIT); history/back button; opens on Today; 3-day weather; Today-only scene, thin theme strip elsewhere; flowchart first with pending nodes and tap-through cards; NOW/NEXT highlighting. DONE (v5): SB filled; animated place-theme band under the header for all 6 themes; Trip tab Flowchart and Route map views; Who-pays-whom flow in Expenses. DONE (v4): splash and Tirumala emblems (namam, shankh, chakra) animated; six place themes (Tirumala, Madurai, Rameswaram, Kanyakumari, Padmanabhaswamy, Kovalam); login/register/forgot PIN/admin reset; Today landing page with only the current activity expanded and two buttons (Photos, Chat with unread badge); pages Today, Trip, Expenses/Payments, Trains, Stays, People, To do, then Drive link; trains as cards with nearby co-passengers and detailed coach/compartment view with station segments and break-journey halts; stays as cards with detailed room view; ticket card shares only that image; complete ticket list share at top and bottom of Trains; multi-payer expenses, equal/individual split, payments between people; Excel (.xlsx built in browser) and PDF account reports with place colours and green payment rows; chat with replies, reactions, photos, voice notes, location, search, read ticks, typing, unread count (needs Supabase); live location by Google Maps share links; seat swap; calendar alarms.
-DONE (v7.0): Pilgrims tab after Today (shared keys pil_<id> = mob, age, bg, addr, aa (Aadhaar, masked for others in UI only), cond, e1/e2 {n,p}, ph, meds[{n,d}]; img_med_<id> = medicine photos aligned to meds, max 10; photo viewer with download/WhatsApp share/delete; first-login prompt on Today); magazine: Wikipedia/Commons images upgraded to 1280-1600px, up to 24 per place, more sections with photos, extra 'More about' text from Wikipedia. DONE (v7.1): Today weather = 7 days by each person's itinerary place (before first train: origin; after last: final destination), Weather tab (place dropdown, current details, AQI, sea waves, 24h, 8-day, Windy animated map with rain/wind/clouds/temp/waves/pressure layers). DONE (v7.2): Phrases tab (Malayalam 54 phrases: Hindi source, native script, auto Devanagari + Latin transliteration, device TTS with Google TTS fallback, Show-to-stranger full screen, Google Translate intent button, default language by itinerary place); YatraTube place chips + YouTube search, admin-only add/remove. NEXT: add Tamil, Telugu, Odia phrase sets to PHD (format Cat|hindi|english|native; PHB needs script base 0B80/0C00/0B00 and PHN name), aesthetic polish, hand-picked magazine photos. DONE (v6.1 bug-fix round): banner no longer peeks as a black strip; chat photo viewer (swipe, pinch, download), custom voice player on a global Audio (survives chat refresh), chat polls without media and caches it, seen-by Info sheet, chat keeps bottom nav, modal/nav z-order and nav-height padding, safer notification enable with real error messages and server-save check, alarm sound fallback, train delay shifts alarms and notifies, save() no longer stores chat images. DONE (v6.2): Trains and Stays now live inside Trip (segments Trains / Stays, all features kept) and their nav tabs are gone; new Map tab (MapLibre + OpenFreeMap tiles, 2D/3D toggle, timetable-based moving trains via ROUTES/ST_XY tables, delay +/- buttons, time slider and play); Today scene runs full-bleed under the header with the Now/Next card inside it; expenses page bottom sections are cards with bordered tables; Excel/PDF headers align with their columns, borders added, no place names in report titles. DONE (v6.3): sw.js v7 + clear error if sw.js missing; chat bubbles left/right; Delete for me / remove deleted placeholder (local); Aa text size (zoom 100-170%); report tables dotted column dividers and column-aware alignment (text left, short codes centred, amounts right, headers match); Not your train / Not your ticket notices and roomier coach plan; auto theme follows itinerary; pre-trip scene = train/station. PENDING DECISIONS: E2E private chat design, Hindi/English mixing, itinerary scene animations, train halts source, India-style route map. DONE (v6.4/6.5): movie-style itinerary scene before/after the trip (fixed to plan during the trip), desktop zoom 1.2 with uniform flowchart width, Hindi header resets; map uses published halts (HT table: 11756 via Chhindwara and 12626 verified, others still major stations) with stop times and At/Between status; end-to-end encrypted chat (ECDH keys wrapped by PIN, group key wrapped per member by Ashish, private 1-to-1 chats). Needs SQL: alter table public.yatra_chat add column if not exists to_u text; add column if not exists enc boolean default false. DONE (v6.7): timetable-driven Map (Train_Timetables_v3.xlsx embedded as TT; coordinates by station code + optional Overpass refine; Now&Next / Full journey views; persistent map, no re-init blinking; map text labels use collision-free symbol layer); per-user auth records (kv keys auth_<id>), login pulls DB first; kids accounts ay/an/sh/rg (PIN 1234 seeded once after a successful DB pull) landing on Games; 25 offline games; update banner + persistent storage; full names; Swap seats button visible. DONE (v6.8): Videos page (YouTube-style, shared list in kv key videos, opens YouTube app), places to visit on flowchart. DONE (v6.9): Today redesign: header palette, NOW/NEXT card, circular place cards (theme follows the centred card, follows the current stop on the trip), full magazine per place in English/Hindi with live Wikipedia/Commons images. NOT YET: full Hindi for every app screen. NEXT: per-day weather/animation polish, review responsiveness on real devices, Hindi, refine routes with exact intermediate timetable stops if wanted.
+DONE (v7.0): Pilgrims tab after Today (shared keys pil_<id> = mob, age, bg, addr, aa (Aadhaar, masked for others in UI only), cond, e1/e2 {n,p}, ph, meds[{n,d}]; img_med_<id> = medicine photos aligned to meds, max 10; photo viewer with download/WhatsApp share/delete; first-login prompt on Today); magazine: Wikipedia/Commons images upgraded to 1280-1600px, up to 24 per place, more sections with photos, extra 'More about' text from Wikipedia. DONE (v7.1): Today weather = 7 days by each person's itinerary place (before first train: origin; after last: final destination), Weather tab (place dropdown, current details, AQI, sea waves, 24h, 8-day, Windy animated map with rain/wind/clouds/temp/waves/pressure layers). DONE (v7.2): Phrases tab (Malayalam 54 phrases: Hindi source, native script, auto Devanagari + Latin transliteration, device TTS with Google TTS fallback, Show-to-stranger full screen, Google Translate intent button, default language by itinerary place); YatraTube place chips + YouTube search, admin-only add/remove. DONE (v7.3-7.4): class clash fix (.pc scoped to .pal), header ellipsis, pil_ sync via pull wrapper, img_med_ excluded from persist; Tamil/Telugu/Odia phrase sets (PHX, same order as Malayalam list, need native-speaker check); light polish CSS. DONE (v7.5): audio pipeline = shared neural audio pack (admin generates once via Google Cloud TTS key; key kept only in admin's localStorage; stored in kv key img_phaud_<lang>, cached via Cache API) > best on-device voice > Google Translate TTS; playback is synchronous inside tap (iOS-safe). NEXT: hand-picked magazine photos, native-speaker review of phrases. DONE (v6.1 bug-fix round): banner no longer peeks as a black strip; chat photo viewer (swipe, pinch, download), custom voice player on a global Audio (survives chat refresh), chat polls without media and caches it, seen-by Info sheet, chat keeps bottom nav, modal/nav z-order and nav-height padding, safer notification enable with real error messages and server-save check, alarm sound fallback, train delay shifts alarms and notifies, save() no longer stores chat images. DONE (v6.2): Trains and Stays now live inside Trip (segments Trains / Stays, all features kept) and their nav tabs are gone; new Map tab (MapLibre + OpenFreeMap tiles, 2D/3D toggle, timetable-based moving trains via ROUTES/ST_XY tables, delay +/- buttons, time slider and play); Today scene runs full-bleed under the header with the Now/Next card inside it; expenses page bottom sections are cards with bordered tables; Excel/PDF headers align with their columns, borders added, no place names in report titles. DONE (v6.3): sw.js v7 + clear error if sw.js missing; chat bubbles left/right; Delete for me / remove deleted placeholder (local); Aa text size (zoom 100-170%); report tables dotted column dividers and column-aware alignment (text left, short codes centred, amounts right, headers match); Not your train / Not your ticket notices and roomier coach plan; auto theme follows itinerary; pre-trip scene = train/station. PENDING DECISIONS: E2E private chat design, Hindi/English mixing, itinerary scene animations, train halts source, India-style route map. DONE (v6.4/6.5): movie-style itinerary scene before/after the trip (fixed to plan during the trip), desktop zoom 1.2 with uniform flowchart width, Hindi header resets; map uses published halts (HT table: 11756 via Chhindwara and 12626 verified, others still major stations) with stop times and At/Between status; end-to-end encrypted chat (ECDH keys wrapped by PIN, group key wrapped per member by Ashish, private 1-to-1 chats). Needs SQL: alter table public.yatra_chat add column if not exists to_u text; add column if not exists enc boolean default false. DONE (v6.7): timetable-driven Map (Train_Timetables_v3.xlsx embedded as TT; coordinates by station code + optional Overpass refine; Now&Next / Full journey views; persistent map, no re-init blinking; map text labels use collision-free symbol layer); per-user auth records (kv keys auth_<id>), login pulls DB first; kids accounts ay/an/sh/rg (PIN 1234 seeded once after a successful DB pull) landing on Games; 25 offline games; update banner + persistent storage; full names; Swap seats button visible. DONE (v6.8): Videos page (YouTube-style, shared list in kv key videos, opens YouTube app), places to visit on flowchart. DONE (v6.9): Today redesign: header palette, NOW/NEXT card, circular place cards (theme follows the centred card, follows the current stop on the trip), full magazine per place in English/Hindi with live Wikipedia/Commons images. NOT YET: full Hindi for every app screen. NEXT: per-day weather/animation polish, review responsiveness on real devices, Hindi, refine routes with exact intermediate timetable stops if wanted.
 NOT DONE: Supabase switched on and tested; real push notifications (needs server; calendar alarms instead); Hindi; fetching photos from Google Photos (Google does not allow it for shared albums: the button opens the album); WhatsApp-only features (calls, end-to-end encryption, status); family info cards with verified Hindi video links; food stops; coach orders for other trains (owner will send screenshots); detailed itinerary (owner will send); NITR voucher 6006386739 PDF (upload was overwritten, ask owner to re-send); unverified Where Is My Train package name com.whereismytrain.android.
 OPEN DECISIONS: TVC to Kanyakumari (16649 or road); Madurai to Rameswaram (16343 or 56711); Tirupati to Kanchipuram (16204, or Arakkonam by train then road); accommodation for TVC night 30 Nov, Madurai, Rameswaram, Tirupati, Kanchipuram; Atul Jabalpur to Itarsi ticket; Vinit cancellations; one duplicate Trichy to Tirupati set.
 V7 PHASE 1 (5 Nov 2026): one-row header (Aa, हिं, theme button, avatar; title always visible); sheets with close bar; ticket-card letter-spacing bug fixed (.tk); Today: Photos/Chat buttons restored (games CSS .bigb override neutralised), story cards above notification card; carousel no longer changes theme, auto theme only during trip by itinerary; past events fold; either/or journeys dropdown (ST.choice, ST.opts; admin only; shared keys); expense form all options in 2 columns, split-how dropdown default Nil; text size 80-170% via --fs on every font-size; per-user prefs pf_<user> (install/notification choices, background) sync via kv once Supabase is live; backgrounds (presets + own photo, photo local); calmer shankh/train animations. ORIGINAL FILES NOW OPEN FROM GOOGLE DRIVE: DRV map (path -> Drive file id) is baked into the script from folder 1LIZ-maFCtxpuACoplwml-FHN4zhlHduI (tickets/, stays/, reference/); viewer = Drive /preview iframe. New files added to Drive need their ids added to DRV. NEXT: phase 2 map, phase 3 games.
@@ -549,7 +549,7 @@ let ST=Object.assign({me:L.g('me','a'),th:L.g('th','maroon'),tab:'trip',vw:'day'
 const SHARED=['paid','todo','swaps','delay','exp'];
 const H={apikey:SB.key,Authorization:'Bearer '+SB.key,'Content-Type':'application/json'};
 const sbf=(p,o)=>fetch(SB.url+'/rest/v1/'+p,{...o,headers:{...H,...(o&&o.headers)}});
-const AUTHSEEN={};let PULLOK=false;let MGSAVE,MGON=false;const persist=()=>L.s('yatra',JSON.stringify(ST,function(a,b){if(a=='chatL'||(this===ST&&/^img_med_/.test(a)))return undefined;if(a=='th'&&this===ST&&MGSAVE!==undefined)return MGSAVE;return b}));
+const AUTHSEEN={};let PULLOK=false;let MGSAVE,MGON=false;const persist=()=>L.s('yatra',JSON.stringify(ST,function(a,b){if(a=='chatL'||(this===ST&&/^img_(med|phaud)_/.test(a)))return undefined;if(a=='th'&&this===ST&&MGSAVE!==undefined)return MGSAVE;return b}));
 function save(k){persist();if(k=='auth'&&SB.url){Object.keys(ST.auth||{}).forEach(u=>{const v=JSON.stringify(ST.auth[u]);if(AUTHSEEN[u]===v)return;AUTHSEEN[u]=v;sbf('yatra_kv?on_conflict=key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates'},body:JSON.stringify({key:'auth_'+u,val:ST.auth[u]})}).catch(()=>{delete AUTHSEEN[u]})});return}if(k&&SB.url)sbf('yatra_kv?on_conflict=key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates'},body:JSON.stringify({key:k,val:ST[k]})}).catch(()=>{})}
 function pull(){if(!SB.url)return;sbf('yatra_kv?select=key,val&key=not.like.img_*').then(r=>r.json()).then(r=>{r.forEach(x=>{if(SHARED.includes(x.key)||x.key.startsWith('loc_')||x.key.startsWith('ll_'))ST[x.key]=x.val});persist();if(ST.tab!='chat')render()}).catch(()=>{})}
 const $=s=>document.querySelector(s),px=s=>s.split('|').map(x=>x.split('='));
@@ -1988,7 +1988,7 @@ Shop|मुझे यह चाहिए|I want this|എനിക്ക് ഇ�
 const PHN={ml:'Malayalam'},PHB={ml:0x0D00},PHCH={'ൺ':'ण्','ൻ':'न्','ർ':'र्','ൽ':'ल्','ൾ':'ळ्','ൿ':'क्'};
 const PHR={'क':'ka','ख':'kha','ग':'ga','घ':'gha','ङ':'nga','च':'cha','छ':'chha','ज':'ja','झ':'jha','ञ':'nja','ट':'ta','ठ':'tha','ड':'da','ढ':'dha','ण':'na','त':'tha','थ':'thha','द':'dha','ध':'dhha','न':'na','प':'pa','फ':'pha','ब':'ba','भ':'bha','म':'ma','य':'ya','र':'ra','ल':'la','व':'va','श':'sha','ष':'sha','स':'sa','ह':'ha','ळ':'la','ऴ':'zha','ऱ':'ra'},PHV={'अ':'a','आ':'aa','इ':'i','ई':'ee','उ':'u','ऊ':'oo','ऋ':'ru','ए':'e','ऐ':'ai','ओ':'o','औ':'au','ऎ':'e','ऒ':'o'},PHS={'ा':'aa','ि':'i','ी':'ee','ु':'u','ू':'oo','ृ':'ru','े':'e','ै':'ai','ो':'o','ौ':'au','ॆ':'e','ॊ':'o'};
 function phDev(s,l){const b=PHB[l];return [...s].map(c=>{if(PHCH[c])return PHCH[c];const n=c.charCodeAt(0);return n>=b&&n<b+0x80?String.fromCharCode(n-b+0x900):c}).join('')}
-function phLat(d){let o='',a=[...d];for(let i=0;i<a.length;i++){const c=a[i];if(PHR[c]){const nx=a[i+1];if(nx==='्'){o+=PHR[c].slice(0,-1);i++}else if(PHS[nx]){o+=PHR[c].slice(0,-1)+PHS[nx];i++}else o+=PHR[c]}else if(PHV[c])o+=PHV[c];else if(c==='ം'||c==='ं')o+='m';else if(c==='ഃ'||c==='ः')o+='h';else if(!/[्]/.test(c))o+=c}return o.replace(/([^aeiou ])\1{2,}/g,'$1$1')}
+function phLat(d){let o='',a=[...d];for(let i=0;i<a.length;i++){const c=a[i];if(PHR[c]){const nx=a[i+1];if(nx==='्'){o+=PHR[c].slice(0,-1);i++}else if(PHS[nx]){o+=PHR[c].slice(0,-1)+PHS[nx];i++}else o+=PHR[c]}else if(PHV[c])o+=PHV[c];else if(c==='ം'||c==='ं')o+='m';else if(c==='ഃ'||c==='ः')o+='h';else if(c==='ँ')o+='n';else if(!/[्]/.test(c))o+=c}return o.replace(/([^aeiou ])\1{2,}/g,'$1$1')}
 const PH={l:null,c:'All',q:''};
 function phDefault(){let p='';try{p=wxPlan()[0].pl}catch(e){}p=p.toLowerCase();return /thiruvananth|trivandrum|kovalam|padmanabh|kochi|kerala/.test(p)?'ml':/madurai|rameswaram|kanyakumari|tiruchi|trichy|kanchi|chennai/.test(p)?'ta':/tirupati|tirumala|vijayawada/.test(p)?'te':/bhubaneswar|jajpur|odisha/.test(p)?'or':'ml'}
 function phSpeak(t,l){try{const v=speechSynthesis.getVoices().find(x=>x.lang.replace('_','-').toLowerCase().startsWith(l));if(v){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.voice=v;u.lang=v.lang;u.rate=.85;speechSynthesis.speak(u);return}}catch(e){}
@@ -2009,5 +2009,199 @@ const _vv0=videoView;videoView=function(){let pl='';try{pl=wxPlan()[0].pl.replac
 return `<div class="chips" style="display:flex;gap:6px;overflow-x:auto;padding:6px 0">${ps.map(p=>`<button class="${(ST.vq||'')==p?'on':''}" onclick="ST.vq=(ST.vq=='${p}'?'':'${p}');render()">📍 ${p}</button>`).join('')}<a class="pcall" style="margin:0;background:#e53935;white-space:nowrap" target="_blank" rel="noopener" href="https://www.youtube.com/results?search_query=${encodeURIComponent((ST.vq||pl)+' temple travel guide')}">🔎 Top on YouTube</a></div>`+_vv0()};
 
 document.head.insertAdjacentHTML('beforeend','<style>'+PCSS+'.top .brand{min-width:0;flex:1 1 auto;overflow:hidden}.top .brand h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:calc(17px*var(--fs,1))}.top .tools{flex:none}.g2c .pc{width:auto;height:auto}</style>');
+/* ===== v7.4 Tamil, Telugu, Odia phrase sets (same order as Malayalam list) + polish ===== */
+const PHX={ta:`வணக்கம்
+நன்றி
+தயவுசெய்து
+மன்னிக்கவும்
+ஆம்
+இல்லை
+எனக்கு தமிழ் தெரியாது
+உங்களுக்கு இந்தி தெரியுமா?
+உங்களுக்கு ஆங்கிலம் தெரியுமா?
+தயவுசெய்து மெதுவாகப் பேசுங்கள்
+எனக்குப் புரியவில்லை
+தயவுசெய்து மீண்டும் சொல்லுங்கள்
+மணி என்ன?
+ரயில் நிலையம் எங்கே இருக்கிறது?
+பேருந்து நிலையம் எங்கே இருக்கிறது?
+இந்த வழி கோவிலுக்குப் போகுமா?
+எனக்கு ஆட்டோ வேண்டும்
+மீட்டர் போட்டு போங்கள்
+கட்டணம் எவ்வளவு?
+இங்கே நிறுத்துங்கள்
+நேராகப் போங்கள்
+இடதுபுறம் திரும்புங்கள்
+வலதுபுறம் திரும்புங்கள்
+எந்த நடைமேடை?
+ரயில் எப்போது வரும்?
+எனக்குப் பசிக்கிறது
+குடிக்கத் தண்ணீர் கொடுங்கள்
+சைவ உணவு கிடைக்குமா?
+இறைச்சி, மீன் வேண்டாம்
+காரம் குறைவாகப் போடுங்கள்
+பில் கொடுங்கள்
+டீ / காபி கொடுங்கள்
+இது எவ்வளவு?
+அறை காலியாக இருக்கிறதா?
+ஒரு இரவுக்கு வாடகை எவ்வளவு?
+சாமான்களை வைக்க இடம் இருக்கிறதா?
+வெந்நீர் இருக்கிறதா?
+செக்-அவுட் எப்போது?
+கோவில் எங்கே இருக்கிறது?
+தரிசன நேரம் என்ன?
+உடை கட்டுப்பாடு என்ன?
+காலணிகளை எங்கே விடுவது?
+புகைப்படம் எடுக்கலாமா?
+டிக்கெட் எங்கே கிடைக்கும்?
+பிரசாதம் எங்கே கிடைக்கும்?
+எனக்கு உதவி வேண்டும்
+டாக்டரை அழையுங்கள்
+மருத்துவமனை எங்கே இருக்கிறது?
+எனக்கு உடம்பு சரியில்லை
+போலீஸை அழையுங்கள்
+நான் வழி தவறிவிட்டேன்
+கழிப்பறை எங்கே இருக்கிறது?
+மருந்துக் கடை எங்கே இருக்கிறது?
+ஏடிஎம் எங்கே இருக்கிறது?
+விலையைக் கொஞ்சம் குறையுங்கள்
+எனக்கு இது வேண்டும்`,te:`నమస్కారం
+ధన్యవాదాలు
+దయచేసి
+క్షమించండి
+అవును
+కాదు
+నాకు తెలుగు రాదు
+మీకు హిందీ వచ్చా?
+మీకు ఇంగ్లీష్ వచ్చా?
+దయచేసి నెమ్మదిగా మాట్లాడండి
+నాకు అర్థం కాలేదు
+దయచేసి మళ్ళీ చెప్పండి
+టైమ్ ఎంత అయింది?
+రైల్వే స్టేషన్ ఎక్కడ ఉంది?
+బస్ స్టాండ్ ఎక్కడ ఉంది?
+ఈ దారి గుడికి వెళ్తుందా?
+నాకు ఆటో కావాలి
+మీటర్ వేసి వెళ్ళండి
+ఛార్జీ ఎంత అవుతుంది?
+ఇక్కడ ఆపండి
+నేరుగా వెళ్ళండి
+ఎడమవైపు తిరగండి
+కుడివైపు తిరగండి
+ఏ ప్లాట్‌ఫారం?
+రైలు ఎప్పుడు వస్తుంది?
+నాకు ఆకలిగా ఉంది
+తాగడానికి నీళ్ళు ఇవ్వండి
+శాకాహార భోజనం దొరుకుతుందా?
+మాంసం, చేపలు వద్దు
+కారం తక్కువగా వేయండి
+బిల్లు ఇవ్వండి
+టీ / కాఫీ ఇవ్వండి
+ఇది ఎంత?
+గది ఖాళీగా ఉందా?
+ఒక రాత్రికి అద్దె ఎంత?
+సామాను పెట్టుకోవడానికి చోటు ఉందా?
+వేడి నీళ్ళు ఉన్నాయా?
+చెక్ అవుట్ ఎప్పుడు?
+గుడి ఎక్కడ ఉంది?
+దర్శనం సమయం ఎంత?
+వస్త్రధారణ నియమం ఏమిటి?
+చెప్పులు ఎక్కడ వదలాలి?
+ఫోటోలు తీయవచ్చా?
+టికెట్లు ఎక్కడ దొరుకుతాయి?
+ప్రసాదం ఎక్కడ దొరుకుతుంది?
+నాకు సహాయం కావాలి
+డాక్టర్‌ని పిలవండి
+ఆసుపత్రి ఎక్కడ ఉంది?
+నాకు ఆరోగ్యం బాగాలేదు
+పోలీసులను పిలవండి
+నేను దారి తప్పిపోయాను
+మరుగుదొడ్డి ఎక్కడ ఉంది?
+మందుల షాపు ఎక్కడ ఉంది?
+ఏటీఎం ఎక్కడ ఉంది?
+ధర కొంచెం తగ్గించండి
+నాకు ఇది కావాలి`,or:`ନମସ୍କାର
+ଧନ୍ୟବାଦ
+ଦୟାକରି
+କ୍ଷମା କରନ୍ତୁ
+ହଁ
+ନା
+ମୋତେ ଓଡ଼ିଆ ଆସେ ନାହିଁ
+ଆପଣ ହିନ୍ଦୀ ଜାଣନ୍ତି କି?
+ଆପଣ ଇଂରାଜୀ ଜାଣନ୍ତି କି?
+ଦୟାକରି ଧୀରେ କୁହନ୍ତୁ
+ମୁଁ ବୁଝିପାରିଲି ନାହିଁ
+ଦୟାକରି ଆଉଥରେ କୁହନ୍ତୁ
+ସମୟ କେତେ ହେଲା?
+ରେଳ ଷ୍ଟେସନ କେଉଁଠି ଅଛି?
+ବସ୍ ଷ୍ଟାଣ୍ଡ କେଉଁଠି ଅଛି?
+ଏହି ରାସ୍ତା ମନ୍ଦିରକୁ ଯାଏ କି?
+ମୋତେ ଅଟୋ ଦରକାର
+ମିଟର ଦେଇ ଚାଲନ୍ତୁ
+ଭଡ଼ା କେତେ ହେବ?
+ଏଠାରେ ରୋକନ୍ତୁ
+ସିଧା ଯାଆନ୍ତୁ
+ବାମକୁ ବୁଲନ୍ତୁ
+ଡାହାଣକୁ ବୁଲନ୍ତୁ
+କେଉଁ ପ୍ଲାଟଫର୍ମ?
+ଟ୍ରେନ୍ କେବେ ଆସିବ?
+ମୋତେ ଭୋକ ଲାଗୁଛି
+ପିଇବାକୁ ପାଣି ଦିଅନ୍ତୁ
+ନିରାମିଷ ଖାଦ୍ୟ ମିଳିବ କି?
+ମାଂସ ମାଛ ଦରକାର ନାହିଁ
+ଝାଳ କମ୍ ଦିଅନ୍ତୁ
+ବିଲ୍ ଦିଅନ୍ତୁ
+ଚା / କଫି ଦିଅନ୍ତୁ
+ଏହା କେତେ?
+ରୁମ୍ ଖାଲି ଅଛି କି?
+ଏକ ରାତିର ଭଡ଼ା କେତେ?
+ମୋଟଗଟ ରଖିବାକୁ ଜାଗା ଅଛି କି?
+ଗରମ ପାଣି ଅଛି କି?
+ଚେକ୍ ଆଉଟ୍ କେବେ?
+ମନ୍ଦିର କେଉଁଠି ଅଛି?
+ଦର୍ଶନ ସମୟ କେତେ?
+ପୋଷାକ ନିୟମ କ'ଣ?
+ଜୋତା କେଉଁଠି ରଖିବା?
+ଫଟୋ ଉଠାଇ ପାରିବା କି?
+ଟିକେଟ୍ କେଉଁଠି ମିଳିବ?
+ପ୍ରସାଦ କେଉଁଠି ମିଳିବ?
+ମୋତେ ସାହାଯ୍ୟ ଦରକାର
+ଡାକ୍ତରଙ୍କୁ ଡାକନ୍ତୁ
+ଡାକ୍ତରଖାନା କେଉଁଠି ଅଛି?
+ମୋର ଶରୀର ଭଲ ନାହିଁ
+ପୋଲିସକୁ ଡାକନ୍ତୁ
+ମୁଁ ବାଟ ହଜିଗଲି
+ଶୌଚାଳୟ କେଉଁଠି ଅଛି?
+ଔଷଧ ଦୋକାନ କେଉଁଠି ଅଛି?
+ଏଟିଏମ୍ କେଉଁଠି ଅଛି?
+ଦାମ୍ ଟିକେ କମ୍ କରନ୍ତୁ
+ମୋତେ ଏହା ଦରକାର`};
+const PHM={ta:['Tamil','तमिल'],te:['Telugu','तेलुगु'],or:['Odia','ओड़िया']};
+Object.keys(PHX).forEach(l=>{const a=PHX[l].split('\n');PHN[l]=PHM[l][0];PHB[l]={ta:0x0B80,te:0x0C00,or:0x0B00}[l];PHD[l]=PHD.ml.map((x,i)=>i==6?[x[0],'मुझे '+PHM[l][1]+' नहीं आती','I do not know '+PHM[l][0],a[i]]:[x[0],x[1],x[2],a[i]])});
+document.head.insertAdjacentHTML('beforeend','<style>html{scroll-behavior:smooth}button:active{transform:scale(.97)}.pgc,.phc,.wxg>div,.wd{transition:transform .2s,box-shadow .2s}.pgc,.phc{animation:yfade .4s ease both}@keyframes yfade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}nav{backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}.pcall:active,.pb:active{filter:brightness(.92)}</style>');
+
+/* ===== v7.5 Native-sounding audio: shared neural audio pack > best phone voice > online voice. iOS-safe (plays inside the tap) ===== */
+const PHA={},PHLC={ml:'ml-IN',ta:'ta-IN',te:'te-IN',or:'or-IN'};
+async function phPack(l){if(PHA[l])return PHA[l];try{const r=await(await caches.open('ph-audio')).match('/_phaud/'+l);if(r){PHA[l]=await r.json();return PHA[l]}}catch(e){}
+if(!SB.url)return null;try{const r=await(await sbf('yatra_kv?select=val&key=eq.img_phaud_'+l)).json(),v=r[0]&&r[0].val;if(v&&Object.keys(v).length){PHA[l]=v;try{(await caches.open('ph-audio')).put('/_phaud/'+l,new Response(JSON.stringify(v)))}catch(e){}return v}}catch(e){}return null}
+function phVoice(l){const sc=v=>(/enhanced|premium|neural|natural/i.test(v.name)?4:0)+(/google/i.test(v.name)?3:0)+(v.localService?0:1)-(/compact|eloquence|espeak/i.test(v.name)?5:0);return speechSynthesis.getVoices().filter(v=>v.lang.replace('_','-').toLowerCase().startsWith(l)).sort((a,b)=>sc(b)-sc(a))[0]}
+function phAud(a){if(PH.a){try{PH.a.pause()}catch(e){}}PH.a=a;const p=a.play();if(p&&p.catch)p.catch(()=>toast('No '+PHN[PH.l]+' voice available on this phone – use the 🌐 Translate button'))}
+function phSay(i){const l=PH.l,t=PHD[l][i][3],p=PHA[l]&&PHA[l][i];try{speechSynthesis.cancel()}catch(e){}
+if(p){phAud(new Audio('data:audio/mpeg;base64,'+p));return}
+let v;try{v=phVoice(l)}catch(e){}
+if(v){const u=new SpeechSynthesisUtterance(t);u.voice=v;u.lang=v.lang;u.rate=.88;u.pitch=1;speechSynthesis.speak(u);return}
+phAud(new Audio('https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl='+l+'&q='+encodeURIComponent(t)))}
+function phBig(i){const x=PHD[PH.l][i];phSay(i);show(`<div style="text-align:center"><div style="font-size:34px;line-height:1.35;font-weight:700;margin:6px 0">${escx(x[3])}</div><div style="font-size:15px;opacity:.75">${escx(x[1])}</div><button class="pcall" style="font-size:20px;padding:14px 30px;border:0" onclick="phSay(${i})">🔊 Play again</button><br><button class="pcall" style="background:#2e86de;border:0" onclick="phTr('${escx(x[1]).replace(/'/g,'')}')">🌐 Google Translate</button></div>`)}
+function phStatus(){const e=$('#phst');if(!e)return;const l=PH.l;let v;try{v=phVoice(l)}catch(x){}e.textContent=PHA[l]?'🎧 Native neural voice · works offline':v?'📱 Phone voice: '+v.name:'🌐 Online voice · needs internet'}
+function phPrep(){phPack(PH.l).then(phStatus);phStatus();try{speechSynthesis.getVoices();speechSynthesis.onvoiceschanged=phStatus}catch(e){}}
+async function phGen(){const l=PH.l,key=($('#phk')||{}).value.trim(),lc=PHLC[l],g=$('#phg');if(!key)return toast('Paste the Google API key first');L.s('ph_gkey',key);g.textContent='Looking for the best voice…';
+let vs=[];try{vs=(await(await fetch('https://texttospeech.googleapis.com/v1/voices?languageCode='+lc+'&key='+key)).json()).voices||[]}catch(e){}
+if(!vs.length){g.textContent='Google has no '+PHN[l]+' voice (or the key is wrong). Phone voice will be used.';return}
+const rk=v=>/Chirp3-HD/.test(v.name)?5:/Studio/.test(v.name)?4:/Neural2/.test(v.name)?3:/wavenet/i.test(v.name)?2:1;vs.sort((a,b)=>rk(b)-rk(a));const v=vs[0],pack={},d=PHD[l];
+for(let i=0;i<d.length;i++){g.textContent='Generating '+(i+1)+'/'+d.length+' · '+v.name;try{const r=await(await fetch('https://texttospeech.googleapis.com/v1/text:synthesize?key='+key,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({input:{text:d[i][3]},voice:{languageCode:lc,name:v.name},audioConfig:{audioEncoding:'MP3',speakingRate:.92}})})).json();if(r.audioContent)pack[i]=r.audioContent}catch(e){}}
+const n=Object.keys(pack).length;if(n<d.length*.9){g.textContent='Only '+n+' of '+d.length+' phrases generated – check the key and try again';return}
+ST['img_phaud_'+l]=pack;PHA[l]=pack;save('img_phaud_'+l);try{(await caches.open('ph-audio')).put('/_phaud/'+l,new Response(JSON.stringify(pack)))}catch(e){}g.textContent='✅ Done · '+v.name+' · everyone gets this voice automatically';phStatus()}
+const _pv0=phrasesView;phrasesView=function(){let h=_pv0();setTimeout(phPrep,50);const adm=pAdm()?`<details class="phc"><summary><b>🎙 Native audio pack (admin)</b></summary><p style="font-size:13px;opacity:.8">One-time: paste a Google Cloud Text-to-Speech API key and tap Generate. A natural human-like voice is saved for all yatris and works on every phone, even offline.</p><input id="phk" class="phs" placeholder="Google API key" value="${escx(L.g('ph_gkey',''))}"><button class="pcall" style="border:0;margin:4px 0" onclick="phGen()">Generate for ${escx(PHN[PH.l]||'')}</button><div id="phg" style="font-size:13px"></div></details>`:'';return h.replace('<input class="phs"','<div id="phst" style="font-size:13px;margin:8px 2px 0;opacity:.8"></div>'+adm+'<input class="phs"')};
+
 (async()=>{const h=location.hash.slice(1);await pull();snap();SNAPREADY=true;if(ST.sess&&!P[ST.sess])ST.sess='';if(ST.sess)ST.me=ST.me||ST.sess;ST.tab=(ST.sess&&['chat','alarms'].includes(h))?h:'today';ST.mv='add';if(ST.lang=='hi')document.documentElement.lang='hi';try{history.replaceState(pgState(),'','#'+ST.tab)}catch(e){}HS.last=stKey();swInit();render();setTimeout(checkAlarms,1500)})();
 </script></body></html>
