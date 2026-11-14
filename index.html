@@ -3114,7 +3114,7 @@ const tp=m7P(p.lat,p.lon),kk=Math.min(p.k,pts.length-2);
 if(p.pct>0){c.save();c.shadowColor=col;c.shadowBlur=14;c.strokeStyle=col;c.lineWidth=4;c.beginPath();for(let k=0;k<=kk;k++){k?c.lineTo(pts[k][0],pts[k][1]):c.moveTo(pts[k][0],pts[k][1])}c.lineTo(tp[0],tp[1]);c.stroke();c.restore();c.strokeStyle='#fff';c.globalAlpha=.8;c.lineWidth=1.2;c.beginPath();for(let k=0;k<=kk;k++){k?c.lineTo(pts[k][0],pts[k][1]):c.moveTo(pts[k][0],pts[k][1])}c.lineTo(tp[0],tp[1]);c.stroke();c.globalAlpha=1}
 stopsForLeg(i).forEach((s,j,arr)=>{const q=m7P(s.lat,s.lon),end=j==0||j==arr.length-1,big=end||s.haltMin>=5;if(q[0]<-30||q[0]>W+30||q[1]<-30||q[1]>H+30)return;
 c.beginPath();c.arc(q[0],q[1],end?6:big?4.2:2.6,0,7);c.fillStyle=s.passed?col:'#fff';c.fill();c.lineWidth=end?2.4:1.6;c.strokeStyle=s.passed?'#fff':col;c.stroke();
-if(end||(big&&M7.s>14)||M7.s>46)lab.push({x:q[0],y:q[1],t:rt7Name(s.n)+((s.arr||s.dep)?' · '+ft(s.arr||s.dep):''),pr:end?2:1,col})});
+const zf=M7.s/(M7.fs||M7.s);if(end||(p.next&&s.n==p.next.n)||(p.cur&&p.cur.n==s.n)||(big&&zf>2.6)||zf>6)lab.push({x:q[0],y:q[1],t:rt7Name(s.n)+((s.arr||s.dep)?' · '+ft(s.arr||s.dep):''),pr:end?2:1,col})});
 // train
 if(p.state!='before'||ids.length==1){m7Train(c,L,p,col,t);}
 if(p.state=='running'){const q=m7P(p.lat,p.lon);M7._tp=q;M7._tpid=i;const r=10+6*Math.abs(Math.sin(t/420));c.beginPath();c.arc(q[0],q[1],r,0,7);c.strokeStyle=col;c.globalAlpha=.55;c.lineWidth=2;c.stroke();c.globalAlpha=1}});
@@ -4467,7 +4467,7 @@ function flowPro(){calcNext();const n=new Date(),rk={Travel:0,Stay:1,Sightseeing
    const meta=e.k=='Travel'?`<span>⏱ ${durF(e.e-e.s)}</span>`:e.k=='Stay'?`<span>🌙 ${Math.max(1,Math.round((e.e-e.s)/864e5))} ${rt2('night','रात')}</span>`:'';prev=e;
    return `<div class="fn k${kind} ${done?'dn':''} ${now?'nw':''} ${nxt&&!now?'nx':''}"><div class="frail"><i class="fdot">${done?'✓':ic}</i></div><div class="fcb">${conn}${meta?`<div class="fmt">${meta}</div>`:''}${evCard(e,now||nxt)}</div></div>`}).join('');
   const oth=othersOn(dd.d),oh=oth.length?`<details class="sec fo"><summary><span>👥 ${rt2('Others’ tickets and stays','दूसरों के टिकट और ठहराव')}</span><small>${oth.length}</small></summary><div class="secb">${oth.map(o=>`<details class="ev dim"><summary><span class="tm">${ft(o.s)}</span><b>${escx(o.tt)}</b><span class="mut ocn">${o.ps.map(u=>escx(P[u].split(' ')[0])).join(', ')}</span></summary><div class="evb">${othDet(o)}</div></details>`).join('')}</div></details>`:'';
-  return `<details class="fdy" ${dd.k==openK?'open':''}><summary class="fdh"><div class="fdd"><b>${fdt(dd.d)}</b><small>${rt2('Day','दिन')} ${dayNo(dd.d)}${dd.k==today?' · '+rt2('Today','आज'):''}</small></div><div class="fdc">${cnt('Travel')?`<span>🚆 ${cnt('Travel')}</span>`:''}${cnt('Stay')?`<span>🛏 ${cnt('Stay')}</span>`:''}${cnt('Sightseeing')?`<span>🛕 ${cnt('Sightseeing')}</span>`:''}${np?`<span class="pp" onclick="event.preventDefault();ST.vw='darshan';save();render()">🎫 ${np}</span>`:''}</div></summary>${body}${oh}</details>`}).join('');
+  return `<details class="fdy" ${dd.k==openK?'open':''}><summary class="fdh"><div class="fdd"><b>${fdt(dd.d)}</b><small>${rt2('Day','दिन')} ${dayNo(dd.d)}${dd.k==today?' · '+rt2('Today','आज'):''}</small></div><div class="fdc">${cnt('Travel')?`<span>🚆 ${cnt('Travel')}</span>`:''}${cnt('Stay')?`<span>🛏 ${cnt('Stay')}</span>`:''}${cnt('Sightseeing')?`<span>🛕 ${cnt('Sightseeing')}</span>`:''}${np?`<span class="pp" onclick="event.preventDefault();ST.vw='darshan';save();render()">🎫 ${np}</span>`:''}</div></summary>${body}${oh}${typeof dpFlowBlock=='function'?dpFlowBlock(dd.d):''}</details>`}).join('');
  return `<div class="fpro">${top}${lg}${html||'<p class="mut">—</p>'}</div>`}
 /* ---- darshan passes: folders by date and temple; my passes first, others collapsed; cost asked at ticket level ---- */
 const DPLF={homam:['2026-12-08','Tirumala · 8–9 Dec'],ssd:['2026-12-08','Tirumala · 8–9 Dec'],vrm:['2026-12-02','Kanyakumari']};
@@ -4767,4 +4767,229 @@ details.fo{margin:6px 0 12px 48px}
 .ckfoot{display:grid;grid-template-columns:1fr 1.6fr;gap:10px;margin-top:4px}.ckfoot button{padding:14px;border-radius:14px;font-weight:800;font-size:1rem}
 `;document.head.appendChild(s)})();
 
-</script></body></html>
+</script><style id="v17css">/* v17 */
+.nowstrip.x17{display:flex;flex-direction:column;gap:6px}.nowstrip.x17 .ns{margin:0}.nowstrip.x17 details.ev{margin:0 0 6px}
+.mab.cur{outline:2px solid var(--acc);outline-offset:-2px}
+.mny table.pt td{padding:6px 10px;line-height:1.3}.mny table.pt th{padding:8px 10px}.mny .card{padding:8px 12px;margin:6px 0}.mny .card .row{gap:8px;align-items:flex-start}.mny .card .mut{margin:0;line-height:1.3}.mny .pdi{padding:8px 10px;margin:6px 0}.mny .pdm{margin:2px 0}
+.mny details.sec>summary{padding:11px 14px}
+/* map details block */
+#tt17 .ttc{border:1px solid #8883;border-radius:14px;background:var(--card);padding:10px 12px;margin:0 0 8px}.ttr{display:flex;justify-content:space-between;align-items:center;gap:8px}.ttd{font-weight:800;border-radius:99px;padding:3px 11px;font-size:.9rem;white-space:nowrap}.ttd.ok{background:#2a7d4526;color:#1f7a3d}.ttd.late{background:#c2410c22;color:#b3380a}
+.ttl{font-weight:700;font-size:1.02rem;margin:6px 0 4px;overflow-wrap:anywhere}.tts{display:inline-block;border-radius:99px;padding:2px 10px;font-size:.76rem;font-weight:700;background:#8882}.tts.g{background:#1d6fb822;color:#1d5fa0}.tts.m{background:#d98b0026;color:#9a6200}.ttn{margin-top:6px;font-size:.88rem}
+/* darshan */
+.dpv.v17 .dpg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+.dpt{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;border:2px solid transparent;border-radius:18px;padding:0 0 10px;background:var(--card);color:inherit;box-shadow:0 2px 10px #0002;overflow:hidden;font:inherit}
+.dpt .dpt-b{align-self:stretch;display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:linear-gradient(135deg,var(--c),color-mix(in srgb,var(--c) 55%,#000));color:#fff}.dpt .dpt-b i{font-style:normal;font-size:1.6rem}.dpt .dpt-b em{font-style:normal;font-weight:800;font-size:.85rem;background:#ffffff2a;border-radius:99px;padding:2px 9px}
+.dpt>b{padding:2px 12px 0;font-size:1.05rem}.dpt>small{padding:0 12px;opacity:.75;font-size:.8rem}.dpt.on{border-color:var(--c);box-shadow:0 4px 16px color-mix(in srgb,var(--c) 40%,transparent)}.dpt.plan{border-style:dashed;border-color:#8886}.dpt.plan.on{border-style:solid;border-color:var(--c)}
+.dpmsg{text-align:center;margin:6px 0 12px}
+.dpp{border:1px solid #8883;border-radius:20px;background:var(--card);padding:12px;margin:8px 0 14px;border-top:5px solid var(--c)}.dpp-h{margin:0 0 6px}.dpp-h b{display:block;font-size:1.08rem}.dpp-h small{opacity:.75}
+.dph4{margin:12px 2px 6px;font-size:1rem}.dpnote{font-size:.82rem;margin:10px 2px 0}
+.secb.nopad{padding:0}.dpo>.secb,.fdp-d>.secb{padding:6px 0 2px}
+.pcrow{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 2px 10px;-webkit-overflow-scrolling:touch}.pcs{flex:0 0 86%;scroll-snap-align:center;min-width:0}
+.pc{position:relative;border-radius:20px;background:var(--card);border:1px solid #8883;box-shadow:0 4px 14px #0002;overflow:hidden;margin:0 0 10px}.pcs .pc{margin:0}.pc.mine{border-color:var(--c)}
+.pc-h{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;padding:12px 14px;color:#fff;background:linear-gradient(135deg,var(--c),color-mix(in srgb,var(--c) 55%,#000))}.pc-t small{display:block;opacity:.9;font-size:.74rem;line-height:1.25}.pc-t b{display:block;font-size:1.02rem;line-height:1.25;margin-top:2px}
+.pc-s{flex:none;font-size:.72rem;font-weight:800;border-radius:99px;padding:3px 10px;background:#fff;color:#8a4b00}.pc-s.td{background:#ffe08a;color:#6b4a00}.pc-s.dn{background:#ffffff55;color:#fff}
+.pc-m{display:flex;gap:12px;padding:12px 14px 6px}.pc-d{flex:none;width:62px;text-align:center;border-radius:14px;background:color-mix(in srgb,var(--c) 12%,transparent);padding:6px 0}.pc-d b{display:block;font-size:1.9rem;line-height:1;color:var(--c)}.pc-d span{display:block;font-weight:800;font-size:.82rem}.pc-d small{opacity:.7;font-size:.7rem}
+.pc-i{min-width:0;flex:1}.pc-n{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.pc-n b{overflow-wrap:anywhere}.pc-i>small{display:block;opacity:.75;margin-top:2px;font-size:.78rem}.pc-w{margin-top:6px;font-size:.82rem;font-weight:600}
+.pc-x{display:flex;align-items:center;margin:6px 0 0}.pc-x span{flex:1;border-top:2px dashed #8886}.pc-x i{width:16px;height:16px;border-radius:50%;background:var(--bg,#fff);border:1px solid #8883;margin:0 -8px}
+.pc-f{display:flex;gap:10px;align-items:center;padding:10px 14px 6px}.pc-a{flex:1;min-width:0}.pc-a small{display:block;opacity:.7;font-size:.72rem}.pc-a div:first-of-type{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.pc-a code{font-size:.8rem;font-weight:800;overflow-wrap:anywhere;background:#8881;border-radius:8px;padding:3px 7px}.pc-a button{border:0;background:#8882;border-radius:8px;padding:4px 8px;color:inherit}.pc-r{margin-top:6px;font-size:.82rem;display:flex;align-items:center;gap:6px;flex-wrap:wrap}.pc-r select{max-width:100%}
+.pc-p{position:relative;flex:none;width:74px;height:74px;border-radius:14px;border:1px solid #8884;background:#8881;overflow:hidden;padding:0}.pc-p img{width:100%;height:100%;object-fit:cover}.pc-p span{position:absolute;right:4px;bottom:4px;background:#000a;color:#fff;border-radius:8px;padding:1px 5px;font-size:.8rem}
+.pc-b{display:flex;gap:6px;flex-wrap:wrap;padding:6px 14px 14px}.pc-b button{flex:1 1 auto;border-radius:12px;padding:10px 8px;font-weight:700;border:1px solid #8885;background:transparent;color:inherit}.pc-b .p{background:var(--c);color:#fff;border-color:var(--c)}
+.dpall{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;border-radius:16px;background:#8881;padding:10px 12px;margin:10px 0}.dpall small{display:block;opacity:.7}.dpall .btns{margin:0}
+.dprem textarea{width:100%;box-sizing:border-box;font-size:16px;padding:10px;border-radius:12px}.dprr2{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px}
+.fdp{margin:10px 0 4px 48px}.fdp-h{font-weight:800;margin:0 0 4px}details.fdp-d{margin:6px 0}
+.dpp .pcrow{margin:0 -8px;padding:4px 8px 10px}.pcs{flex:0 0 92%}.pc-a code{font-size:.72rem}.pc-r select{width:100%;box-sizing:border-box}.dpp .pc{box-shadow:0 2px 8px #0002}
+.dpg .dpt{align-self:stretch}
+</style>
+<script id="v17js">
+/* ===== v17 (14 Nov 2026): stay in place, Trip opens on Flowchart, Now/Next expanded, one expense nav, GPS delay, new Darshan ===== */
+(function(){
+'use strict';
+const hi=()=>ST.lang=='hi';
+const esc=s=>escx(String(s==null?'':s));
+const MON_EN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MON_HI=['जन॰','फ़र॰','मार्च','अप्रैल','मई','जून','जुल॰','अग॰','सित॰','अक्टू॰','नव॰','दिस॰'];
+const mon=d=>(hi()?MON_HI:MON_EN)[d.getMonth()];
+const untilH=ms=>{const m=Math.max(0,Math.round(ms/6e4)),d=Math.floor(m/1440),h=Math.floor(m%1440/60);return hi()?(d?d+' दिन '+h+' घंटे':h?h+' घंटे '+(m%60)+' मिनट':m+' मिनट'):(d?d+'d '+h+'h':h?h+'h '+(m%60)+'m':m+' min')};
+window.__v17=1;
+
+/* ---------- 1. never jump to the top; keep open/closed sections and scroll rows ---------- */
+histSync=function(){if(HS.pop){HS.last=stKey();return}if(stKey()!=HS.last){const prevTab=(HS.last||'').split('|')[0];try{history.pushState(pgState(),'','#'+ST.tab)}catch(e){}HS.last=stKey();if(prevTab!=ST.tab)window.scrollTo(0,0)}};
+const SKIP='#md,#vw,#dv,#wm,#sh,.chatfs';
+const pageDetails=()=>[...document.querySelectorAll('details')].filter(d=>!d.closest(SKIP));
+const dkey=(d,cnt)=>{const s=d.querySelector(':scope > summary'),sp=s&&(s.querySelector(':scope > span,:scope > b,:scope > .fdd b')||s),k=(sp?sp.textContent.replace(/\s+/g,' ').replace(/\d+[dh] \d*[hm]?|in \d+.*$/,'').trim().slice(0,60):'')+'|'+(d.className||'').replace(/\b(cur|nxt|today|open)\b/g,'').replace(/\s+/g,' ').trim();cnt[k]=(cnt[k]||0)+1;return k+'#'+cnt[k]};
+function snap(){const s={key:stKey(),y:window.scrollY||document.documentElement.scrollTop||0,det:{},rows:{}},cnt={};pageDetails().forEach(d=>{s.det[dkey(d,cnt)]=d.open});document.querySelectorAll('[data-keep]').forEach(e=>{s.rows[e.dataset.keep]=e.scrollLeft});return s}
+let RESTORED=new Set();
+function rest(s){RESTORED=new Set();const cnt={};pageDetails().forEach(d=>{const k=dkey(d,cnt);if(k in s.det){d.open=s.det[k];RESTORED.add(d)}});
+ document.querySelectorAll('[data-keep]').forEach(e=>{if(e.dataset.keep in s.rows)e.scrollLeft=s.rows[e.dataset.keep]});
+ if(s.key==stKey()){const y=s.y,go=()=>{if(!window.__v17skip)window.scrollTo(0,y)};go();requestAnimationFrame(go);setTimeout(go,60);setTimeout(go,220)}}
+{const _r=render;render=function(){let s=null;try{s=snap()}catch(e){}const out=_r.apply(this,arguments);try{if(s)rest(s);post()}catch(e){console.warn('v17',e)}return out}}
+
+/* ---------- 2. Trip opens on the Flowchart ---------- */
+{const _go=go;go=function(t){if(t=='trip'&&ST.tab!='trip')ST.vw='flow';return _go.apply(this,arguments)}}
+if(ST.tab=='trip'&&!['flow','day','trains','stays','darshan'].includes(ST.vw))ST.vw='flow';
+
+/* ---------- 3. Now and Next are expanded everywhere ---------- */
+nowStrip=function(){if(me()=='v')return '';calcNext();const n=new Date(),l=mineEvents(),cur=l.filter(e=>e.s<=n&&n<=e.e).sort((a,b)=>(a.k=='Travel'?0:1)-(b.k=='Travel'?0:1))[0];
+ const row=(c,lab,txt,sm)=>`<div class="ns ${c}"><span class="dot"></span><b>${lab}</b><span class="nt">${txt}</span>${sm?`<small>${sm}</small>`:''}</div>`;let h='';
+ h+=cur?row('now',rt2('NOW','अभी'),esc(cur.tt),cur.k=='Travel'?rt2('until ','तक ')+ft(cur.e):rt2('check-out ','चेक-आउट ')+fd(cur.e)+' '+ft(cur.e))+evCard(cur,true):row('now idle',rt2('NOW','अभी'),rt2('Nothing running right now','अभी कुछ नहीं चल रहा'));
+ h+=NXT?row('nxt',rt2('NEXT','अगला'),esc(NXT.tt),fd(NXT.s)+' '+ft(NXT.s)+' · '+rt2('in ','में ')+untilH(NXT.s-n))+evCard(NXT,true):row('nxt idle',rt2('NEXT','अगला'),rt2('Nothing more planned','आगे कुछ तय नहीं'));
+ return `<div class="nowstrip x17">${h}</div>`};
+function post(){
+ pageDetails().forEach(d=>{if(RESTORED.has(d)||d.open)return;
+  if(d.matches('details.ev.cur,details.ev.nxt')||d.parentElement&&d.parentElement.matches('.ph-now,.ph-next')||(d.matches('details.fdy')&&d.querySelector('.fn.nw,.fn.nx')))d.open=true});
+ /* day groups holding now or next are always open (even when restored closed by an older render) */
+ document.querySelectorAll('details.fdy').forEach(d=>{if(!d.open&&!RESTORED.has(d)&&d.querySelector('.fn.nw,.fn.nx'))d.open=true});
+ document.querySelectorAll('.phl').forEach(e=>{const b=e.querySelector('b');if(b&&b.textContent=='EN')e.style.display=hi()?'none':''});
+ try{ttPaint()}catch(e){}
+}
+
+
+/* ---------- 4. Expenses: one navigation bar everywhere (same as Statement); Team settlement above Initial payment ---------- */
+const mAct=(c,i,l,on)=>`<button type="button" class="mab ${c}" onclick="${on}"><i>${i}</i><b>${l}</b></button>`;
+function mNav(mv){const vo=VO();return `<div class="mact">${vo?'':mAct('p'+(mv=='add'?' cur':''),'＋',rt2('Expense','खर्च'),"XF={};ST.mv='add';render()")+mAct(mv=='pay'?'cur':'','💸',rt2('Payment','भुगतान'),"ST.mv='pay';render()")}${mAct(mv=='stmt'?'cur':'','📄',rt2('Statement','विवरण'),mv=='stmt'?'HUB.p=null;stmtHub()':"ST.mv='stmt';render()")}${mAct(mv=='tot'?'cur':'','📊',rt2('Trip total','यात्रा कुल'),"ST.mv='tot';render()")}${mAct(mv=='list'?'cur':'','🗂',rt2('All entries','सभी प्रविष्टियाँ'),"ST.mv='list';render()")}</div>`}
+function takeDetails(h,marker){const i=h.indexOf(marker);if(i<0)return[h,''];const re=/<(\/?)details\b/g;re.lastIndex=i;let m,depth=0;while((m=re.exec(h))){if(m[1]){depth--;if(depth==0){const e=h.indexOf('>',m.index)+1;return[h.slice(0,i)+h.slice(e),h.slice(i,e)]}}else depth++}return[h,'']}
+{const _mv=moneyView;moneyView=function(){let h=_mv.apply(this,arguments);
+ if(/<div class="mtabs">/.test(h))h=h.replace(/<div class="mtabs">[\s\S]*?<\/div>/,()=>mNav(ST.mv));
+ else if(h.indexOf('class="mact"')>=0&&ST.mv!='tot'){/* Statement page: same bar, just marked as the current page */
+  h=h.replace(/<div class="mact">[\s\S]*?<\/div>(?=\s*(?:<details|<h3|<div class="card))/,()=>mNav('stmt'))}
+ const tm='<details class="sec"><summary><span>🤝',im=/<details class="sec"><summary><span>🧾 (?:Initial payment paid details|शुरुआती भुगतान का विवरण)/;
+ if(h.indexOf(tm)>=0&&im.test(h)){const[h2,blk]=takeDetails(h,tm);if(blk){const k=h2.search(im);h=k>=0?h2.slice(0,k)+blk+h2.slice(k):h2+blk}}
+ return h}}
+
+
+/* ---------- 5. Map: details first, map at the bottom, labels appear on zoom ---------- */
+{const _f=m7Fit;m7Fit=function(){const r=_f.apply(this,arguments);try{M7.fs=M7.tx?M7.tx.s:M7.s}catch(e){}return r}}
+{const _p=m7FitPins;m7FitPins=function(){const r=_p.apply(this,arguments);try{if(M7.tx)M7.fs=M7.tx.s}catch(e){}return r}}
+{const _lm=liveMapView;liveMapView=function(){let h=_lm.apply(this,arguments);
+ const a=h.indexOf('<h3 class="orh" style="margin-top:14px">🗺️'),b=h.indexOf('<details class="sec lmdet"');
+ if(a>0&&b>a){const head=h.slice(0,a);let map=h.slice(a,b),rest=h.slice(b);
+  map=map.replace(/<p class="mut small">[\s\S]*?<\/p>/,`<p class="mut small">${rt2('The map shows the train on the timetable, corrected by phone GPS. Zoom in to see more station names.','नक्शे में ट्रेन समय-सारिणी और फ़ोन GPS के अनुसार दिखती है। ज़्यादा स्टेशनों के नाम देखने के लिए ज़ूम करें।')}</p>`);
+  rest=rest.replace(/<summary><span>🚆[^<]*<\/span><\/summary>/,`<summary><span>🚆 ${rt2('Timetable · location · delay','समय-सारिणी · स्थान · देरी')}</span></summary>`).replace('<div class="secb"><div id="lmi" class="lmi"></div>','<div class="secb"><div id="tt17"></div><div id="lmi" class="lmi"></div>');
+  rest=rest.replace(/<details class="sec lmdet"( open)?/,'<details class="sec lmdet" open');
+  try{MC.det=true}catch(e){}
+  h=head+rest+map}
+ setTimeout(()=>{try{ttPaint()}catch(e){}},0);return h};mapView=liveMapView}
+
+/* ---------- 6. GPS on every phone: location and delay (GPS first, then typed delay, then timetable) ---------- */
+const TT={sh:{},inj:{},td:{},kind:{},mov:0,sig:''};
+const GWIN=180000;
+const legKey=i=>T[i][1]+T[i][4].slice(0,4),legSk=i=>'gps_'+T[i][1]+'_'+T[i][4].slice(0,10);
+const myLeg=i=>i>=0&&T[i]&&px(T[i][8]).some(x=>x[0]==me());
+const tripWin=()=>{try{const l=m7Legs();if(!l.length)return false;const n=Date.now(),a=Math.min(...l.map(i=>+D(T[i][4])))-12*36e5,z=Math.max(...l.map(i=>+D(T[i][5])))+12*36e5;return n>=a&&n<=z}catch(e){return false}};
+function ttSel(){let i=-1;try{i=(M7.sel>=0)?M7.sel:m7Default()}catch(e){}return i}
+function ttLive(i){/* the live board's train: running now, or about to start in 3 h */try{const p=legProgress(i,Date.now());return p&&(p.state=='running'||(p.state=='before'&&+D(T[i][4])-Date.now()<3*36e5))}catch(e){return false}}
+function ttApply(i){if(i<0||!T[i])return;const k=legKey(i),n=Date.now();
+ if(TT.inj[k]!==undefined&&ST.delay[k]!==TT.inj[k])TT.td[k]=+ST.delay[k]||0;/* typed or synced by someone else */
+ const own=GPS.on&&GPS.ok&&n-GPS.ok<GWIN&&GPS.k==k&&GPS.dl!=null,sh=TT.sh[k]&&n-TT.sh[k].t<GWIN?TT.sh[k]:null;
+ let v=null,kind='';
+ if(own){v=Math.max(0,GPS.dl);kind='gps'}else if(sh&&sh.delay!=null){v=Math.max(0,+sh.delay||0);kind='shared'}
+ if(v!=null){if(TT.inj[k]===undefined)TT.td[k]=+ST.delay[k]||0;TT.inj[k]=v;ST.delay[k]=v}
+ else if(TT.inj[k]!==undefined){ST.delay[k]=TT.td[k]||0;delete TT.inj[k]}
+ TT.kind[k]=v!=null?kind:(+ST.delay[k]?'manual':'timetable')}
+/* GPS values are never saved or synced as if typed */
+const withTyped=fn=>{const swap={};for(const k in TT.inj){if(ST.delay[k]===TT.inj[k]){swap[k]=ST.delay[k];ST.delay[k]=TT.td[k]||0}}try{return fn()}finally{for(const k in swap)ST.delay[k]=swap[k]}};
+{const _s=save;save=function(){const a=arguments;return withTyped(()=>_s.apply(this,a))}}
+{const _p=pushSync;pushSync=function(){const a=arguments;return withTyped(()=>_p.apply(this,a))}}
+{const _l=setLate;setLate=function(k,v){const r=_l.apply(this,arguments);try{TT.td[k]=+v||0;if(TT.inj[k]!==undefined)ST.delay[k]=TT.inj[k]}catch(e){}return r}}
+function ttShare(i,v,pr){const now=Date.now();if(now-(TT.wr||0)<15000)return;TT.wr=now;try{tuSet(legSk(i),{t:now,by:ST.sess,delay:v,sp:GPS.sp,lat:GPS.fix&&GPS.fix.lat,lon:GPS.fix&&GPS.fix.lon,d:pr&&pr.d})}catch(e){}}
+gOnFix=function(p){const c=p.coords,f={lat:c.latitude,lon:c.longitude,acc:c.accuracy||0,speed:c.speed,t:p.timestamp||Date.now()};GPS.fix=f;GPS.t=Date.now();GPS.err='';
+ if(f.acc&&f.acc>250){gUI();return}gSpeed(f);if(GPS.sp!=null&&GPS.sp>=20)TT.mov=Date.now();
+ try{const i=m7Default();GPS.i=i;if(i>=0&&T[i]){const L=rt7Leg(i);if(L&&L.pts&&L.pts.length>1){const pr=gProject(L,f.lat,f.lon);GPS.off=pr.off;const k=legKey(i);
+   /* count this phone only when its owner is on this train and it has been moving like a train */
+   if(pr.off<6&&myLeg(i)&&Date.now()-TT.mov<6e5){const cur=+ST.delay[k]||0,ts=gSched(L,pr.d,f.t,cur);let dl=Math.round((f.t-ts)/6e4);dl=Math.max(-90,Math.min(1500,dl));GPS.est.push(dl);GPS.est=GPS.est.slice(-3);
+    const med=[...GPS.est].sort((a,b)=>a-b)[Math.floor(GPS.est.length/2)];GPS.dl=med;GPS.ok=Date.now();GPS.k=k;GPS.pd=pr.d;ttShare(i,Math.max(0,med),pr);ttApply(i);try{rrUI()}catch(e){}}}}}catch(e){}
+ gUI();ttPaint()};
+async function ttPoll(){if(!SB.url||document.hidden||!ST.sess)return;try{const i=m7Default();if(i<0||!T[i]||!ttLive(i))return;const sh=await tuGet(legSk(i)),k=legKey(i);
+ if(sh&&sh.t&&Date.now()-sh.t<GWIN)TT.sh[k]=sh;else delete TT.sh[k];ttApply(i);ttPaint()}catch(e){}}
+setInterval(ttPoll,20000);setTimeout(ttPoll,4000);
+setInterval(()=>{try{const i=ttSel();if(i>=0){ttApply(i);if(ST.tab=='map')ttPaint()}}catch(e){}},5000);
+/* every phone starts sharing during the trip, unless its owner switched it off */
+function ttAuto(){try{if(!ST.sess||!tripWin()&&!window.__ttForce)return;let pref=null;try{pref=localStorage.getItem('yatra_gps')}catch(e){}if(pref==='0')return;if(!GPS.on){GPS.on=true;try{localStorage.setItem('yatra_gps','1')}catch(e){}}if(GPS.w==null)gpsStart()}catch(e){}}
+setInterval(ttAuto,30000);setTimeout(ttAuto,3000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)ttAuto()});
+
+function ttWhere(i,d){const st=stopsForLeg(i);if(!st.length)return '';for(let j=0;j<st.length;j++){if(Math.abs(d-st[j].dist)<2)return rt2('At ','अभी ')+rt7n(st[j].n)+rt2('',' पर')}
+ for(let j=0;j<st.length-1;j++){if(d>=st[j].dist&&d<=st[j+1].dist)return rt2('Between ','')+rt7n(st[j].n)+rt2(' and ',' और ')+rt7n(st[j+1].n)+rt2(' · '+Math.max(1,Math.round(st[j+1].dist-d))+' km to go',' के बीच · '+Math.max(1,Math.round(st[j+1].dist-d))+' किमी बाकी')}
+ return ''}
+function ttPaint(){const el=$('#tt17');if(!el||ST.tab!='map')return;const i=ttSel();
+ if(i<0||!T[i]){const h=`<p class="mut">${rt2('No train to show yet.','अभी दिखाने के लिए कोई ट्रेन नहीं।')}</p>`;if(el._h!==h){el.innerHTML=h;el._h=h}return}
+ const t=T[i],k=legKey(i),n=Date.now();ttApply(i);const dl=+ST.delay[k]||0,kind=TT.kind[k]||'timetable',p=legProgress(i,n);
+ let d=null,who='',age=0;
+ if(kind=='gps'&&GPS.pd!=null){d=GPS.pd;who=rt2('your phone','आपका फ़ोन');age=n-GPS.ok}
+ else if(kind=='shared'&&TT.sh[k]&&TT.sh[k].d!=null){d=TT.sh[k].d;who=(P[TT.sh[k].by]||'').split(' ')[0];age=n-TT.sh[k].t;if(hi()&&typeof hiText=='function')who=hiText(who)}
+ let loc=d!=null?ttWhere(i,d):'';if(!loc&&p){loc=p.state=='before'?rt2('Not started · departs ','अभी शुरू नहीं · प्रस्थान ')+fd(D(t[4]))+' '+ft(new Date(+D(t[4])+dl*6e4)):p.state=='done'?rt2('Arrived at the destination','गंतव्य पर पहुँच गई'):p.cur.kind=='at'?rt2('Now at ','अभी ')+rt7n(p.cur.n)+rt2('',' पर'):rt2('Between ','')+rt7n(p.cur.from)+rt2(' and ',' और ')+rt7n(p.cur.to)+rt2('',' के बीच')}
+ const src=kind=='gps'||kind=='shared'?`<span class="tts g">📍 GPS · ${esc(who)} · ${rt2(Math.max(1,Math.round(age/1000))+' s ago',Math.max(1,Math.round(age/1000))+' सेकंड पहले')}</span>`:kind=='manual'?`<span class="tts m">✍ ${rt2('Entered delay','दर्ज की गई देरी')}</span>`:`<span class="tts t">🕐 ${rt2('Timetable','समय-सारिणी')}</span>`;
+ const h=`<div class="ttc"><div class="ttr"><b>${t[1]} ${esc(TR[t[1]][0])}</b><span class="ttd ${dl?'late':'ok'}">${dl?'+'+dl+rt2(' min',' मिनट'):rt2('On time','समय पर')}</span></div><div class="ttl">${esc(loc)}</div>${src}${p&&p.state=='running'&&p.next?`<div class="ttn">${rt2('Next','अगला')}: <b>${esc(rt7n(p.next.n))}</b> · ${ft(p.next.eta)}</div>`:''}</div>`;
+ if(el._h!==h){el.innerHTML=h;el._h=h}}
+window.__tt={TT,ttPaint,ttPoll,ttApply,ttSel};
+
+
+/* ---------- 7. Darshan: temple grid -> own pass card, others in a sideways row, remarks, all-passes PDF ----------
+   To add a new pass set later: 1) add its temple to DPK, 2) add one line per pass holder to DP,
+   3) upload <temple>-<number>.jpg/.pdf and <temple>-all-originals.pdf to the Drive folder. The page does the rest. */
+const DPH={madurai:{temple:'अरुलमिगु मीनाक्षी सुंदरेश्वर मंदिर',pass:'विशेष प्रवेश · अम्मन और स्वामी',city:'मदुरै',win:'सुबह 6:30 से रात 8:30 तक',note:'केवल सेवा की तारीख पर, सुबह 6:30 से रात 8:30 तक मान्य। मूल आधार साथ रखें। गर्भगृह में केवल हिंदुओं को प्रवेश है।'},
+ ttd:{temple:'तिरुमला तिरुपति देवस्थानम्',pass:'विशेष प्रवेश दर्शन (श्री टीटी) · ₹300',city:'तिरुमला',win:'रात 8:00 बजे का स्लॉट · ATC सर्कल पर पहुँचें',note:'हर यात्री अपना टिकट और बुकिंग में दिया मूल फ़ोटो पहचान-पत्र साथ रखे। किसी और के नाम पर प्रवेश नहीं। केवल पारंपरिक वस्त्र। सामान या इलेक्ट्रॉनिक उपकरण नहीं। केवल अपने समय-स्लॉट में पहुँचें। निःशुल्क प्रसाद: 1 लड्डू।'}};
+const DPLH={homam:{title:'दिव्यानुग्रह होमम · तिरुमला',when:'8 या 9 दिसंबर 2026',relTxt:'टिकट 23, 24 और 25 नवंबर 2026 को जारी होंगे',links:['TTD बुकिंग साइट खोलें'],fb:'होमम के टिकट न मिलें तो स्लॉटेड सर्व दर्शन (एसएसडी) टोकन आज़माएँ – नीचे देखें।'},
+ ssd:{title:'स्लॉटेड सर्व दर्शन (एसएसडी) · विकल्प',when:'तिरुपति · उसी या अगले दिन',relTxt:'टोकन तिरुपति के काउंटरों पर ऑफ़लाइन मिलते हैं। समय बदलता रहता है – जाने से पहले ताज़ा समय देखें।',links:['एसएसडी जारी होने का ताज़ा समय देखें','TTD की आधिकारिक साइट'],counters:[['श्रीनिवासम कॉम्प्लेक्स','तिरुपति सेंट्रल बस स्टैंड के सामने'],['विष्णु निवासम','तिरुपति रेलवे स्टेशन के सामने'],['भूदेवी कॉम्प्लेक्स','अलिपिरि बस स्टैंड के पास'],['गोविंदराज स्वामी सत्रम','रेलवे स्टेशन के पीछे (कभी-कभी)']],fb:'हर व्यक्ति का मूल आधार साथ रखें। टोकन किसी और को नहीं दिया जा सकता।'},
+ vrm:{title:'विवेकानंद रॉक मेमोरियल · कन्याकुमारी',when:'कन्याकुमारी के दिन',relTxt:'पास मौके पर ही या ज़्यादा से ज़्यादा 48 घंटे पहले बुक होता है।',links:['बुकिंग पेज खोलें'],fb:''}};
+const kx=(k,f)=>hi()&&DPH[k]&&DPH[k][f]?DPH[k][f]:DPK[k][f];
+const DS=window.DS={k:null},DREM={};
+const dpDay=d=>new Date(d.getFullYear(),d.getMonth(),d.getDate());
+const dpDays=p=>Math.ceil((dpDate(p)-dpDay(new Date()))/864e5);
+const dpSt=p=>{const n=dpDays(p);return n<0?['dn',rt2('Used / past','पूर्ण')]:n==0?['td',rt2('Today','आज')]:['up',rt2('In '+n+' days',n+' दिन में')]};
+const dpThumb=p=>{const k='darshan/'+p.f+'.jpg';return DRV[k]?'https://drive.google.com/thumbnail?id='+DRV[k]+'&sz=w700':k};
+const dpAll=(k,mode)=>{const key='darshan/'+k+'-all-originals.pdf';return DRV[key]?(mode=='dl'?drvDl({id:DRV[key]}):drvView({id:DRV[key]})):key};
+const avatar=p=>{let n=P[p]||'?';if(hi()&&typeof hiText=='function')n=hiText(n);return n[0]};
+const pName=n=>hi()&&typeof hiText=='function'?hiText(n):n;
+function dpCard2(p,o){o=o||{};const K=DPK[p.k],d=dpDate(p),sl=dpSt(p),mine=p.u==me(),lab=hi()?(K.lab=='Ack. No.'?'पावती सं.':'टिकट सं.'):K.lab;
+ return `<article class="pc ${mine?'mine':''}" style="--c:${K.col}"><header class="pc-h"><div class="pc-t"><small>${esc(kx(p.k,'temple'))}</small><b>${esc(kx(p.k,'pass'))}</b></div><span class="pc-s ${sl[0]}">${sl[1]}</span></header>
+<div class="pc-m"><div class="pc-d"><b>${d.getDate()}</b><span>${mon(d)}</span><small>${d.getFullYear()}</small></div><div class="pc-i"><div class="pc-n"><span class="pav sm">${esc(avatar(p.u))}</span><b>${esc(pName(p.name))}</b>${mine?`<em class="you">${rt2('You','आप')}</em>`:''}</div><small>${hi()?(p.g=='Male'?'पुरुष':'महिला'):p.g}${p.age?' · '+p.age+rt2(' yrs',' वर्ष'):''} · ${rt2('Aadhaar','आधार')} ••••${p.idl}</small><div class="pc-w">⏰ ${esc(kx(p.k,'win'))} · ${esc(kx(p.k,'city'))}</div></div></div>
+<div class="pc-x"><i></i><span></span><i></i></div>
+<div class="pc-f"><div class="pc-a"><small>${lab}</small><div><code>${p.ack}</code><button type="button" onclick="navigator.clipboard&&navigator.clipboard.writeText('${p.ack}');toast('${rt2('Copied','कॉपी हुआ')}')" aria-label="Copy">⧉</button></div><div class="pc-r">₹${K.amt} · ${payBy('dp_'+p.ack)}</div></div><button type="button" class="pc-p" onclick="dpOpen('${p.id}')" aria-label="${rt2('View original','मूल पास देखें')}"><img loading="lazy" alt="" src="${dpThumb(p)}" onerror="this.style.display='none'"><span>🔍</span></button></div>
+<div class="pc-b"><button type="button" class="p" onclick="dpOpen('${p.id}')">👁 ${rt2('View original','मूल पास देखें')}</button><button type="button" onclick="dpDl('${p.id}')">⬇ ${rt2('Download','डाउनलोड')}</button><button type="button" onclick="dpShare('${p.id}')">🟢 ${rt2('Share','भेजें')}</button></div></article>`}
+const dpRow=(k,list)=>`<div class="pcrow" data-keep="pcr-${k}">${list.map(p=>`<div class="pcs">${dpCard2(p)}</div>`).join('')}</div>`;
+/* one temple's passes: mine first, the others collapsed in a sideways row */
+function dpSet(k,open){const list=DP.filter(p=>p.k==k).sort((a,b)=>(a.u==me()?0:1)-(b.u==me()?0:1)),mine=list.filter(p=>p.u==me()),oth=list.filter(p=>p.u!=me());
+ return `<h4 class="dph4">🎫 ${rt2('Your pass','आपका पास')}</h4>${mine.length?mine.map(p=>dpCard2(p)).join(''):`<div class="card mut">${rt2('No pass for you here.','यहाँ आपका कोई पास नहीं।')}</div>`}${oth.length?`<details class="sec dpo"><summary><span>👥 ${rt2('Others’ passes','दूसरों के पास')}</span><small>${oth.length}</small></summary><div class="secb nopad">${dpRow(k,oth)}</div></details>`:''}`}
+const dpAllBox=k=>{const n=DP.filter(p=>p.k==k).length;return `<div class="dpall"><div><b>📄 ${rt2('All passes in one PDF','सभी पास एक PDF में')}</b><small>${n} ${rt2('passes','पास')}</small></div><div class="btns"><a href="${dpAll(k)}" target="_blank" rel="noopener"><button type="button" class="p">👁 ${rt2('View','देखें')}</button></a><a href="${dpAll(k,'dl')}" download="${k}-all-passes.pdf" target="_blank" rel="noopener"><button type="button">⬇ ${rt2('Download','डाउनलोड')}</button></a></div></div>`};
+/* remarks: one shared note per temple */
+const remKey=k=>'dprem_'+k;
+function remLoad(k){if(DREM[k])return;DREM[k]={loading:1};try{DREM[k]=JSON.parse(localStorage.getItem(remKey(k))||'{}')}catch(e){DREM[k]={}}DREM[k].loading=1;
+ tuGet(remKey(k)).then(v=>{DREM[k]=v||DREM[k]||{};DREM[k].loading=0;remPaint(k)}).catch(()=>{DREM[k].loading=0})}
+function remBox(k){remLoad(k);const r=DREM[k]||{},by=r.by?(pName(P[r.by]||'')).split(' ')[0]:'';
+ return `<div class="dprem" id="rem-${k}"><h4 class="dph4">📝 ${rt2('Remarks for everyone','सबके लिए टिप्पणी')}</h4><textarea id="remt-${k}" rows="3" maxlength="600" placeholder="${rt2('Anything the family should remember about this darshan','इस दर्शन के बारे में परिवार को जो याद रखना है')}">${esc(r.txt||'')}</textarea><div class="dprr2"><button type="button" class="p" onclick="remSave('${k}')">${rt2('Save remark','टिप्पणी सहेजें')}</button><small class="mut" id="remi-${k}">${r.t?rt2('Last edited by ','अंतिम बदलाव: ')+esc(by)+' · '+fd(new Date(r.t))+' '+ft(new Date(r.t)):''}</small></div></div>`}
+function remPaint(k){const t=$('#remt-'+k);if(!t||document.activeElement===t)return;const r=DREM[k]||{};t.value=r.txt||'';const i=$('#remi-'+k);if(i)i.textContent=r.t?rt2('Last edited by ','अंतिम बदलाव: ')+(pName(P[r.by]||'').split(' ')[0])+' · '+fd(new Date(r.t))+' '+ft(new Date(r.t)):''}
+window.remSave=function(k){const t=$('#remt-'+k);if(!t)return;const v={txt:t.value.trim(),by:ST.sess,t:Date.now()};DREM[k]=v;try{localStorage.setItem(remKey(k),JSON.stringify(v))}catch(e){}try{tuSet(remKey(k),v)}catch(e){}toast(rt2('Remark saved for everyone','टिप्पणी सबके लिए सहेजी'));remPaint(k)};
+function dpPlan2(x){const H=hi()?DPLH[x.id]:null,n=dpDay(new Date()),rel=(x.rel||[]).map(([d,l])=>{const dd=Math.ceil((new Date(d+'T00:00:00')-n)/864e5),dt=new Date(d+'T00:00:00');return `<span class="dpr ${dd<0?'dn':dd==0?'td':''}">${dt.getDate()} ${mon(dt)}${dd>0?' · '+rt2('in '+dd+' d',dd+' दिन में'):dd==0?' · '+rt2('today','आज'):''}</span>`}).join('');
+ return `<div class="dpl"><div class="dph"><i>${x.ic}</i><div><b>${esc(H?H.title:x.title)}</b><small>${esc(H?H.when:x.when)}</small></div><span class="dps up">${rt2('To book','बुक करना है')}</span></div><div class="dpu">${x.us.split('').map(u=>`<span class="tav t${teamOf(u)} sm" title="${esc(pName(P[u]))}">${esc(avatar(u))}</span>`).join('')}<small>${x.us.split('').map(u=>esc(pName(P[u].split(' ')[0]))).join(', ')}</small></div><p class="dpx">${esc(H?H.relTxt:x.relTxt)}</p>${rel?`<div class="dprr">${rel}</div>`:''}${x.counters?`<div class="dpc2">${x.counters.map(([a,b],i)=>`<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a+' Tirupati')}" target="_blank" rel="noopener"><b>${esc(H?H.counters[i][0]:a)}</b><small>${esc(H?H.counters[i][1]:b)}</small></a>`).join('')}</div>`:''}<div class="btns">${x.links.map(([u,l],i)=>`<a href="${u}" target="_blank" rel="noopener"><button type="button" class="${i?'':'p'}">${i?'':'🔗 '}${esc(H?H.links[i]:l)}</button></a>`).join('')}</div>${(H?H.fb:x.fb)?`<small class="mut">${esc(H?H.fb:x.fb)}</small>`:''}</div>`}
+const dpPlanDate=x=>new Date((DPLF[x.id]||['2026-12-31'])[0]+'T00:00:00');
+function dpTiles(){const t=[];
+ Object.keys(DPK).forEach(k=>{const K=DPK[k],list=DP.filter(p=>p.k==k);if(!list.length)return;t.push({id:k,d:new Date(K.d),ic:k=='ttd'?'🏔':'🛕',name:kx(k,'city'),sub:kx(k,'pass').split(' · ')[0],col:K.col,cnt:list.length,mine:list.filter(p=>p.u==me()).length,kind:'pass'})});
+ DPL.forEach(x=>{const H=hi()?DPLH[x.id]:null;t.push({id:x.id,d:dpPlanDate(x),ic:x.ic,name:(H?H.title:x.title).split(' · ')[0],sub:rt2('To book','बुक करना है'),col:'#d98b00',kind:'plan',x})});
+ return t.sort((a,b)=>a.d-b.d)}
+window.dpPick=function(id){DS.k=DS.k==id?null:id;window.__v17skip=1;render();setTimeout(()=>{const e=$('#dpp');if(DS.k&&e)e.scrollIntoView({behavior:'smooth',block:'start'});setTimeout(()=>{window.__v17skip=0},700)},80)};
+darshanView=function(){const tl=dpTiles(),sel=tl.find(t=>t.id==DS.k);
+ const grid=tl.map(t=>`<button type="button" class="dpt ${t.id==DS.k?'on':''} ${t.kind}" style="--c:${t.col}" onclick="dpPick('${t.id}')"><span class="dpt-b"><i>${t.ic}</i><em>${t.d.getDate()} ${mon(t.d)}</em></span><b>${esc(t.name)}</b><small>${t.kind=='pass'?t.cnt+' '+rt2('passes','पास')+(t.mine?' · ✓ '+rt2('yours','आपका'):''):esc(t.sub)}</small></button>`).join('');
+ let panel='';
+ if(sel&&sel.kind=='pass'){const K=DPK[sel.id];panel=`<section class="dpp" id="dpp" style="--c:${K.col}"><div class="dpp-h"><b>${esc(kx(sel.id,'temple'))}</b><small>${sel.d.getDate()} ${mon(sel.d)} ${sel.d.getFullYear()} · ${esc(kx(sel.id,'win'))}</small></div>${dpSet(sel.id)}${dpAllBox(sel.id)}${remBox(sel.id)}<p class="mut dpnote">${esc(kx(sel.id,'note'))}</p></section>`}
+ else if(sel&&sel.kind=='plan')panel=`<section class="dpp" id="dpp" style="--c:#d98b00">${dpPlan2(sel.x)}${remBox(sel.id)}</section>`;
+ else panel=`<p class="mut dpmsg">👆 ${rt2('Tap a temple to see its passes.','पास देखने के लिए किसी मंदिर पर दबाएँ।')}</p>`;
+ return `<div class="dpv v17"><div class="stiles">${[['🎫',rt2('Passes','पास'),DP.length],['🛕',rt2('Temples','मंदिर'),tl.length],['⏳',rt2('To book','बुक करना'),DPL.length]].map(([i,l,v])=>`<div class="stile"><small>${i} ${l}</small><b>${v}</b></div>`).join('')}</div><div class="dpg">${grid}</div>${panel}</div>`};
+
+/* ---------- Flowchart: on a darshan day, my pass and the others' passes (all collapsed) with "view original" ---------- */
+window.dpFlowBlock=function(day){try{const ds=day.toDateString(),ps=DP.filter(p=>dpDate(p).toDateString()==ds);if(!ps.length)return '';const ks=[...new Set(ps.map(p=>p.k))];
+ return ks.map(k=>{const l=ps.filter(p=>p.k==k).sort((a,b)=>(a.u==me()?0:1)-(b.u==me()?0:1)),mine=l.filter(p=>p.u==me()),oth=l.filter(p=>p.u!=me()),isToday=dpDays(l[0])==0;
+  return `<div class="fdp"><div class="fdp-h">🎫 ${esc(kx(k,'city'))} · ${esc(kx(k,'pass').split(' · ')[0])}</div>${mine.length?`<details class="sec fdp-d" ${isToday?'open':''}><summary><span>🎫 ${rt2('Your pass','आपका पास')}</span><small>${mine.length}</small></summary><div class="secb nopad">${mine.map(p=>dpCard2(p)).join('')}</div></details>`:''}${oth.length?`<details class="sec fdp-d"><summary><span>👥 ${rt2('Others’ passes','दूसरों के पास')}</span><small>${oth.length}</small></summary><div class="secb nopad">${dpRow('f'+k,oth)}</div></details>`:''}</div>`}).join('')}catch(e){return ''}};
+
+
+/* ---------- 8. Hindi mode is Hindi: remaining English phrases and place names ---------- */
+Object.assign(HI,{'🖼 Background':'🖼 पृष्ठभूमि','📁 Check Drive files':'📁 ड्राइव फ़ाइलें देखें','Switch to English':'अंग्रेज़ी में बदलें',"Use this when one person gives money to another towards the trip. It reduces the giver's dues and the receiver's credit.":'जब कोई व्यक्ति यात्रा के लिए किसी दूसरे को पैसे देता है, तब इसका उपयोग करें। इससे देने वाले की बकाया राशि और पाने वाले का जमा, दोनों घटते हैं।','Checklist':'चेकलिस्ट','Marked for later':'बाद के लिए चिह्नित','No videos yet.':'अभी कोई वीडियो नहीं।','(leave empty if not paid yet)':'(अभी भुगतान नहीं हुआ हो तो खाली छोड़ें)','⚙️ New admin alarm':'⚙️ नया एडमिन अलार्म','रद्द · not to be paid':'रद्द · भुगतान नहीं करना'});
+[[/^(?:about )?(\d+) coach(?:es)? away/,'लगभग $1 कोच दूर'],[/^(\d+) compartments? away/,'$1 डिब्बा दूर'],[/^In (\S+ \S+) → out /,'आगमन $1 → प्रस्थान '],[/^(\d+) rooms?\/bookings?$/,'$1 कमरा/बुकिंग']].forEach(r=>HIR.unshift(r));
+HIT.push(['Check Drive files','ड्राइव फ़ाइलें देखें'],['Background','पृष्ठभूमि'],['Special Entrance · Amman and Swamy','विशेष प्रवेश · अम्मन और स्वामी'],['Arulmigu Meenakshi Sundaraswarar Temple','अरुलमिगु मीनाक्षी सुंदरेश्वर मंदिर'],['Special Entry Darshan (Sri TT) · ₹300','विशेष प्रवेश दर्शन (श्री टीटी) · ₹300'],['Tirumala Tirupati Devasthanams','तिरुमला तिरुपति देवस्थानम्'],['stay for the night of','की रात का ठहराव:'],['or Arakkonam by train then road','या अरक्कोणम तक ट्रेन से, फिर सड़क से'],['Start date in the app:','ऐप में शुरू की तारीख:'],['deluxe 5-bed','डीलक्स 5-बिस्तर'],[' and ',' और '],['check-out','चेक-आउट'],['Check-out','चेक-आउट'],['Darshan Pass','दर्शन पास'],['Aronai','अरोनाई'],['Falaknuma','फलकनुमा'],['Kumar','कुमार'],['rooms/bookings','कमरे/बुकिंग'],['room/booking','कमरा/बुकिंग'],['Tickets and payment','टिकट और भुगतान'],['not to be paid','भुगतान नहीं करना'],['male dorm','पुरुष डॉर्म'],['Dorm ','डॉर्म '],['deluxe','डीलक्स'],['Team ','टीम '],['Arulmigu pass','अरुलमिगु पास'],['तिरुमला pass','तिरुमला पास'],['special entrance valid','विशेष प्रवेश मान्य'],['पूर्वाह्न to ','पूर्वाह्न से '],['Carry the original Aadhaar','मूल आधार साथ रखें'],
+ ['Very long pillared corridors and the holy-water bath at 22 theerthams.','बहुत लंबे स्तंभों वाले गलियारे और 22 तीर्थम् में पवित्र जल-स्नान।'],['Goddess Kamakshi, with ','देवी कामाक्षी, साथ में '],['(likely)','(संभावित)'],['(verify)','(जाँचें)'],
+ ['same compartment','उसी डिब्बे में'],['different coach type','अलग कोच प्रकार'],['Compartment ','डिब्बा '],[' · coach ',' · कोच '],[' compartments away',' डिब्बे दूर'],[' compartment away',' डिब्बा दूर'],[' · then ',' · फिर '],['unavailable offline','ऑफ़लाइन उपलब्ध नहीं'],['Google Maps','गूगल मैप्स']);
+HIR.unshift([/halt (\d+)m at /,'रुकाव $1 मिनट: ']);
+HIT.sort((x,y)=>y[0].length-x[0].length);
+
+})();
+</script>
+</body></html>
