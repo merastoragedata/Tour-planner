@@ -735,6 +735,10 @@ const S=[
 ['Retiring dorm D3C','Nagpur (NSC Bose Itwari)','1128 0800','1128 2000',84,'l','Voucher 6006386739','6006386739'],
 ['Sri Udupis Inn · 7-bed + 4-bed rooms','Thiruvananthapuram','1129 1200','1130 1200',4410,A8,'Pay at hotel · RE0990','RE0990'],
 ['Triveni Tourist Home · 2 four-bed rooms','Kanyakumari','1201 1230','1202 1100',3258,A8,'Paid on Goibibo · GH25020279147548','GH25020279147548'],
+['Birla Vishram Lodge · 4-bed AC room','Madurai','1202 1800','1203 1600',1000,'akst','Paid by Ashish · Ack ACK20264400002745479','ACK20264400002745479'],
+['Ellisnagar Pilgrims Rest House · 4-bed non-AC room','Madurai','1202 1800','1203 1600',900,'uhld','Paid by Ashish · Ack ACK20264700002745545','ACK20264700002745545'],
+['Birla Vishram Lodge · 4-bed AC room','Madurai','1203 1800','1204 1600',1000,'akst','Paid by Ashish · Ack ACK20260400002745519','ACK20260400002745519'],
+['Ellisnagar Pilgrims Rest House · 4-bed non-AC room','Madurai','1203 1800','1204 1600',900,'uhld','Paid by Ashish · Ack ACK20260400002745584','ACK20260400002745584'],
 ['Room 114 · deluxe 5-bed','Tiruchirappalli','1205 2300','1206 2300',4014,'adku','Voucher 6006367012','6006367012'],
 ['Room 102 · deluxe','Tiruchirappalli','1205 2300','1206 2300',2229,'sl','Voucher 6006367157','6006367157'],
 ['Dorm GL03, GL04 · male dorm','Tiruchirappalli','1205 2300','1206 2300',1284,'ht','Voucher 6006367120','6006367120'],
@@ -743,7 +747,7 @@ const S=[
 ['4 Bed Non AC · 1 room · Sri Radhe Krishna Residency','Rameswaram','1204 1300','1205 1200',1529.25,'adku','Paid online · Booking ID 101997090','101997090'],
 ['Hotel Aalayam (TTDC) · 1 room · 8 guests','Kanchipuram','1210 1200','1211 1000',5630,A8,'Fully paid by Ashish · Order HD5617762','HD5617762']];
 // default payer for bookings whose payment is known (admin can still change it)
-const DEFPAID={'6112687482':'a','dp_ACK20265100002730699':'u','dp_ACK20264200002728035':'u','dp_ACK20265500002736927':'u','HD5617762':'a','SMH-262':'a','101997072':'a','101997090':'a'};
+const DEFPAID={'6112687482':'a','dp_ACK20265100002730699':'u','dp_ACK20264200002728035':'u','dp_ACK20265500002736927':'u','HD5617762':'a','SMH-262':'a','101997072':'a','101997090':'a','ACK20264400002745479':'a','ACK20264700002745545':'a','ACK20260400002745519':'a','ACK20260400002745584':'a'};
 // phone numbers to call straight from a stay card
 const STC={'Kovalam':['Santa Maria Hostel Kovalam','+916238368009']};
 // sightseeing from your itinerary: [MMDD,title,scene,note] (days are tentative)
@@ -2009,7 +2013,7 @@ const _tripView7=tripView;tripView=function(){const vw=ST.vw;if(['flow','leg','t
 function pastFold(){const v=$('#v');if(!v)return;const els=[...v.querySelectorAll('.ph.ph-done')].filter(e=>!e.parentElement.closest('.ph-done'));const gs=[];els.forEach(e=>{let g=gs.find(x=>x.p==e.parentElement);if(!g){g={p:e.parentElement,items:[]};gs.push(g)}g.items.push(e)});
  gs.forEach(g=>{const d=document.createElement('details');d.className='pastgrp';d.innerHTML='<summary>✓ Past ('+g.items.length+')</summary>';g.items[0].before(d);g.items.forEach(i=>d.appendChild(i))})}
 // --- either/or journeys: all options in a dropdown, admin's pick is adopted everywhere ---
-[0,4,7,8].forEach(i=>{PEND[i][2]='Booked';PEND[i][3]=1}); // Kovalam, Rameswaram, Kanchipuram stays are booked: hidden everywhere, indexes kept
+[0,2,4,7,8].forEach(i=>{PEND[i][2]='Booked';PEND[i][3]=1}); // Kovalam, Rameswaram, Kanchipuram stays are booked: hidden everywhere, indexes kept
 ['forEach','filter'].forEach(f=>{const o=Array.prototype[f];Object.defineProperty(PEND,f,{value:function(cb,t){return o.call(this,function(p,j,a){return p[3]&&f=='forEach'?undefined:(p[3]&&f=='filter'?false:cb.call(t,p,j,a))})},enumerable:false})});
 const PEND0=PEND.map(p=>p.slice());
 const OPT0={1:['Parasuram 16649 · 18:37 → 21:30','By road'],3:['Amritha Express 16343 · 09:25 → 12:15','Train 56711'],6:['Train 16204','Train 22159 to Arakkonam, then road','Train 17313 to Arakkonam, then road']};
@@ -3930,14 +3934,15 @@ function todayPlan(list,head,all,n){calcNext();
  const nowBody=nowL.length?nowL.map(e=>evCard(e,true)).join(''):none(n<st?rt2('Nothing running right now. The yatra starts in '+dd+' days.','अभी कुछ नहीं चल रहा। यात्रा '+dd+' दिन में शुरू होगी।'):rt2('Nothing running right now.','अभी कुछ नहीं चल रहा।'));
  const nextBody=nxL.length?nxL.map(e=>evCard(e,true)).join(''):none(rt2('Nothing more planned.','आगे कुछ तय नहीं।'));
  const dcd=(ic,t,c,b)=>c?`<details class="cpd tdd"><summary><span>${ic}</span><b>${t}</b><small>${c}</small></summary><div class="tddb">${b}</div></details>`:'';
- const docs=u=>{const ts=T.filter(t=>px(t[8]).some(x=>x[0]==u)).sort((a,b)=>D(a[4])-D(b[4])),ps=(typeof DP!='undefined'?DP:[]).filter(p=>p.u==u),sg=Object.entries(stayGroups()).filter(([k,g])=>g.r.some(s=>s[5].includes(u)));
+ const dayR=ref=>{const a=new Date(ref);a.setHours(0,0,0,0);return [+a,+a+864e5-1]};
+ const docs=(u,ref)=>{const [lo,hi]=dayR(ref),ov=(a,b)=>+a<=hi&&+b>=lo,ts=T.filter(t=>px(t[8]).some(x=>x[0]==u)&&ov(D(t[4]),D(t[5]))).sort((a,b)=>D(a[4])-D(b[4])),ps=(typeof DP!='undefined'?DP:[]).filter(p=>p.u==u&&ov(new Date(DPK[p.k].d),new Date(DPK[p.k].d))),sg=Object.entries(stayGroups()).filter(([k,g])=>g.r.some(s=>s[5].includes(u))&&ov(D(g.f),D(g.o)));
   const tb=ts.map(t=>`<div class="tdr"><b>${t[1]} ${escx(TR[t[1]][0])}</b><small>${t[2]} ${fd(D(t[4]))} ${ft(D(t[4]))} → ${t[3]} ${ft(D(t[5]))}</small><span class="seat">${sT(t,u)}</span><div>${pn(t[0])}</div><div class="btns"><button onclick="tcard(${T.indexOf(t)})">${rt2('Ticket card','टिकट कार्ड')}</button>${orig(t[0])}</div></div>`).join('');
   const pb=ps.map(p=>window.dpCard2?window.dpCard2(p):'').join('');
   const sb=sg.map(([k,g])=>`<div class="tdr"><b>${escx(g.c)}</b><small>${rt2('In','आगमन')} ${fd(D(g.f))} ${ft(D(g.f))} · ${rt2('out','प्रस्थान')} ${fd(D(g.o))} ${ft(D(g.o))}</small><span class="seat">${g.r.filter(s=>s[5].includes(u)).map(s=>escx(s[0])).join('; ')}</span><div class="btns"><button onclick="scard('${k}')">${rt2('Stay card','स्टे कार्ड')}</button></div></div>`).join('');
   return dcd('🚆',rt2('Tickets','टिकट'),ts.length,tb)+dcd('🎫',rt2('Passes','पास'),ps.length,pb)+dcd('🛏',rt2('Stay','ठहराव'),sg.length,sb)};
- const mineDocs=docs(me()),othDocs=oth.map(u=>{const d=docs(u);return d?`<details class="cpd tdd"><summary><span>👤</span><b>${nm(u)}</b></summary><div class="tddb">${d}</div></details>`:''}).join('');
- const tdocs=`<div class="tdocs"><h4 class="dph4">🧾 ${rt2('Your tickets, passes & stay','आपके टिकट, पास और ठहराव')}</h4>${mineDocs}${othDocs?`<details class="cpd tdd"><summary><span>👥</span><b>${rt2('Others’ tickets, passes & stay','दूसरों के टिकट, पास और ठहराव')}</b><small>${oth.length}</small></summary><div class="tddb">${othDocs}</div></details>`:''}</div>`;
- return strip(covr(rt2('Now','अभी')+' · '+fmtD(n),nowBody+og(gOf(curE),true)))+strip(covr(rt2('Next','अगला')+(nxL[0]?' · '+fmtD(nxL[0].s):''),nextBody+og(gOf(nextE),false)))+tdocs}
+ const docBlock=ref=>{if(!ref)return '';const mine=docs(me(),ref),oth=oth_(ref);return mine+oth};
+ const oth_=ref=>{const r=oth.map(u=>{const d=docs(u,ref);return d?`<details class="cpd tdd"><summary><span>👤</span><b>${nm(u)}</b></summary><div class="tddb">${d}</div></details>`:''}).join('');return r?`<details class="cpd tdd"><summary><span>👥</span><b>${rt2('Others’ tickets, passes & stay','दूसरों के टिकट, पास और ठहराव')}</b></summary><div class="tddb">${r}</div></details>`:''};
+ return strip(covr(rt2('Now','अभी')+' · '+fmtD(n),nowBody+docBlock(n)+og(gOf(curE),true)))+strip(covr(rt2('Next','अगला')+(nxL[0]?' · '+fmtD(nxL[0].s):''),nextBody+(nxL[0]?docBlock(nxL[0].s):'')+og(gOf(nextE),false)))}
 
 /* --- Map: where-is-my-train first, Now/Next, map at the bottom, station ETAs --- */
 
@@ -4413,7 +4418,7 @@ function flowPro(){calcNext();const n=new Date(),rk={Travel:0,Stay:1,Sightseeing
   const done=e.e<n,now=e.s<=n&&n<=e.e,nxt=isNext(e),kind=e.k=='Travel'?'T':e.k=='Stay'?'S':'G',ic=e.k=='Travel'?'🚆':e.k=='Stay'?'🛏':'🛕';
   let conn='';if(prev&&e.s>prev.e&&e.s-prev.e>6e5&&(prev.k=='Travel'||e.k=='Travel'))conn=`<div class="fcn">⏱ ${durF(e.s-prev.e)} ${rt2('gap','अंतर')}</div>`;
   const meta=e.k=='Travel'?`<span>⏱ ${durF(e.e-e.s)}</span>`:e.k=='Stay'?`<span>🌙 ${Math.max(1,Math.round((e.e-e.s)/864e5))} ${rt2('night','रात')}</span>`:'';
-  h+=`<div class="fn k${kind} ${done?'dn':''} ${now?'nw':''} ${nxt&&!now?'nx':''}"><div class="frail"><i class="fdot">${done?'✓':ic}</i></div><div class="fcb">${conn}${meta?`<div class="fmt">${meta}</div>`:''}${evCard(e,now||nxt)}</div></div>`;prev=e});
+  h+=`<div class="fn k${kind} ${done?'dn':''} ${now?'nw':''} ${nxt&&!now?'nx':''}"><div class="frail"><i class="fdot">${done?'✓':ic}</i></div><div class="fcb">${conn}${meta?`<div class="fmt">${meta}</div>`:''}${evCard(e,now||nxt||sameDay(e.s,n))}</div></div>`;prev=e});
  return `<div class="fpro">${top}${lg}${h||'<p class="mut">—</p>'}</div>`}
 /* ---------- Darshan passes ---------- */
 const DPK={madurai:{temple:'Arulmigu Meenakshi Sundaraswarar Temple',pass:'Special Entrance · Amman and Swamy',city:'Madurai',d:'2026-12-03T00:00:00',win:'6:30 AM – 8:30 PM',amt:100,col:'#b3261e',lab:'Ack. No.',note:'Valid only on the service date, 6:30 am to 8:30 pm. Carry the original Aadhaar. Only Hindus are allowed inside the shrines.'},
@@ -4489,7 +4494,7 @@ function flowPro(){calcNext();const n=new Date(),rk={Travel:0,Stay:1,Sightseeing
   const body=ds.map(e=>{const done=e.e<n,now=e.s<=n&&n<=e.e,nxt=isNext(e),kind=e.k=='Travel'?'T':e.k=='Stay'?'S':'G',ic=e.k=='Travel'?'🚆':e.k=='Stay'?'🛏':'🛕';
    let conn='';if(prev&&e.s>prev.e&&e.s-prev.e>6e5&&(prev.k=='Travel'||e.k=='Travel'))conn=`<div class="fcn">⏱ ${durF(e.s-prev.e)} ${rt2('gap','अंतर')}</div>`;
    const meta=e.k=='Travel'?`<span>⏱ ${durF(e.e-e.s)}</span>`:e.k=='Stay'?`<span>🌙 ${Math.max(1,Math.round((e.e-e.s)/864e5))} ${rt2('night','रात')}</span>`:'';prev=e;
-   return `<div class="fn k${kind} ${done?'dn':''} ${now?'nw':''} ${nxt&&!now?'nx':''}"><div class="frail"><i class="fdot">${done?'✓':ic}</i></div><div class="fcb">${conn}${meta?`<div class="fmt">${meta}</div>`:''}${evCard(e,now||nxt)}</div></div>`}).join('');
+   return `<div class="fn k${kind} ${done?'dn':''} ${now?'nw':''} ${nxt&&!now?'nx':''}"><div class="frail"><i class="fdot">${done?'✓':ic}</i></div><div class="fcb">${conn}${meta?`<div class="fmt">${meta}</div>`:''}${evCard(e,now||nxt||sameDay(e.s,n))}</div></div>`}).join('');
   const oth=othersOn(dd.d),oh=oth.length?`<details class="sec fo"><summary><span>👥 ${rt2('Others’ tickets and stays','दूसरों के टिकट और ठहराव')}</span><small>${oth.length}</small></summary><div class="secb">${oth.map(o=>`<details class="ev dim"><summary><span class="tm">${ft(o.s)}</span><b>${escx(o.tt)}</b><span class="mut ocn">${o.ps.map(u=>escx(P[u].split(' ')[0])).join(', ')}</span></summary><div class="evb">${othDet(o)}</div></details>`).join('')}</div></details>`:'';
   return `<details class="fdy" ${dd.k==openK?'open':''}><summary class="fdh"><div class="fdd"><b>${fdt(dd.d)}</b><small>${rt2('Day','दिन')} ${dayNo(dd.d)}${dd.k==today?' · '+rt2('Today','आज'):''}</small></div><div class="fdc">${cnt('Travel')?`<span>🚆 ${cnt('Travel')}</span>`:''}${cnt('Stay')?`<span>🛏 ${cnt('Stay')}</span>`:''}${cnt('Sightseeing')?`<span>🛕 ${cnt('Sightseeing')}</span>`:''}${np?`<span class="pp" onclick="event.preventDefault();ST.vw='darshan';save();render()">🎫 ${np}</span>`:''}</div></summary>${body}${oh}${typeof dpFlowBlock=='function'?dpFlowBlock(dd.d):''}</details>`}).join('');
  return `<div class="fpro">${top}${lg}${html||'<p class="mut">—</p>'}</div>`}
@@ -5075,6 +5080,11 @@ const LOC={
  '101997072':[['Booking voucher','stays/101997072.pdf',1]],
  '101997090':[['Booking voucher','stays/101997090.pdf',1]],
  'HD5617762':[['Booking confirmation','stays/HD5617762.jpg',0]],
+ 'ACK20264400002745479':[['Booking receipt','stays/ACK20264400002745479.pdf',1]],
+ 'ACK20264700002745545':[['Booking receipt','stays/ACK20264700002745545.pdf',1]],
+ 'ACK20260400002745519':[['Booking receipt','stays/ACK20260400002745519.pdf',1]],
+ 'ACK20260400002745584':[['Booking receipt','stays/ACK20260400002745584.pdf',1]],
+
  '6112687482':[['E-ticket','tickets/6112687482.jpg',0],['PDF','tickets/6112687482.pdf',1]]};
 const _dl=drvList;
 drvList=function(id){return (window.TKDOC&&TKDOC[id])?TKDOC[id]:LOC[id]?LOC[id].map(([l,u,pdf])=>({l,u,pdf:!!pdf})):_dl(id)};
@@ -5094,7 +5104,7 @@ items=function(){const o=_it.apply(this,arguments);try{const k=o.find(x=>x.id=='
 const CP=(f)=>'combined/'+f;
 const combBox=k=>vaultHTML(k);
 const _dv=darshanView;darshanView=function(){let h=_dv();const m=h.match(/<div class="stiles">(?:<div class="stile">[\s\S]*?<\/div>)+<\/div>/),st=m?m[0]:'';if(m)h=h.replace(st,'');const i=h.lastIndexOf('</div>');return h.slice(0,i)+combBox('pass')+st+h.slice(i)};
-const _sv=staysView;staysView=function(){const h=_sv();return h.replace('</h2>','</h2>'+combBox('stay'))};
+const _sv=staysView;staysView=function(){const h=_sv(),ns=nowStrip();return h.replace('</h2>'+ns,'</h2>'+ns+'<div class="vup stup"><span>'+rt2('Voucher missing?','वाउचर नहीं मिला?')+'</span><button type="button" onclick="tkOpen(\'st\')">⬆ '+rt2('Upload','अपलोड')+'</button></div>')};
 try{if(ST.sess)render()}catch(e){}
 })();
 
@@ -5350,5 +5360,23 @@ const st=document.createElement('style');st.textContent=css;document.head.append
 'Open Google Maps, tap your profile picture, then Location sharing.':'गूगल मैप्स खोलें, अपनी प्रोफ़ाइल फ़ोटो दबाएँ, फिर स्थान साझा करना चुनें।','Start date in the app':'ऐप में शुरू की तारीख़','Passes':'पास','Temples':'मंदिर','To book':'बुक करना'};
 Object.assign(I18H,A);I18K.length=0;Object.keys(I18H).sort((a,b)=>b.length-a.length).forEach(k=>I18K.push(k));Object.keys(I18C).forEach(k=>delete I18C[k]);})();
 
+</script>
+
+<script id="v21js">
+(function(){
+const NV=()=>[['flow','🧭',rt2('Flowchart','फ़्लोचार्ट')],['day','📅',rt2('By day','दिन-वार')],['trains','🚆',rt2('Trains','ट्रेन')],['stays','🛏',rt2('Stays','ठहराव')],['darshan','🎫',rt2('Passes','पास')]];
+const nav=()=>`<div class="tnav" role="tablist">${NV().map(([k,i,l],x)=>`<button type="button" role="tab" class="${ST.vw==k?'on':''}" aria-selected="${ST.vw==k}" onclick="ST.vw='${k}';save();render()"><i>${i}</i><span>${l}</span></button>`).join('')}</div>`;
+const _t=tripView;tripView=function(){const h=_t.apply(this,arguments);return h.replace(/<div class="seg">[\s\S]*?<\/div>/,nav())};
+const _g=go;go=function(t){const r=_g.apply(this,arguments);if(t=='trip'){const up=()=>{try{window.scrollTo(0,0);document.documentElement.scrollTop=0;document.body.scrollTop=0}catch(e){}};up();requestAnimationFrame(up);setTimeout(up,120);setTimeout(up,450)}return r};
+const st=document.createElement('style');st.textContent=`
+.tnav{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:12px 0;padding:6px;border-radius:18px;background:color-mix(in srgb,var(--acc,#b3202a) 9%,transparent);border:1px solid color-mix(in srgb,var(--acc,#b3202a) 22%,transparent)}
+.tnav button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px;border:0;border-radius:13px;background:transparent;color:inherit;font:inherit;font-size:.72rem;font-weight:600;min-width:0;cursor:pointer;transition:transform .2s,background .25s,box-shadow .25s}
+.tnav button i{font-style:normal;font-size:1.25rem;line-height:1.1;transition:transform .25s}
+.tnav button span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tnav button.on{background:var(--acc,#b3202a);color:#fff;box-shadow:0 4px 12px color-mix(in srgb,var(--acc,#b3202a) 40%,transparent);transform:translateY(-1px)}
+.tnav button.on i{transform:scale(1.18)}.tnav button:active{transform:scale(.95)}
+.vup.stup{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0;padding:8px 12px;border-radius:12px;border:1px dashed color-mix(in srgb,var(--acc,#b3202a) 40%,transparent)}
+`;document.head.appendChild(st);
+})();
 </script>
 </body></html>
