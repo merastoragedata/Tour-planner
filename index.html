@@ -3935,14 +3935,14 @@ function todayPlan(list,head,all,n){calcNext();
  const nextBody=nxL.length?nxL.map(e=>evCard(e,true)).join(''):none(rt2('Nothing more planned.','आगे कुछ तय नहीं।'));
  const dcd=(ic,t,c,b)=>c?`<details class="cpd tdd"><summary><span>${ic}</span><b>${t}</b><small>${c}</small></summary><div class="tddb">${b}</div></details>`:'';
  const dayR=ref=>{const a=new Date(ref);a.setHours(0,0,0,0);return [+a,+a+864e5-1]};
- const docs=(u,ref)=>{const [lo,hi]=dayR(ref),ov=(a,b)=>+a<=hi&&+b>=lo,ts=T.filter(t=>px(t[8]).some(x=>x[0]==u)&&ov(D(t[4]),D(t[5]))).sort((a,b)=>D(a[4])-D(b[4])),ps=(typeof DP!='undefined'?DP:[]).filter(p=>p.u==u&&ov(new Date(DPK[p.k].d),new Date(DPK[p.k].d))),sg=Object.entries(stayGroups()).filter(([k,g])=>g.r.some(s=>s[5].includes(u))&&ov(D(g.f),D(g.o)));
+ const docs=(u,ref,evs)=>{const [lo,hi]=dayR(ref),ov=(a,b)=>+a<=hi&&+b>=lo,shown=e=>evs.some(x=>x.k==e.k&&+x.s==+e.s&&x.tt==e.tt),ts=T.filter(t=>px(t[8]).some(x=>x[0]==u)&&ov(D(t[4]),D(t[5]))&&!shown({k:'Travel',s:D(t[4]),tt:`${t[1]} ${TR[t[1]][0]}`})).sort((a,b)=>D(a[4])-D(b[4])),ps=(typeof DP!='undefined'?DP:[]).filter(p=>p.u==u&&ov(new Date(DPK[p.k].d),new Date(DPK[p.k].d))),sg=Object.entries(stayGroups()).filter(([k,g])=>g.r.some(s=>s[5].includes(u))&&ov(D(g.f),D(g.o))&&!shown({k:'Stay',s:D(g.f),tt:'Stay · '+g.c}));
   const tb=ts.map(t=>`<div class="tdr"><b>${t[1]} ${escx(TR[t[1]][0])}</b><small>${t[2]} ${fd(D(t[4]))} ${ft(D(t[4]))} → ${t[3]} ${ft(D(t[5]))}</small><span class="seat">${sT(t,u)}</span><div>${pn(t[0])}</div><div class="btns"><button onclick="tcard(${T.indexOf(t)})">${rt2('Ticket card','टिकट कार्ड')}</button>${orig(t[0])}</div></div>`).join('');
   const pb=ps.map(p=>window.dpCard2?window.dpCard2(p):'').join('');
   const sb=sg.map(([k,g])=>`<div class="tdr"><b>${escx(g.c)}</b><small>${rt2('In','आगमन')} ${fd(D(g.f))} ${ft(D(g.f))} · ${rt2('out','प्रस्थान')} ${fd(D(g.o))} ${ft(D(g.o))}</small><span class="seat">${g.r.filter(s=>s[5].includes(u)).map(s=>escx(s[0])).join('; ')}</span><div class="btns"><button onclick="scard('${k}')">${rt2('Stay card','स्टे कार्ड')}</button></div></div>`).join('');
   return dcd('🚆',rt2('Tickets','टिकट'),ts.length,tb)+dcd('🎫',rt2('Passes','पास'),ps.length,pb)+dcd('🛏',rt2('Stay','ठहराव'),sg.length,sb)};
- const docBlock=ref=>{if(!ref)return '';const mine=docs(me(),ref),oth=oth_(ref);return mine+oth};
- const oth_=ref=>{const r=oth.map(u=>{const d=docs(u,ref);return d?`<details class="cpd tdd"><summary><span>👤</span><b>${nm(u)}</b></summary><div class="tddb">${d}</div></details>`:''}).join('');return r?`<details class="cpd tdd"><summary><span>👥</span><b>${rt2('Others’ tickets, passes & stay','दूसरों के टिकट, पास और ठहराव')}</b></summary><div class="tddb">${r}</div></details>`:''};
- return strip(covr(rt2('Now','अभी')+' · '+fmtD(n),nowBody+docBlock(n)+og(gOf(curE),true)))+strip(covr(rt2('Next','अगला')+(nxL[0]?' · '+fmtD(nxL[0].s):''),nextBody+(nxL[0]?docBlock(nxL[0].s):'')+og(gOf(nextE),false)))}
+ const docBlock=(ref,evs,gs)=>{if(!ref)return '';const mine=docs(me(),ref,evs),oth=oth_(ref,gs);return mine+oth};
+ const oth_=(ref,gs)=>{const r=oth.map(u=>{const d=docs(u,ref,[].concat(...gs.filter(g=>g.u.includes(u)).map(g=>[g.e])));return d?`<details class="cpd tdd"><summary><span>👤</span><b>${nm(u)}</b></summary><div class="tddb">${d}</div></details>`:''}).join('');return r?`<details class="cpd tdd"><summary><span>👥</span><b>${rt2('Others’ tickets, passes & stay','दूसरों के टिकट, पास और ठहराव')}</b></summary><div class="tddb">${r}</div></details>`:''};
+ return strip(covr(rt2('Now','अभी')+' · '+fmtD(n),nowBody+docBlock(n,nowL,gOf(curE))+og(gOf(curE),true)))+strip(covr(rt2('Next','अगला')+(nxL[0]?' · '+fmtD(nxL[0].s):''),nextBody+(nxL[0]?docBlock(nxL[0].s,nxL,gOf(nextE)):'')+og(gOf(nextE),false)))}
 
 /* --- Map: where-is-my-train first, Now/Next, map at the bottom, station ETAs --- */
 
@@ -5324,11 +5324,6 @@ svg.em.gl{animation:fxfloat 4.6s ease-in-out infinite;overflow:visible}.fxhalo{a
 .wd{animation:wfall 1.2s linear infinite}.wbolt{animation:wbolt 3.2s steps(1) infinite}.wfog0{animation:wdrift 5s ease-in-out infinite alternate}.wfog1{animation:wdrift 6s ease-in-out infinite alternate-reverse}.wsn{animation:wsnow 2s linear infinite}.wmo{animation:fxbreath2 4s ease-in-out infinite;transform-origin:center}.wst{animation:fxtw 2s ease-in-out infinite}.wst2{animation:fxtw 2.7s ease-in-out infinite}
 @keyframes fxbreath2{50%{transform:scale(1.1)}}@keyframes wdrift{to{transform:translateX(4px)}}@keyframes wfall{0%{transform:translateY(-6px);opacity:0}30%{opacity:1}100%{transform:translateY(8px);opacity:0}}@keyframes wbolt{0%,86%{opacity:0}88%,92%{opacity:1}90%,94%{opacity:.2}96%,100%{opacity:0}}@keyframes wsnow{0%{transform:translate(0,-6px);opacity:0}40%{opacity:1}100%{transform:translate(3px,8px);opacity:0}}
 
-body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:2;background:transparent;transition:background 3s}
-body[data-ph=night]::before{background:linear-gradient(#0b1a4a33,#0b1a4a55)}
-body[data-ph=dusk]::before{background:linear-gradient(#ff7a3a14,#7a2a8a22)}
-body[data-ph=golden]::before{background:#ffb04a14}
-body[data-ph=dawn]::before{background:linear-gradient(#ffb3c622,#ffd9a014)}
 .fxwv{animation:fxwv 4s ease-in-out infinite}@keyframes fxwv{0%,100%{transform:translateX(-10px);opacity:.15}50%{transform:translateX(14px);opacity:.7}}
 .fxms{animation:fxms 18s ease-in-out infinite}@keyframes fxms{0%,100%{transform:translateX(-40px)}50%{transform:translateX(40px)}}
 .fxsk{animation:fxsk 1s linear infinite}@keyframes fxsk{0%{transform:translateX(-80px);opacity:0}20%{opacity:.7}100%{transform:translateX(480px);opacity:0}}
@@ -5377,6 +5372,73 @@ const st=document.createElement('style');st.textContent=`
 .tnav button.on i{transform:scale(1.18)}.tnav button:active{transform:scale(.95)}
 .vup.stup{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0;padding:8px 12px;border-radius:12px;border:1px dashed color-mix(in srgb,var(--acc,#b3202a) 40%,transparent)}
 `;document.head.appendChild(st);
+})();
+</script>
+
+<script id="v23js">
+(function(){
+const _t=tripView;tripView=function(){let h=_t.apply(this,arguments);if(ST.vw=='flow'||!ST.vw){try{const ns=nowStrip();if(ns)h=h.replace(ns,'')}catch(e){}}return h};
+window.__ssk=null;
+window.stPick=function(k){window.__ssk=window.__ssk==k?null:k;window.__v17skip=1;render();setTimeout(()=>{const e=document.getElementById('stp');if(window.__ssk&&e)e.scrollIntoView({behavior:'smooth',block:'start'});setTimeout(()=>{window.__v17skip=0},700)},80)};
+const _s=staysView;
+staysView=function(){const h=_s.apply(this,arguments);try{
+ const box=document.createElement('div');box.innerHTML=h;
+ const cards=[...box.querySelectorAll('.ph')],pend=[...box.querySelectorAll('.card.pend')],up=box.querySelector('.vup.stup'),gs=Object.entries(stayGroups());
+ if(cards.length!=gs.length)return h;
+ const m=me(),mon3=d=>d.toLocaleString('en',{month:'short'}),
+ tiles=gs.map(([k,g],i)=>{const f=D(g.f),mine=g.r.some(s=>s[5].includes(m)),n=Math.max(1,Math.round((D(g.o)-D(g.f))/864e5));return{id:k,d:f,ic:'🛏',name:g.c,sub:g.r.length+' '+rt2(g.r.length>1?'rooms':'room','कमरे')+(mine?' · ✓ '+rt2('yours','आपका'):''),col:'#7a3fa0',kind:'stay',el:cards[i],range:fd(f)+' → '+fd(D(g.o))}});
+ const pl=PEND.filter(p=>!p[3]);pend.forEach((el,i)=>{const p=pl[i];if(!p)return;const d=D(p[0]);tiles.push({id:'pd'+i,d,ic:'⏳',name:String(p[1]).split(',')[0],sub:rt2('Not booked','बुक नहीं'),col:'#d98b00',kind:'plan',el,range:''})});
+ tiles.sort((a,b)=>a.d-b.d);
+ const sel=tiles.find(t=>t.id==window.__ssk);
+ const grid=tiles.map(t=>`<div role="button" tabindex="0" class="dtl ${t.id==window.__ssk?'dsel':''} ${t.kind=='plan'?'tbook':'thave'}" style="--c:${t.col}" onclick="stPick('${t.id}')" onkeydown="if(event.key=='Enter')stPick('${t.id}')"><span class="dtl-b"><i>${t.ic}</i><em>${t.d.getDate()} ${mon3(t.d)}</em></span><b>${esc(t.name)}</b><small>${esc(t.sub)}</small></div>`).join('');
+ const panel=sel?`<section class="dpp" id="stp" style="--c:${sel.col}"><div class="dpp-h"><b>${esc(sel.name)}</b><small>${esc(sel.range)}</small></div>${sel.el.outerHTML}</section>`:`<p class="mut dpmsg">👆 ${rt2('Tap a stay to see its details.','विवरण देखने के लिए किसी ठहराव पर दबाएँ।')}</p>`;
+ const mineN=gs.filter(([k,g])=>g.r.some(s=>s[5].includes(m))).length;
+ const head=h.slice(0,h.indexOf('<div class="vup stup"'));
+ const hd=(head.match(/^[\s\S]*?<\/h2>/)||[''])[0]+nowStrip();
+ return hd+(up?up.outerHTML:'')+`<div class="dwrap v17"><div class="stiles">${[['🛏',rt2('Stays','ठहराव'),gs.length],['✓',rt2('Yours','आपके'),mineN],['⏳',rt2('To book','बुक करना'),pend.length]].map(([i,l,v])=>`<div class="stile"><small>${i} ${l}</small><b>${v}</b></div>`).join('')}</div><div class="dpg">${grid}</div>${panel}</div>`}catch(e){console.error(e);return h}};
+})();
+</script>
+
+<script id="v24js">
+/* ===== v24: documents on Google Drive (map saved in Supabase), faster loading, background offline download (Now/Next first) ===== */
+(function(){
+const LK='yatra_drvmap',PRE=/^(tickets|stays|darshan|combined|reference|scans)\//;
+const st=document.createElement('style');st.textContent='.dtl b{overflow-wrap:anywhere;font-size:.95em}#offp{position:fixed;left:50%;transform:translateX(-50%);bottom:84px;z-index:30;background:#222d;color:#fff;border-radius:99px;padding:6px 14px;font-size:.78rem;pointer-events:none;transition:opacity .6s}#offp.hide{opacity:0}.dvs textarea{width:100%;min-height:120px;font:12px monospace;border-radius:10px;padding:8px}.dvs pre{max-height:170px;overflow:auto;background:#8881;border-radius:10px;padding:8px;font-size:11px;white-space:pre-wrap}';document.head.appendChild(st);
+const merge=m=>{let n=0;for(const k in m){if(typeof m[k]=='string'&&DRV[k]!==m[k]){DRV[k]=m[k];n++}}return n};
+try{merge(JSON.parse(localStorage.getItem(LK)||'{}'))}catch(e){}
+const loadMap=()=>sbf('yatra_kv?select=val&key=eq.drvmap').then(r=>r.json()).then(r=>{if(!Array.isArray(r)||!r[0])return;let m=r[0].val;if(typeof m=='string')m=JSON.parse(m);const n=merge(m);try{localStorage.setItem(LK,JSON.stringify(m))}catch(e){}if(n&&typeof render=='function'){window.__v17skip=0;render()}}).catch(()=>{});
+loadMap();
+const DOC=k=>DRV[k]?'https://drive.google.com/file/d/'+DRV[k]+'/view':null;
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a[href]');if(!a)return;const h=a.getAttribute('href')||'';if(PRE.test(h)&&DRV[h]){e.preventDefault();window.open(DOC(h),'_blank','noopener')}},true);
+const _fg=window.fileGet;window.fileGet=function(url,name){if(DRV[url])return _fg('https://drive.usercontent.google.com/download?id='+DRV[url]+'&export=download&confirm=t',name);return _fg(url,name)};
+try{fileGet=window.fileGet}catch(e){}
+const fixImg=i=>{const s=i.getAttribute&&i.getAttribute('src')||'';if(PRE.test(s)&&DRV[s])i.src='https://drive.google.com/thumbnail?id='+DRV[s]+'&sz=w1600'};
+new MutationObserver(ms=>ms.forEach(m=>{m.addedNodes.forEach(n=>{if(n.nodeType!=1)return;if(n.tagName=='IMG')fixImg(n);n.querySelectorAll&&n.querySelectorAll('img').forEach(fixImg)});if(m.type=='attributes'&&m.target.tagName=='IMG')fixImg(m.target)})).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['src']});
+/* ---- admin sheet ---- */
+const SCRIPT="function run(){\n var root=DriveApp.getFolderById('1LIZ-maFCtxpuACoplwml-FHN4zhlHduI'),out={};\n function cat(p,n){p=p.toLowerCase();if(/^yatra2026_/i.test(n)||/combined/.test(p))return 'combined';if(/darshan|pass|temple/.test(p))return 'darshan';if(/stay|hotel|room/.test(p))return 'stays';if(/ref|scan|itiner/.test(p))return 'reference';if(/ticket|train/.test(p))return 'tickets';return null}\n function walk(f,p){var fs=f.getFiles();while(fs.hasNext()){var x=fs.next(),c=cat(p,x.getName());if(c){x.setSharing(DriveApp.Access.ANYONE_WITH_LINK,DriveApp.Permission.VIEW);out[c+'/'+x.getName()]=x.getId()}}\n  var ds=f.getFolders();while(ds.hasNext()){var d=ds.next();walk(d,p+'/'+d.getName())}}\n walk(root,'');\n Logger.log(JSON.stringify(out));\n}";
+window.drvCopy=()=>{try{navigator.clipboard.writeText(SCRIPT);toast('Script copied')}catch(e){const t=document.getElementById('drvsc');t.select();document.execCommand('copy')}};
+window.drvSave=async()=>{const t=document.getElementById('drvin').value.trim();let m;try{m=JSON.parse(t)}catch(e){toast('That is not valid JSON');return}
+ const body=JSON.stringify({key:'drvmap',val:JSON.stringify(m)});
+ const r=await sbf('yatra_kv?on_conflict=key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body}).catch(()=>null);
+ if(!r||!r.ok){toast('Could not save, check internet');return}
+ const n=merge(m);try{localStorage.setItem(LK,JSON.stringify(m))}catch(e){}toast(Object.keys(m).length+' files linked');window.__v17skip=0;render();prefetch(true)};
+window.drvSetup=function(){show(`<div class="dvs"><h3 style="margin:0 0 8px">📁 Documents on Google Drive</h3><ol style="padding-left:18px;margin:0 0 8px;font-size:.88rem"><li>Open your existing Drive folder (the one behind the Drive link in the portal). Keep the current <b>tickets</b>, <b>stays</b> and <b>reference</b> sub-folders as they are and upload the new files into sub-folders with these names: <b>tickets</b>, <b>stays</b>, <b>darshan</b> (pass images and PDFs), <b>combined</b> (the Yatra2026_*.pdf files).</li><li>Open <b>script.google.com</b>, make a New project, paste the script below and run <b>run</b> once, allowing access. It also turns on view-by-link.</li><li>Copy the long <code>{…}</code> line from the Execution log and paste it here.</li></ol><button type="button" onclick="drvCopy()">Copy script</button><textarea id="drvsc" style="position:absolute;left:-999px">${SCRIPT.replace(/</g,'&lt;')}</textarea><pre>${SCRIPT.replace(/</g,'&lt;')}</pre><textarea id="drvin" placeholder='{"tickets/6112687482.pdf":"1AbC…", …}'></textarea><div class="btns"><button class="p" type="button" onclick="drvSave()">Save for everyone</button></div><small class="mut">${Object.keys(DRV).length} files linked now</small></div>`)};
+const _so=settingsOpen;settingsOpen=function(){_so.apply(this,arguments);try{const g=document.querySelector('.stg');if(g&&isAdm())g.insertAdjacentHTML('beforeend','<button onclick="drvSetup()"><span class="stgi">📁</span><b>Documents (Drive)</b><em></em><i>›</i></button>')}catch(e){}};
+/* ---- background offline download: Now/Next first, then upcoming, then past ---- */
+const DONE='yatra_off_done';let done={};try{done=JSON.parse(localStorage.getItem(DONE)||'{}')}catch(e){}
+const when=k=>{try{let m;if(m=/^tickets\/(\d+)/.exec(k)){const t=T.find(x=>x[0]==m[1]);if(t)return +D(t[4])}if(m=/^stays\/([^.\-]+)/.exec(k)){const g=Object.values(stayGroups()).find(g=>g.r.some(r=>r[7]==m[1]));if(g)return +D(g.f)}if(m=/^darshan\/([a-z]+)-/.exec(k)){const K=DPK[m[1]];if(K)return +new Date(K.d)}}catch(e){}return null};
+const order=()=>{const n=Date.now()-12*36e5,ks=Object.keys(DRV).filter(k=>PRE.test(k)&&!done[k]).map(k=>[k,when(k)]);
+ const up=ks.filter(x=>x[1]!=null&&x[1]>=n).sort((a,b)=>a[1]-b[1]),past=ks.filter(x=>x[1]!=null&&x[1]<n).sort((a,b)=>b[1]-a[1]),rest=ks.filter(x=>x[1]==null);return [...up,...past,...rest].map(x=>x[0])};
+let running=0;
+async function one(k){const id=DRV[k],isPdf=/\.pdf$/i.test(k),u=isPdf?'https://drive.usercontent.google.com/download?id='+id+'&export=download&confirm=t':'https://drive.google.com/thumbnail?id='+id+'&sz=w1600';
+ try{const c=await caches.open('yatra-docs');if(await c.match(u))return true;const r=await fetch(u,{mode:'cors'});if(r.ok){await c.put(u,r.clone());return true}}catch(e){}
+ try{await fetch(u,{mode:'no-cors'});return true}catch(e){return false}}
+async function prefetch(force){if(running||!navigator.onLine||(navigator.connection&&navigator.connection.saveData&&!force)||!window.caches)return;const q=order();if(!q.length)return;running=1;
+ let el=document.getElementById('offp');if(!el){el=document.createElement('div');el.id='offp';document.body.appendChild(el)}el.classList.remove('hide');let i=0;const tot=q.length;
+ const worker=async()=>{while(q.length){const k=q.shift();const ok=await one(k);if(ok){done[k]=1;try{localStorage.setItem(DONE,JSON.stringify(done))}catch(e){}}i++;el.textContent='⬇ '+i+'/'+tot+' documents saved for offline'}};
+ await Promise.all([worker(),worker()]);el.textContent='✓ Documents saved for offline';setTimeout(()=>el.classList.add('hide'),2500);running=0}
+const go=()=>{try{(window.requestIdleCallback||setTimeout)(()=>prefetch(false),{timeout:4000})}catch(e){}};
+setTimeout(go,5000);addEventListener('online',go);
 })();
 </script>
 </body></html>
