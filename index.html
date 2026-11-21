@@ -5480,4 +5480,55 @@ document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('#tk
 new MutationObserver(()=>{if(document.getElementById('tkb')&&!document.getElementById('tk_drv'))upd()}).observe(document.body,{childList:true,subtree:true});
 })();
 </script>
+
+<script id="v28js">
+/* ===== v28 motion layer: route transitions, staggered reveals, springy sheets, tactile press, count-ups. Always on (ignores reduce-motion by request). ===== */
+(function(){
+const EZ='cubic-bezier(.2,.9,.25,1)',SPR='cubic-bezier(.34,1.45,.5,1)',A=(el,k,o)=>{try{return el.animate(k,o)}catch(e){}};
+const st=document.createElement('style');st.textContent=`
+.dtl,.tdr,.stile,.cpd>summary,.ev>summary,.card{transition:transform .28s ${SPR},box-shadow .3s ease,background-color .25s,border-color .25s,filter .25s}
+@media(hover:hover){.dtl:hover,.tdr:hover{transform:translateY(-3px);box-shadow:0 12px 30px #0000002b}.stile:hover{transform:translateY(-2px)}}
+button:not(.on):not(.ic):active,.dtl:active,.cpd>summary:active,.ev>summary:active{transform:scale(.965)}
+.dtl:active{transform:translateY(-1px) scale(.97)}
+header.top{transition:box-shadow .35s ease,backdrop-filter .35s}
+header.top.scr{box-shadow:0 8px 26px #0000003d}
+.rip{position:absolute;border-radius:50%;pointer-events:none;background:currentColor;opacity:.28;transform:scale(0)}
+#nav button i,#nav button span{transition:transform .35s ${SPR},opacity .25s}
+#nav button.on span{transform:translateY(-1px)}
+.cpd[open]>summary small,.ev[open]>summary .chev{transition:transform .3s ${SPR}}
+@keyframes v28sh{from{transform:translateY(46px) scale(.97);opacity:0}to{transform:none;opacity:1}}
+.vfx{will-change:transform,opacity}
+`;document.head.appendChild(st);
+/* --- route transitions --- */
+let last=null,order=[];
+const sig=()=>ST.tab+'/'+(ST.tab=='trip'?(ST.vw||'flow'):'')+(ST.tab=='money'?(ST.mv||''):'');
+const tabIdx=()=>{const b=[...document.querySelectorAll('#nav button')];order=b.map(x=>x.getAttribute('onclick')||'');const i=b.findIndex(x=>x.classList.contains('on'));return i};
+let lastIdx=0;
+function enter(first){
+ const v=document.getElementById('v');if(!v)return;const idx=tabIdx(),dir=first?0:(idx>lastIdx?1:idx<lastIdx?-1:0);lastIdx=idx;
+ const kids=[...v.children].filter(e=>getComputedStyle(e).position!='fixed'&&e.getBoundingClientRect().height>0).slice(0,14),map=ST.tab=='map';
+ kids.forEach((e,i)=>{const dx=map?0:dir*22,dy=map?0:(first?22:14);A(e,[{opacity:0,transform:`translate(${dx}px,${dy}px) scale(${map?1:.985})`},{opacity:1,transform:'none'}],{duration:first?620:440,delay:Math.min(i,9)*(first?70:48),easing:EZ,fill:'backwards'})});
+ const on=document.querySelector('#nav .on i');if(on&&!first)A(on,[{transform:'scale(1)'},{transform:'scale(1.45) translateY(-3px)'},{transform:'scale(.92)'},{transform:'scale(1.12)'},{transform:'scale(1)'}],{duration:560,easing:'ease-out'});
+ /* count-up on pure-number stat tiles */
+ v.querySelectorAll('.stile b').forEach(b=>{const t=b.textContent.trim();if(!/^\d{1,5}$/.test(t))return;const n=+t,t0=performance.now();const f=now=>{const k=Math.min(1,(now-t0)/800),e=1-Math.pow(1-k,3);b.textContent=Math.round(n*e);if(k<1)requestAnimationFrame(f);else b.textContent=t};requestAnimationFrame(f)});
+}
+const _r=render;render=function(){const r=_r.apply(this,arguments);try{const sg=sig();if(sg!==last){const first=last===null;last=sg;requestAnimationFrame(()=>enter(first))}observe()}catch(e){console.error(e)}return r};
+/* --- scroll reveal for items below the fold (once per item, never on refresh) --- */
+const seen=new Set(),io=new IntersectionObserver(es=>es.forEach(en=>{if(!en.isIntersecting)return;const el=en.target;io.unobserve(el);const k=el.__rk;if(seen.has(k))return;seen.add(k);A(el,[{opacity:0,transform:'translateY(22px) scale(.985)'},{opacity:1,transform:'none'}],{duration:520,easing:EZ})}),{rootMargin:'0px 0px -6% 0px'});
+function observe(){const v=document.getElementById('v');if(!v)return;v.querySelectorAll('.card,.ev,.dtl,details.cpd,.tdr,.ph,.stile,.pc,.row,.itm').forEach((el,i)=>{if(el.__o||el.closest('details:not([open])'))return;const r=el.getBoundingClientRect();el.__o=1;const k=sig()+'|'+i+'|'+(el.textContent||'').slice(0,40);el.__rk=k;if(r.top>innerHeight*.9){io.observe(el)}else seen.add(k)})}
+/* --- details open: content glides in (only for real taps) --- */
+let tap=0;document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('summary'))tap=Date.now()},true);
+document.addEventListener('toggle',e=>{const d=e.target;if(!d||d.tagName!='DETAILS'||!d.open||Date.now()-tap>700)return;[...d.children].filter(c=>c.tagName!='SUMMARY').slice(0,8).forEach((c,i)=>A(c,[{opacity:0,transform:'translateY(-10px)'},{opacity:1,transform:'none'}],{duration:380,delay:i*45,easing:EZ,fill:'backwards'}))},true);
+/* --- sheets and toast --- */
+const md=document.getElementById('md');if(md){let was=md.classList.contains('show');new MutationObserver(()=>{const on=md.classList.contains('show');if(on&&!was){A(md,[{backgroundColor:'rgba(0,0,0,0)'},{backgroundColor:'rgba(0,0,0,.53)'}],{duration:300,easing:'ease-out'});const sh=document.getElementById('sh');if(sh)A(sh,[{transform:'translateY(60px) scale(.97)',opacity:0},{transform:'none',opacity:1}],{duration:480,easing:SPR})}was=on}).observe(md,{attributes:true,attributeFilter:['class']})}
+const tz=document.getElementById('toast');if(tz){let w=false;new MutationObserver(()=>{const on=tz.classList.contains('show');if(on&&!w)A(tz,[{transform:'translateX(-50%) translateY(18px) scale(.9)'},{transform:'translateX(-50%)'}],{duration:420,easing:SPR});w=on}).observe(tz,{attributes:true,attributeFilter:['class']})}
+/* --- ripple on primary buttons --- */
+document.addEventListener('pointerdown',e=>{const b=e.target.closest&&e.target.closest('button.p,.btns button,.bigb,.tnav button');if(!b)return;const c=getComputedStyle(b);if(c.position=='static')b.style.position='relative';b.style.overflow='hidden';const r=b.getBoundingClientRect(),d=Math.max(r.width,r.height)*2.2,x=document.createElement('span');x.className='rip';x.style.cssText=`width:${d}px;height:${d}px;left:${e.clientX-r.left-d/2}px;top:${e.clientY-r.top-d/2}px`;b.appendChild(x);const a=A(x,[{transform:'scale(0)',opacity:.3},{transform:'scale(1)',opacity:0}],{duration:620,easing:'ease-out'});(a?a.finished:Promise.resolve()).then(()=>x.remove(),()=>x.remove())},true);
+/* --- sticky header depth --- */
+const hd=()=>{const h=document.querySelector('header.top');if(h)h.classList.toggle('scr',scrollY>8)};addEventListener('scroll',hd,{passive:true});hd();
+/* --- images fade in once loaded --- */
+const fi=i=>{if(i.__f||i.complete||i.closest('#sp,#lmap'))return;i.__f=1;i.style.opacity=0;i.style.transition='opacity .6s ease';const ok=()=>{i.style.opacity=''};i.addEventListener('load',ok,{once:true});i.addEventListener('error',ok,{once:true})};
+new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType!=1)return;if(n.tagName=='IMG')fi(n);n.querySelectorAll&&n.querySelectorAll('img').forEach(fi)}))).observe(document.body,{childList:true,subtree:true});
+})();
+</script>
 </body></html>
