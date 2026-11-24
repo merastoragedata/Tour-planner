@@ -28,6 +28,8 @@ DONE v43 (24 Nov 2026): Aadhaar watermark choice everywhere (in-app ID page and 
 DONE v44 (24 Nov 2026): watermark choice shown as a titled 2x2 panel (in-app ID page and Downloads, Aadhaar section open by default); self-attestation line and signature/date removed from the Aadhaar page (only a small 'copy made on' note stays).
 DONE v45 (24 Nov 2026): TTD Special Entry passes replaced by the official per-person PDFs (darshan/ttd2-<ack>.pdf|jpg, each pilgrim own pass, no group); Tirupati stay added: Srinivasam Rest House (TTD) 7 Dec 12:00 -> 8 Dec 12:00, Suresh + Divya, ₹210 (+₹211 refundable deposit), id IAJS24092606384460, payer default Suresh (receipt mobile 5538), file stays/IAJS24092606384460.pdf (4.7 MB, owner uploads it); Aadhaar watermark 'Own watermark text' box always shown; offline-saving progress hidden; weather: single dropdown (Auto, My location, trip places in date order, other saved places, search) + 16-day date strip with that day's forecast; Today weather strip opens the tapped place and date.
 DONE v46 (24 Nov): off-screen animations paused (607->110 running), keyboard/bottom-bar float fix (iOS visualViewport), BUILD self-update (v46-20261124), Expenses PDF/Excel side button (stmtHub), admin hero card text, mobile header tightened, selected-passes filename.
+DONE v47 (24 Nov): iOS 26 floating bars fixed by moving fixed elements by visualViewport.offsetTop (translate) when no input focused; iPhone home-screen downloads go through a Save/Open sheet (share sheet → Save to Files) by catching blob anchor clicks; Downloads shows a Drive-key banner (admin can paste key there) – kv gdrive_key was NOT set, so Drive files never loaded; pilgrim cards made compact (pzCard rewritten, SOS 2-up, key/value rows); Aadhaar from a pilgrim card is view-only (aaShow(u,1)); 8-day weather labels fixed (fmtDW).
+DONE v48 (24 Nov): Today scene card + hero scene arrows Ashish-only; simulator for Ashish + admins he ticks (kv simok, card under simulator on Today); who-changed stored as kv by_<key> {u,t} on save and appended to every change alert (changeMsg wrapper, 20-min window); admin alarm push says by whom; Downloads Aadhaar section starts collapsed.
 NOT DONE: Supabase switched on and tested; real push notifications (needs server; calendar alarms instead); Hindi; fetching photos from Google Photos (Google does not allow it for shared albums: the button opens the album); WhatsApp-only features (calls, end-to-end encryption, status); family info cards with verified Hindi video links; food stops; coach orders for other trains (owner will send screenshots); detailed itinerary (owner will send); NITR voucher 6006386739 PDF (upload was overwritten, ask owner to re-send); unverified Where Is My Train package name com.whereismytrain.android.
 OPEN DECISIONS: Trivandrum and Kanyakumari stays are FINALISED; TVC to Kanyakumari travel (16649 or road); Madurai to Rameswaram (16343 or 56711); Tirupati to Kanchipuram (16204, or Arakkonam by train then road); accommodation for TVC night 30 Nov, Madurai, Rameswaram, Tirupati, Kanchipuram; Atul Jabalpur to Itarsi ticket; Vinit cancellations; one duplicate Trichy to Tirupati set.
 V7 PHASE 1 (5 Nov 2026): one-row header (Aa, हिं, theme button, avatar; title always visible); sheets with close bar; ticket-card letter-spacing bug fixed (.tk); Today: Photos/Chat buttons restored (games CSS .bigb override neutralised), story cards above notification card; carousel no longer changes theme, auto theme only during trip by itinerary; past events fold; either/or journeys dropdown (ST.choice, ST.opts; admin only; shared keys); expense form all options in 2 columns, split-how dropdown default Nil; text size 80-170% via --fs on every font-size; per-user prefs pf_<user> (install/notification choices, background) sync via kv once Supabase is live; backgrounds (presets + own photo, photo local); calmer shankh/train animations. ORIGINAL FILES NOW OPEN FROM GOOGLE DRIVE: DRV map (path -> Drive file id) is baked into the script from folder 1LIZ-maFCtxpuACoplwml-FHN4zhlHduI (tickets/, stays/, reference/); viewer = Drive /preview iframe. New files added to Drive need their ids added to DRV. NEXT: phase 2 map, phase 3 games.
@@ -1436,7 +1438,7 @@ return out.sort((a,b)=>a.at-b.at)}
 function setAlm(id,patch){const k='alm_'+me();ST[k]=ST[k]||{};ST[k][id]={...(ST[k][id]||{}),...patch};if(ST[k][id].t==null)delete ST[k][id].t;save(k);pushSync();render()}
 const almTime=(id,v)=>{if(!v)return;setAlm(id,{t:v})},almOn=(id,on)=>setAlm(id,{off:on?0:1}),almReset=id=>{const k='alm_'+me();if(ST[k])delete ST[k][id];save(k);pushSync();render()};
 function addAdminAlarm(){const t=$('#aat').value.trim(),d=$('#aad').value,ty=$('#aay').value;if(!t||!d)return toast('Enter a title and a date and time');
-ST.aladm=[...(ST.aladm||[]),{id:'a'+Date.now(),type:ty,title:t,at:new Date(d).toISOString(),by:ST.sess}];save('aladm');notifyAll({kind:'info',title:'⏰ New admin alarm',body:t+' · '+fd(new Date(d))+' '+ft(new Date(d)),tag:'aladm'});render();toast('Alarm added')}
+ST.aladm=[...(ST.aladm||[]),{id:'a'+Date.now(),type:ty,title:t,at:new Date(d).toISOString(),by:ST.sess}];save('aladm');notifyAll({kind:'info',title:'⏰ New admin alarm',body:t+' · '+fd(new Date(d))+' '+ft(new Date(d))+' · by '+String(P[ST.sess]||'').split(' ')[0],tag:'aladm'});render();toast('Alarm added')}
 function delAdminAlarm(id){if(!confirm('Delete this alarm?'))return;ST.aladm=(ST.aladm||[]).filter(a=>a.id!=id);save('aladm');render()}
 function alarmsView(){const n=new Date(),list=ALM(),up=list.filter(a=>a.at>=new Date(n-6e5)),past=list.filter(a=>a.at<new Date(n-6e5)),ad=[...(ST.aladm||[])].sort((a,b)=>new Date(a.at)-new Date(b.at));
 const z=n=>String(n).padStart(2,'0'),hm=d=>z(d.getHours())+':'+z(d.getMinutes());
@@ -2225,7 +2227,7 @@ try{const m=await(await fetch(`https://marine-api.open-meteo.com/v1/marine?latit
 const t=s2=>new Date(s2).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
 d.innerHTML=`<div class="wxg"><div><small>💧 Humidity</small><b>${u.relative_humidity_2m}%</b></div><div><small>💨 Wind</small><b>${Math.round(u.wind_speed_10m)} km/h ${wxDir(u.wind_direction_10m)}</b><small>gusts ${Math.round(u.wind_gusts_10m)}</small></div><div><small>🌡️ Pressure</small><b>${Math.round(u.pressure_msl)} hPa</b></div><div><small>👁️ Visibility</small><b>${(u.visibility/1000).toFixed(1)} km</b></div><div><small>☁️ Cloud cover</small><b>${u.cloud_cover}%</b></div><div><small>🌧️ Rain now</small><b>${u.precipitation} mm</b></div><div><small>☀️ UV index today</small><b>${dl.uv_index_max[0]}</b></div><div><small>🌅 Sunrise / sunset</small><b>${t(dl.sunrise[0])} / ${t(dl.sunset[0])}</b></div>${aq}${wv}</div>
 <h3 style="margin:16px 0 0">Next 24 hours</h3><div class="wxhr">${hh.time.slice(s,s+24).map((x,i)=>`<div>${new Date(x).getHours()}:00<br>${WM(hh.weather_code[s+i])}<br><b>${Math.round(hh.temperature_2m[s+i])}°</b><br>🌧${hh.precipitation_probability[s+i]}%</div>`).join('')}</div>
-<h3 style="margin:16px 0 0">8-day outlook</h3><div class="wxhr">${dl.time.map((x,i)=>`<div style="min-width:78px">${i?new fmtDW(Date(x)):'Today'}<br>${WM(dl.weather_code[i])}<br><b>${Math.round(dl.temperature_2m_min[i])}–${Math.round(dl.temperature_2m_max[i])}°</b><br>🌧${dl.precipitation_probability_max[i]}%<br><small>${dl.precipitation_sum[i]} mm</small></div>`).join('')}</div>`}
+<h3 style="margin:16px 0 0">8-day outlook</h3><div class="wxhr">${dl.time.map((x,i)=>`<div style="min-width:78px">${i?fmtDW(new Date(x+'T12:00')):'Today'}<br>${WM(dl.weather_code[i])}<br><b>${Math.round(dl.temperature_2m_min[i])}–${Math.round(dl.temperature_2m_max[i])}°</b><br>🌧${dl.precipitation_probability_max[i]}%<br><small>${dl.precipitation_sum[i]} mm</small></div>`).join('')}</div>`}
 
 /* ===== v7.2 Phrasebook (Malayalam first) + YatraTube place chips ===== */
 const PHD={ml:`Basics|नमस्कार|Hello|നമസ്കാരം
@@ -5810,7 +5812,7 @@ window.simPre=function(i){const a=PRE[i][1];simApply(new Date(a[0],a[1],a[2],a[3
 window.simReset=function(){localStorage.removeItem('yatra_sim');location.reload()};
 const simCard=()=>`<div class="simc"><div class="simh"><b>🧪 ${rt2('Simulator','सिम्युलेटर')}</b><span class="${simOn?'on':''}">${simOn?rt2('ON','चालू'):rt2('OFF','बंद')}</span></div><small>${rt2('Pick a date and time and the whole site behaves as if it is then: trains, Now and Next, pop-ups, weather place, phrase language. Saving to the shared database is switched off while it is on.','तारीख और समय चुनें, पूरी साइट उसी समय जैसी दिखेगी: ट्रेन, अभी और आगे, पॉप-अप, मौसम का स्थान, वाक्य की भाषा। चालू रहते हुए साझा डेटाबेस में सहेजना बंद रहता है।')}</small><div class="simr"><input type="datetime-local" id="simdt" value="${loc(new Date())}"><button type="button" class="p" onclick="simGo()">${rt2('Apply','लागू करें')}</button></div><div class="simq">${PRE.map((p,i)=>`<button type="button" onclick="simPre(${i})">${p[0]}</button>`).join('')}</div>${simOn?`<button type="button" class="simx" onclick="simReset()">↩ ${rt2('Back to real time','असली समय पर लौटें')}</button>`:''}</div>`;
 const _td=todayView;
-todayView=function(){let h=_td.apply(this,arguments);try{if(ST.sess=='a')h+=simCard()}catch(e){}return h};
+todayView=function(){let h=_td.apply(this,arguments);try{if(window.simAllowed?simAllowed():ST.sess=='a')h+=simCard()+(ST.sess=='a'&&window.simOkCard?simOkCard():'')}catch(e){}return h};
 function bar(){if(!simOn||document.getElementById('simbar'))return;const b=document.createElement('div');b.id='simbar';const d=new Date();b.innerHTML=`🧪 ${rt2('Simulating','सिम्युलेशन')} <b>${d.toLocaleString('en-IN',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</b> · ${rt2('saving off','सहेजना बंद')} <button type="button" onclick="simReset()">${rt2('Reset','रीसेट')}</button>`;document.body.appendChild(b);document.body.classList.add('simon')}
 if(document.body)bar();else document.addEventListener('DOMContentLoaded',bar);
 
@@ -6505,7 +6507,7 @@ const tt=(a,b)=>{try{return rt2(a,b)}catch(e){return a}};
 const R=(a,b)=>a+Math.random()*(b-a);
 let MODE=(()=>{try{return localStorage.getItem('yatra_hm')||'anim'}catch(e){return 'anim'}})();
 async function modeLoad(){try{const v=await tuGet('hero_mode');if(v&&/^(video|anim|photo)$/.test(v)&&v!==MODE){MODE=v;try{localStorage.setItem('yatra_hm',v)}catch(e){}apply()}}catch(e){}}
-window.heroMode=function(v){if(!adm())return;MODE=v;try{localStorage.setItem('yatra_hm',v)}catch(e){}try{tuSet('hero_mode',v)}catch(e){}apply();document.querySelectorAll('.v35m button').forEach(b=>b.classList.toggle('on',b.dataset.v==v))};
+window.heroMode=function(v){if(ST.sess!='a')return;MODE=v;try{localStorage.setItem('yatra_hm',v)}catch(e){}try{tuSet('hero_mode',v)}catch(e){}apply();document.querySelectorAll('.v35m button').forEach(b=>b.classList.toggle('on',b.dataset.v==v))};
 
 /* ---------- scene key -> clip / photo ---------- */
 const MAGK={padmanabha:'padma',shankhumukham:'shank',kovalam:'shank',kanyakumari:'cape',kumariamman:'cape',suchindram:'such',meenakshi:'madurai',thirupparankundram:'madurai',ramanathaswamy:'rames',pamban:'rames',dhanushkodi:'dhanush',srirangam:'trichy',rockfort:'trichy',thiruvanaikaval:'trichy',samayapuram:'trichy',tirumala:'tirumala',tiruchanoor:'tirumala',srikalahasti:'tirumala'};
@@ -6608,8 +6610,8 @@ function media(){if(!H)return;const k=sceneKey();let want=null;
 document.addEventListener('touchend',()=>{if(VID&&VID.paused)try{VID.play().catch(()=>{})}catch(e){}},{passive:true});
 
 /* ---------- admin: scene mode card on Today ---------- */
-function adminCard(){if(!adm()||ST.tab!='today')return;const v=$q('#v');if(!v||v.querySelector('.v35m'))return;const n=Object.keys((window.DOCS&&DOCS.idx)||{}).filter(p=>/^videos\/.+\.mp4$/.test(p)).length;
- const d=document.createElement('div');d.className='v35m';d.innerHTML=`<div class="v35mh"><b>🎬 ${tt('Today scene','आज का दृश्य')}</b><small>${tt('Admin · applies to everyone','एडमिन · सबके लिए')}</small></div><div class="v35mb">${[['video','🎥 '+tt('Video','वीडियो')],['anim','✨ '+tt('Animation','एनिमेशन')],['photo','🖼 '+tt('Photo','फ़ोटो')]].map(([k,l])=>`<button type="button" data-v="${k}" class="${MODE==k?'on':''}" onclick="heroMode('${k}')">${l}</button>`).join('')}</div><small class="mut">${tt('Video plays where a clip exists (','जहाँ क्लिप हो वहाँ वीडियो चलेगा (')+n+tt(' uploaded), otherwise the animation; photo if neither works. Upload clips in Settings → Documents as videos/hero-<scene>.mp4.',' अपलोड), नहीं तो एनिमेशन; दोनों न चलें तो फ़ोटो। क्लिप सेटिंग → दस्तावेज़ में videos/hero-<scene>.mp4 नाम से डालें।')}</small>`;
+function adminCard(){if(ST.sess!='a'||ST.tab!='today')return;const v=$q('#v');if(!v||v.querySelector('.v35m'))return;const n=Object.keys((window.DOCS&&DOCS.idx)||{}).filter(p=>/^videos\/.+\.mp4$/.test(p)).length;
+ const d=document.createElement('div');d.className='v35m';d.innerHTML=`<div class="v35mh"><b>🎬 ${tt('Today scene','आज का दृश्य')}</b><small>${tt('Only you · applies to everyone','केवल आप · सबके लिए')}</small></div><div class="v35mb">${[['video','🎥 '+tt('Video','वीडियो')],['anim','✨ '+tt('Animation','एनिमेशन')],['photo','🖼 '+tt('Photo','फ़ोटो')]].map(([k,l])=>`<button type="button" data-v="${k}" class="${MODE==k?'on':''}" onclick="heroMode('${k}')">${l}</button>`).join('')}</div><small class="mut">${tt('Video plays where a clip exists (','जहाँ क्लिप हो वहाँ वीडियो चलेगा (')+n+tt(' uploaded), otherwise the animation; photo if neither works. Upload clips in Settings → Documents as videos/hero-<scene>.mp4.',' अपलोड), नहीं तो एनिमेशन; दोनों न चलें तो फ़ोटो। क्लिप सेटिंग → दस्तावेज़ में videos/hero-<scene>.mp4 नाम से डालें।')}</small>`;
  const sim=v.querySelector('.simc');sim?sim.before(d):v.appendChild(d)}
 
 /* ---------- loop ---------- */
@@ -7151,7 +7153,7 @@ function catalog(){const C=[];
  try{localStorage.setItem('yatra_dlcat',JSON.stringify(C))}catch(e){}
  return C}
 const allIt=C=>C.flatMap(c=>c.g.flatMap(g=>g.it));
-const DL={sel:null,open:{aa:1},use:null};
+const DL={sel:null,open:{},use:null};
 function selLoad(C){if(DL.sel)return;let s=null;try{s=JSON.parse(localStorage.getItem('yatra_dlsel')||'null')}catch(e){}DL.sel=new Set(s||C.filter(c=>c.k=='pass'||c.k=='aa').flatMap(c=>c.g.flatMap(g=>g.it.map(x=>x.id)))) }
 const selSave=()=>{try{localStorage.setItem('yatra_dlsel',JSON.stringify([...DL.sel]))}catch(e){}};
 
@@ -7196,10 +7198,10 @@ async function aaPage(u,fc,bc,use){const W=1240,H=1754,c=document.createElement(
  return c.toDataURL('image/jpeg',.9)}
 idPages=async function(sel){const out=[];for(const u of sel){const a=IDC.ims[u]||await pilAA(u)||{};IDC.ims[u]=a;let f=null,b=null;try{if(a.f)f=await idClean(a.f)}catch(e){}try{if(a.b)b=await idClean(a.b)}catch(e){}out.push({u,jpg:await aaPage(u,f,b,idUse())});await new Promise(z=>setTimeout(z,0))}return out};
 /* in-app Aadhaar page with moving hologram */
-window.aaShow=async function(u){const a=await pilAA(u);if(!a.f&&!a.b)return say(tt('Aadhaar not uploaded yet','आधार अभी अपलोड नहीं'));
+window.aaShow=async function(u,vo){const a=await pilAA(u);if(!a.f&&!a.b)return say(tt('Aadhaar not uploaded yet','आधार अभी अपलोड नहीं'));
  let o=$q('#aav');if(!o){o=document.createElement('div');o.id='aav';document.body.appendChild(o)}
- o.innerHTML=`<div class="aavb"><button type="button" class="ic" onclick="document.getElementById('aav').remove()" aria-label="Back">←</button><b>${E(P[u])}</b><span class="sp"></span><button type="button" onclick="aaPdf('${u}')">⬇ PDF</button><button type="button" onclick="aaPdf('${u}',1)">🟢 ${tt('Share','भेजें')}</button></div>
- <div class="aause"><b class="wmt">💧 ${tt('Watermark','वॉटरमार्क')}</b>${wmChips("aaShow('"+u+"')")}</div>
+ o.innerHTML=`<div class="aavb"><button type="button" class="ic" onclick="document.getElementById('aav').remove()" aria-label="Back">←</button><b>${E(P[u])}</b><span class="sp"></span>${vo?'':`<button type="button" onclick="aaPdf('${u}')">⬇ PDF</button><button type="button" onclick="aaPdf('${u}',1)">🟢 ${tt('Share','भेजें')}</button>`}</div>
+ ${vo?`<p class="aavo">${tt('View only · to save or print use ⬇ Downloads at the top','केवल देखें · सहेजने या प्रिंट के लिए ऊपर ⬇ डाउनलोड')}</p>`:`<div class="aause"><b class="wmt">💧 ${tt('Watermark','वॉटरमार्क')}</b>${wmChips("aaShow('"+u+"')")}</div>`}
  <div class="aavs"><p class="mut">${tt('Preparing the page…','पेज तैयार हो रहा है…')}</p></div>`;
  try{const pg=await idPages([u]);const b=o.querySelector('.aavs');if(b)b.innerHTML=`<img class="aaimg" src="${pg[0].jpg}" alt="">`}catch(e){}};
 window.aaPdf=async function(u,share){say(tt('Preparing…','तैयार हो रहा है…'));try{const pg=await idPages([u]);const b=idPdf(pg.map(p=>p.jpg)),nm='Aadhaar-'+safe(String(P[u]).split(' ')[0])+'.pdf';cPut('bundle/'+nm,b);
@@ -7252,7 +7254,7 @@ window.pdfView=pdfView;
 
 /* ================= 7. the Downloads sheet ================= */
 let CAT=null;
-window.dlOpen=function(pre){CAT=catalog();if(pre=='aa'){DL.sel=new Set(CAT.filter(c=>c.k=='aa').flatMap(c=>c.g.flatMap(g=>g.it.map(x=>x.id))));DL.open={aa:1}}else selLoad(CAT);
+window.dlOpen=function(pre){CAT=catalog();if(pre=='aa'){DL.sel=new Set(CAT.filter(c=>c.k=='aa').flatMap(c=>c.g.flatMap(g=>g.it.map(x=>x.id))));DL.open={}}else{selLoad(CAT);DL.open={}};
  let o=$q('#dlc');if(o)o.remove();o=document.createElement('div');o.id='dlc';document.body.appendChild(o);dlPaint();warm()};
 function triState(ids){const n=ids.filter(i=>DL.sel.has(i)).length;return n==0?0:n==ids.length?2:1}
 function dlPaint(){const o=$q('#dlc');if(!o)return;const C=CAT,n=DL.sel.size,saved=svList();
@@ -7304,14 +7306,16 @@ window.pilIdOpen=()=>dlOpen('aa');
 /* ================= 8. Pilgrims page ================= */
 const pzRing=u=>{const r=pR(u),f=[r.mob,r.age,r.addr,r.e1&&r.e1.p,r.bg,r.aaf&&r.aab];return Math.round(f.filter(Boolean).length/f.length*100)};
 function pzCard(u){const r=pR(u),me=u==ST.sess,can=me||pAdm(),ms=r.meds||[],pc=pzRing(u),aa=String(r.aa||'').replace(/\D/g,'');
- const sos=[r.e1,r.e2].filter(x=>x&&x.p).map(x=>`<a class="pzsos" href="tel:${pTel(x.p)}"><span>🆘</span><span><b>${E(x.n||tt('Contact','संपर्क'))}</b><small>${E(x.r||'')} · ${E(x.p)}</small></span><i>📞</i></a>`).join('')||`<p class="pzmut">${tt('No emergency contact yet','आपातकालीन संपर्क नहीं')}</p>`;
- const med=ms.length?ms.map((m,i)=>`<div class="pzmed"><span class="pzmi" data-u="${u}" data-i="${i}">💊</span><span><b>${E(m.n||'—')}</b><small>${E(m.d||'')}</small></span><button type="button" onclick="pgMedView('${u}',${i})" aria-label="View">👁</button><button type="button" onclick="pgMedDl('${u}',${i})" aria-label="Download">⬇</button></div>`).join(''):`<p class="pzmut">${tt('No regular medicines','कोई नियमित दवा नहीं')}</p>`;
- return `<details class="pzc ${me?'me':''}" data-u="${u}" ontoggle="if(this.open)pzLazy()"><summary><span class="pzav" style="--p:${pc}"><span>${r.ph?`<img src="${r.ph}" alt="">`:E(String(P[u])[0])}</span></span><span class="pzn"><b>${E(P[u])}${me?` <em>${tt('You','आप')}</em>`:''}</b><small>${r.age?E(r.age)+' '+tt('yrs','वर्ष'):tt('Age —','उम्र —')}${r.bg?` · <span class="pzbg">🩸 ${E(r.bg)}</span>`:''}${can?` · 🪪 ${r.aaf?'✓':'✗'}${r.aab?'✓':'✗'}`:''}</small></span>
-  <span class="pzact">${can&&aa?`<button type="button" onclick="event.preventDefault();event.stopPropagation();pzCopyAA('${u}')" aria-label="Copy Aadhaar number" title="${tt('Copy Aadhaar number','आधार नंबर कॉपी करें')}">🪪⧉</button>`:''}${r.mob?`<a href="tel:${pTel(r.mob)}" onclick="event.stopPropagation()" aria-label="Call">📞</a>`:''}${can?`<button type="button" onclick="event.preventDefault();event.stopPropagation();pilEdit('${u}')" aria-label="Edit">✏️</button>`:''}</span></summary>
-  <div class="pzbody">${can?`<div class="pzid" onclick="aaShow('${u}')"><div class="pzidc"><img class="pzaim" data-u="${u}" alt="" hidden><span>🪪</span></div><div><b>${tt('Aadhaar','आधार')} ${aa?'· '+E(pFmtA(aa)):''}</b><small>${r.aaf?'✓':'✗'} ${tt('front','आगे')} · ${r.aab?'✓':'✗'} ${tt('back','पीछे')} · ${tt('tap for the ID page','ID पेज के लिए दबाएँ')}</small></div>${aa?`<button type="button" onclick="event.stopPropagation();pzCopyAA('${u}')" aria-label="Copy">⧉</button>`:''}</div>`:''}
-  <div class="pzsec"><h4>🆘 ${tt('Emergency contacts','आपातकालीन संपर्क')}</h4>${sos}</div>
-  <div class="pzsec"><h4>💊 ${tt('Medicines','दवाएँ')} <em>${ms.length}</em></h4>${med}</div>
-  <div class="pzsec"><h4>🏠 ${tt('Address & health','पता और सेहत')}</h4><p><small class="pzmut">${tt('Permanent address','स्थायी पता')}</small><br>${E(r.addr||'—')}</p><p><small class="pzmut">${tt('Allergies / health notes','एलर्जी / स्वास्थ्य नोट')}</small><br>${E(r.cond||'—')}</p>${r.mob?`<p><small class="pzmut">${tt('Mobile','मोबाइल')}</small><br><a href="tel:${pTel(r.mob)}">${E(r.mob)}</a></p>`:''}</div></div></details>`}
+ const sos=[r.e1,r.e2].filter(x=>x&&x.p).map(x=>`<a class="pzs2" href="tel:${pTel(x.p)}" title="${E(x.p)}"><i>📞</i><span><b>${E(x.n||tt('Contact','संपर्क'))}</b><small>${E(x.r||'')}${x.r?' · ':''}${E(x.p)}</small></span></a>`).join('');
+ const med=ms.map((m,i)=>`<div class="pzmed"><span class="pzmi" data-u="${u}" data-i="${i}">💊</span><span><b>${E(m.n||'—')}</b><small>${E(m.d||'')}</small></span><button type="button" onclick="pgMedView('${u}',${i})" aria-label="View">👁</button></div>`).join('');
+ const kv=(ic,lab,val)=>`<div class="pzkv"><i>${ic}</i><small>${lab}</small><span>${val}</span></div>`;
+ const sub=[r.age?E(r.age)+' '+tt('yrs','वर्ष'):'',r.bg?`<span class="pzbg">${E(r.bg)}</span>`:'',r.mob?E(r.mob):''].filter(Boolean).join(' · ');
+ return `<details class="pzc pz2 ${me?'me':''}" data-u="${u}" ontoggle="if(this.open)pzLazy()"><summary><span class="pzav" style="--p:${pc}"><span>${r.ph?`<img src="${r.ph}" alt="">`:E(String(P[u])[0])}</span></span><span class="pzn"><b>${E(P[u])}${me?` <em>${tt('You','आप')}</em>`:''}</b><small>${sub||'—'}</small></span>
+  <span class="pzact">${r.mob?`<a href="tel:${pTel(r.mob)}" onclick="event.stopPropagation()" aria-label="Call">📞</a>`:''}${can?`<button type="button" onclick="event.preventDefault();event.stopPropagation();pilEdit('${u}')" aria-label="Edit">✏️</button>`:''}<i class="pzchev">▾</i></span></summary>
+  <div class="pzbody">${can&&(aa||r.aaf||r.aab)?`<div class="pzaa"><span class="pzidc" onclick="aaShow('${u}',1)"><img class="pzaim" data-u="${u}" alt="" hidden><span>🪪</span></span><span class="pzaan" onclick="aaShow('${u}',1)"><b>${aa?E(pFmtA(aa)):tt('Aadhaar','आधार')}</b><small>${r.aaf?'✓':'✗'} ${tt('front','आगे')} · ${r.aab?'✓':'✗'} ${tt('back','पीछे')}</small></span>${aa?`<button type="button" onclick="event.stopPropagation();pzCopyAA('${u}')" aria-label="Copy">⧉ ${tt('Copy','कॉपी')}</button>`:''}</div>`:''}
+  ${sos?`<div class="pzsr">${sos}</div>`:`<p class="pzmut">🆘 ${tt('No emergency contact yet','आपातकालीन संपर्क नहीं')}</p>`}
+  <div class="pzkvs">${kv('🏠',tt('Address','पता'),E(r.addr||'—'))}${kv('🩺',tt('Health','सेहत'),E(r.cond||'—'))}${ms.length?'':kv('💊',tt('Medicines','दवाएँ'),tt('None','कोई नहीं'))}</div>
+  ${ms.length?`<div class="pzmeds">${med}</div>`:''}</div></details>`}
 window.pzCopyAA=async function(u){const r=pR(u),a=String(r.aa||'').replace(/\D/g,'');if(!a)return say(tt('Aadhaar number not added','आधार नंबर नहीं जोड़ा'));try{await navigator.clipboard.writeText(a)}catch(e){const t=document.createElement('textarea');t.value=a;document.body.appendChild(t);t.select();try{document.execCommand('copy')}catch(x){}t.remove()}say(tt('Aadhaar number copied · ','आधार नंबर कॉपी हुआ · ')+pFmtA(a))};
 pilgrimsView=function(){if(PIL.ed)return pilForm();const ids=Object.keys(P),ord=[ST.sess,...ids.filter(x=>x!=ST.sess)].filter(x=>P[x]&&x!='m'&&x!='v');const done=ord.filter(u=>pDone(u)).length;
  return `<style>${PCSS}</style><div class="pz"><section class="pzh"><div class="pzht"><div><h2>🙏 ${tt('Pilgrims','यात्री')}</h2><p>${ord.length} ${tt('yatris','यात्री')} · ${done}/${ord.length} ${tt('profiles complete','प्रोफ़ाइल पूरी')}</p></div><div class="pzst">${ord.slice(0,8).map(u=>{const r=pR(u);return `<span>${r.ph?`<img src="${r.ph}" alt="">`:E(String(P[u])[0])}</span>`}).join('')}</div></div>
@@ -7409,8 +7413,8 @@ window.m7People=function(){const n=Date.now(),now=new Date(),out=[],got={};try{m
  return out};
 
 /* ---------- 3. hero scenes: only Ashish can move between scenes or pick video / animation / picture ---------- */
-setInterval(()=>{try{document.body.classList.toggle('v41adm',adm())}catch(e){}},1000);
-try{const _g=sc7Go;sc7Go=function(i,u){if(u&&!adm())return;return _g.apply(this,arguments)}}catch(e){}
+setInterval(()=>{try{document.body.classList.toggle('v41adm',ST.sess=='a')}catch(e){}},1000);
+try{const _g=sc7Go;sc7Go=function(i,u){if(u&&ST.sess!='a')return;return _g.apply(this,arguments)}}catch(e){}
 
 /* ---------- 4. open at the top ---------- */
 try{history.scrollRestoration='manual'}catch(e){}
@@ -7562,7 +7566,7 @@ const st=document.createElement('style');st.textContent=`
 (function(){
 const $q=s=>document.querySelector(s);
 const tt=(a,b)=>{try{return rt2(a,b)}catch(e){return a}};
-const BUILD='v46-20261124';
+const BUILD='v48-20261124';
 
 /* ---------- 1. pause what is off screen ---------- */
 const SEL='#mgrow > *, #wx8s, .wx8s, .cvg, #v svg.s7svg, #v .mgi, #v .p4h, #v .pzh, #v .dpg > *, #wm svg';
@@ -7605,4 +7609,145 @@ body.v46kb #nav,body.v46kb #bnav,body.v46kb .bnav{display:none!important}
 })();
 </script>
 
+<script id="v47js">
+/* v47: iOS 26 fixed-bar fix, iOS home-screen downloads via share sheet, Drive key banner, crisp pilgrim cards */
+(function(){
+const $q=s=>document.querySelector(s);
+const tt=(a,b)=>{try{return rt2(a,b)}catch(e){return a}};
+const E=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+const iOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform=='MacIntel'&&navigator.maxTouchPoints>1);
+const standalone=()=>navigator.standalone===true||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches);
+const typing=el=>el&&(/^(TEXTAREA|SELECT)$/.test(el.tagName)||(el.tagName=='INPUT'&&!/^(checkbox|radio|button|submit|range|color|file)$/.test(el.type))||el.isContentEditable);
+
+/* 1. iOS 26: after the keyboard or a picker closes, Safari leaves the visual viewport shifted, so every
+   fixed bar (bottom menu, top bar, full-screen sheets) floats up the screen. Move them back by that shift. */
+const FIX=new Set();let lastOff=0;
+function fixedEls(){const out=[];for(const el of document.body.children){if(el.tagName=='SCRIPT'||el.tagName=='STYLE')continue;const cs=getComputedStyle(el);if(cs.position=='fixed'&&cs.display!='none')out.push(el)}
+ for(const sel of ['header.top','#nav']){const x=$q(sel);if(x&&!out.includes(x)&&getComputedStyle(x).position=='fixed')out.push(x)}return out}
+function vvFix(){const vv=window.visualViewport;if(!vv)return;let off=0;
+ if(!typing(document.activeElement)&&Math.abs(vv.scale-1)<0.02)off=Math.round(vv.offsetTop);
+ if(off<2)off=0;
+ if(off==lastOff&&!off)return;lastOff=off;
+ const els=off?fixedEls():[...FIX];
+ for(const el of els){if(off){el.style.translate='0 '+off+'px';FIX.add(el)}else{el.style.translate='';FIX.delete(el)}}
+ document.documentElement.classList.toggle('v47vv',!!off)}
+window.__vvFix=vvFix;
+if(window.visualViewport){visualViewport.addEventListener('resize',()=>setTimeout(vvFix,60));visualViewport.addEventListener('scroll',()=>requestAnimationFrame(vvFix))}
+addEventListener('scroll',()=>{if(lastOff||window.visualViewport&&visualViewport.offsetTop>1)requestAnimationFrame(vvFix)},{passive:true});
+document.addEventListener('focusout',()=>setTimeout(vvFix,350));document.addEventListener('focusin',()=>setTimeout(vvFix,50));
+setInterval(()=>{if(document.visibilityState=='visible')vvFix()},700);
+/* new full-screen sheets opened while shifted also get moved */
+new MutationObserver(()=>{if(lastOff){lastOff=-1;vvFix()}}).observe(document.body,{childList:true});
+
+/* 2. iPhone home-screen app: a plain download link does nothing there. Every PDF / Excel the app
+   makes is offered through a "ready" sheet: Save to phone (share sheet → Save to Files), Open, Share. */
+const BL=new Map();
+const _cu=URL.createObjectURL.bind(URL);
+URL.createObjectURL=function(o){const u=_cu(o);try{if(o instanceof Blob){BL.set(u,o);if(BL.size>40)BL.delete(BL.keys().next().value)}}catch(e){}return u};
+const _rv=URL.revokeObjectURL.bind(URL);
+URL.revokeObjectURL=function(u){if(BL.has(u)&&iOS&&standalone()){setTimeout(()=>{BL.delete(u);_rv(u)},5*60e3);return}BL.delete(u);_rv(u)};
+const _ck=HTMLAnchorElement.prototype.click;
+HTMLAnchorElement.prototype.click=function(){try{const h=this.href||'';if(iOS&&standalone()&&this.hasAttribute('download')&&/^(blob:|data:)/.test(h)){readySheet(BL.get(h)||null,this.getAttribute('download')||'file',h);return}}catch(e){}return _ck.apply(this,arguments)};
+window.saveFile=function(b,name){const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove()};
+const sz=n=>n>1e6?(n/1e6).toFixed(1)+' MB':Math.max(1,Math.round(n/1e3))+' KB';
+async function readySheet(b,name,href){if(!b&&href){try{b=await(await fetch(href)).blob()}catch(e){}}if(!b)return;
+ const type=b.type||(/\.pdf$/i.test(name)?'application/pdf':/\.xlsx$/i.test(name)?'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':'application/octet-stream');
+ const f=new File([b],name,{type});let o=$q('#v47rd');if(o)o.remove();o=document.createElement('div');o.id='v47rd';
+ o.innerHTML=`<div class="v47rb"><div class="v47ri">${/pdf/.test(type)?'📕':/sheet|excel/.test(type)?'📗':'📄'}</div><b>${E(name)}</b><small>${sz(b.size)} · ${tt('ready','तैयार')}</small>
+ <button type="button" class="p" id="v47s">⬇ ${tt('Save to phone','फ़ोन में सहेजें')}</button><button type="button" id="v47o">👁 ${tt('Open','खोलें')}</button><button type="button" id="v47c">${tt('Close','बंद करें')}</button>
+ <p>${tt('Tap “Save to Files” in the list that opens.','खुलने वाली सूची में “Save to Files” दबाएँ।')}</p></div>`;
+ document.body.appendChild(o);const close=()=>o.remove();o.onclick=e=>{if(e.target==o)close()};o.querySelector('#v47c').onclick=close;
+ o.querySelector('#v47s').onclick=async()=>{try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:name});close();return}}catch(e){if(e&&e.name=='AbortError')return}window.open(_cu(b),'_blank')};
+ o.querySelector('#v47o').onclick=()=>{if(/pdf/.test(type)&&window.pdfView){close();pdfView(b,name)}else window.open(_cu(b),'_blank')}}
+window.readySheet=readySheet;
+
+/* 3. Downloads: say clearly when Drive files cannot load (no Google key yet) */
+const gdOk=()=>{const g=window.GDRIVE;return g&&g.key&&Object.keys(g.files||{}).length};
+function dlBanner(){const w=$q('#dlc .dlcw');if(!w)return;let b=w.querySelector('.v47gd');if(gdOk()){if(b)b.remove();return}if(b)return;
+ const adm=(()=>{try{return typeof isAdm=='function'?!!isAdm():ST.sess=='a'}catch(e){return false}})();const g=window.GDRIVE||{};
+ b=document.createElement('div');b.className='v47gd';
+ b.innerHTML=adm?`<b>⚠ ${tt('Passes, tickets and stays cannot load yet','पास, टिकट और ठहराव अभी नहीं खुल रहे')}</b><small>${g.err?E(g.err)+' · ':''}${tt('The app needs the Google API key once (Drive API on). Paste it here – it is saved for every phone.','ऐप को एक बार Google API कुंजी चाहिए (Drive API चालू)। यहाँ डालें – सब फ़ोन के लिए सहेजी जाएगी।')}</small><div><input id="gdk" placeholder="AIza…" autocomplete="off" value="${E(g.key||'')}"><button type="button" class="p" onclick="gdKeySave().then(()=>{const x=document.querySelector('#dlc .v47gd');x&&x.remove();setTimeout(()=>{try{dlOpen()}catch(e){}},400)})">💾 ${tt('Save','सहेजें')}</button></div>`
+ :`<b>⏳ ${tt('Passes, tickets and stays are not on this phone yet','पास, टिकट और ठहराव अभी इस फ़ोन में नहीं')}</b><small>${tt('Aadhaar pages work now. The rest will come once Ashish connects the documents.','आधार पेज अभी चलेंगे। बाकी आशीष के दस्तावेज़ जोड़ने के बाद आएँगे।')}</small>`;
+ const h=w.querySelector('.dlch');if(h)h.after(b);else w.prepend(b)}
+new MutationObserver(()=>{if($q('#dlc'))dlBanner()}).observe(document.body,{childList:true});
+
+const st=document.createElement('style');st.textContent=`
+#v47rd{position:fixed;inset:0;z-index:10050;background:#0007;display:flex;align-items:flex-end;justify-content:center;animation:v47f .18s}
+@keyframes v47f{from{opacity:0}}
+.v47rb{background:var(--card,#fff);color:var(--ink,#222);width:100%;max-width:520px;border-radius:24px 24px 0 0;padding:20px 18px calc(18px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:9px;text-align:center}
+.v47ri{font-size:40px}.v47rb b{word-break:break-all}.v47rb small{opacity:.7}.v47rb p{margin:2px 0 0;font-size:.82rem;opacity:.7}
+.v47rb button{border:0;border-radius:14px;padding:14px;font-weight:800;font-size:1rem;background:var(--soft,#eee);color:inherit}.v47rb button.p{background:linear-gradient(135deg,#3b3f8f,#e8731a);color:#fff}
+.v47gd{background:#fff4e5;color:#5a3300;border:1px solid #f0b46a;border-radius:16px;padding:12px;margin:0 0 12px;display:flex;flex-direction:column;gap:6px}
+.v47gd small{opacity:.85}.v47gd div{display:flex;gap:6px}.v47gd input{flex:1;min-width:0;border:1px solid #d9a45f;border-radius:10px;padding:10px;font-size:16px}.v47gd button{border:0;border-radius:10px;padding:0 14px;font-weight:800;background:#e8731a;color:#fff}
+.aavo{margin:8px 14px;font-size:.85rem;opacity:.75;text-align:center}
+/* crisp pilgrim cards */
+.pz2{padding:8px 10px!important;border-radius:16px!important}
+.pz2>summary{gap:9px!important}
+.pz2 .pzav{width:40px!important;height:40px!important;padding:2px!important}
+.pz2 .pzav>span{font-size:16px!important}
+.pz2 .pzn b{font-size:.98rem!important;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pz2 .pzn small{font-size:.78rem!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pz2 .pzact{gap:5px!important;align-items:center}
+.pz2 .pzact a,.pz2 .pzact button{width:34px!important;min-width:34px!important;height:34px!important;border-radius:11px!important;font-size:15px!important;display:grid;place-items:center;text-decoration:none;border:0;background:var(--soft)}
+.pz2 .pzchev{font-style:normal;opacity:.45;font-size:.8rem;transition:transform .2s;width:14px;text-align:center}
+.pz2[open] .pzchev{transform:rotate(180deg)}
+.pz2 .pzbody{padding:8px 0 2px!important;display:flex;flex-direction:column;gap:7px}
+.pzaa{display:flex;gap:10px;align-items:center;padding:7px 8px;border-radius:13px;background:var(--soft)}
+.pzaa .pzidc{width:46px!important;cursor:pointer}
+.pzaan{flex:1;min-width:0;display:flex;flex-direction:column;cursor:pointer}.pzaan b{font-size:.95rem;letter-spacing:.3px;font-variant-numeric:tabular-nums}.pzaan small{font-size:.72rem;opacity:.65}
+.pzaa>button{border:0;border-radius:10px;padding:8px 10px;font-weight:700;font-size:.8rem;background:var(--card);color:inherit;flex:none}
+.pzsr{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.pzs2{display:flex;gap:7px;align-items:center;text-decoration:none;color:inherit;padding:7px 8px;border-radius:12px;background:#fff1f0;min-width:0}
+.pzs2 i{font-style:normal;width:28px;height:28px;border-radius:9px;background:#1f9d55;display:grid;place-items:center;font-size:13px;flex:none}
+.pzs2 span{display:flex;flex-direction:column;min-width:0}.pzs2 b{font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pzs2 small{font-size:.7rem;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pzkvs{display:flex;flex-direction:column;border-top:1px solid #8882}
+.pzkv{display:grid;grid-template-columns:20px 74px 1fr;gap:6px;align-items:baseline;padding:6px 2px;border-bottom:1px solid #8881;font-size:.86rem}
+.pzkv i{font-style:normal}.pzkv small{opacity:.6;font-size:.74rem}.pzkv span{min-width:0;overflow-wrap:anywhere}
+.pzmeds .pzmed{display:flex;gap:8px;align-items:center;padding:5px 0}.pzmeds .pzmed span{display:flex;flex-direction:column;flex:1;min-width:0}.pzmeds .pzmed small{opacity:.65;font-size:.74rem}.pzmeds .pzmed button{border:0;background:var(--soft);border-radius:9px;width:32px;height:30px}
+.pz2 .pzmut{margin:0;font-size:.82rem;opacity:.65}
+@media (max-width:360px){.pzsr{grid-template-columns:1fr}}
+`;document.head.appendChild(st);
+})();
+
+</script>
+<script id="v48js">
+/* v48: simulator for admins Ashish allows; notifications say who made the change */
+(function(){
+const tt=(a,b)=>{try{return rt2(a,b)}catch(e){return a}};
+const E=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+const first=u=>String(P[u]||'').split(' ')[0];
+const simOn=!!(window.__SIM&&__SIM.off);
+
+/* ---------- 1. simulator: Ashish always; other admins only when Ashish ticks their name ---------- */
+if(!SHARED.includes('simok'))SHARED.push('simok');
+if(!Array.isArray(ST.simok))ST.simok=[];
+window.simAllowed=u=>{u=u||ST.sess;return u=='a'||(isAdm(u)&&(ST.simok||[]).includes(u))};
+window.simOkCard=function(){const ad=(ST.adm||[]).filter(u=>u!='a'&&P[u]);
+ return `<div class="simok"><b>🧪 ${tt('Who else can use the simulator','सिम्युलेटर और कौन चला सकता है')}</b><small>${tt('Only admins can be picked. Others never see it.','केवल एडमिन चुने जा सकते हैं। बाकी को यह नहीं दिखता।')}</small>
+ ${ad.length?`<div class="simokl">${ad.map(u=>`<label><input type="checkbox" ${(ST.simok||[]).includes(u)?'checked':''} onchange="simOk('${u}',this.checked)"><span>${E(P[u])}</span></label>`).join('')}</div>`:`<p class="mut">${tt('No other admins yet. Make someone an admin first (People → Admin: logins).','अभी कोई और एडमिन नहीं। पहले किसी को एडमिन बनाएँ (लोग → एडमिन)।')}</p>`}
+ ${simOn?`<p class="simokw">⚠ ${tt('Saving is off while you simulate – press Reset at the top, then tick names.','सिम्युलेशन में सहेजना बंद है – ऊपर रीसेट दबाएँ, फिर नाम चुनें।')}</p>`:''}</div>`};
+window.simOk=function(u,c){if(ST.sess!='a')return;if(simOn){toast(tt('Reset the simulator first, then tick names','पहले सिम्युलेटर रीसेट करें, फिर नाम चुनें'));render();return}
+ const s=new Set(ST.simok||[]);c?s.add(u):s.delete(u);ST.simok=[...s];save('simok');toast(first(u)+' · '+(c?tt('can use the simulator','सिम्युलेटर चला सकते हैं'):tt('simulator removed','सिम्युलेटर हटाया')))};
+/* someone who lost permission while simulating goes back to the real time (after the shared list has loaded) */
+if(simOn)setTimeout(function chk(){try{if(ST.sess&&typeof PULLOK!='undefined'&&PULLOK){if(!simAllowed())simReset();return}}catch(e){}setTimeout(chk,3000)},6000);
+
+/* ---------- 2. who made the change: stored next to each shared item, shown in every alert ---------- */
+const KS=['exp','pm','paid','swaps','delay','links','todo','adm','simok','aladm','videos'];
+KS.forEach(k=>{if(!SHARED.includes('by_'+k))SHARED.push('by_'+k)});
+const _sv=save;
+save=function(k){try{if(k&&KS.includes(k)&&ST.sess&&!simOn){ST['by_'+k]={u:ST.sess,t:Date.now()};_sv('by_'+k)}}catch(e){}return _sv.apply(this,arguments)};
+const byTxt=k=>{const b=ST['by_'+k];if(!b||!b.u||!P[b.u]||Date.now()-(+b.t||0)>20*60e3)return '';return b.u==ST.sess?tt('by you','आपके द्वारा'):tt('by '+first(b.u),first(b.u)+' द्वारा')};
+window.__byTxt=byTxt;
+const _cm=changeMsg;
+changeMsg=function(k){const m=_cm.apply(this,arguments);if(!m)return m;const by=byTxt(k);if(by&&!String(m.body||'').includes(by)){m.body=(m.body?m.body+' · ':'')+by}return m};
+const st=document.createElement('style');st.textContent=`
+.simok{margin:10px 0 4px;padding:12px;border-radius:16px;background:var(--card);box-shadow:var(--shadow);border:1px dashed #6d28d955;display:flex;flex-direction:column;gap:6px}
+.simok small{opacity:.7}.simokl{display:flex;flex-wrap:wrap;gap:6px}
+.simokl label{display:flex;gap:7px;align-items:center;padding:8px 12px;border-radius:99px;background:var(--soft);font-weight:600}
+.simokl input{width:20px;height:20px;accent-color:#6d28d9}
+.simokw{margin:0;font-size:.82rem;color:#b45309}
+`;document.head.appendChild(st);
+})();
+
+</script>
 </body></html>
