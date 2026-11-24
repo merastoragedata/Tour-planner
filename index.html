@@ -30,7 +30,10 @@ DONE v45 (24 Nov 2026): TTD Special Entry passes replaced by the official per-pe
 DONE v46 (24 Nov): off-screen animations paused (607->110 running), keyboard/bottom-bar float fix (iOS visualViewport), BUILD self-update (v46-20261124), Expenses PDF/Excel side button (stmtHub), admin hero card text, mobile header tightened, selected-passes filename.
 DONE v47 (24 Nov): iOS 26 floating bars fixed by moving fixed elements by visualViewport.offsetTop (translate) when no input focused; iPhone home-screen downloads go through a Save/Open sheet (share sheet → Save to Files) by catching blob anchor clicks; Downloads shows a Drive-key banner (admin can paste key there) – kv gdrive_key was NOT set, so Drive files never loaded; pilgrim cards made compact (pzCard rewritten, SOS 2-up, key/value rows); Aadhaar from a pilgrim card is view-only (aaShow(u,1)); 8-day weather labels fixed (fmtDW).
 DONE v48 (24 Nov): Today scene card + hero scene arrows Ashish-only; simulator for Ashish + admins he ticks (kv simok, card under simulator on Today); who-changed stored as kv by_<key> {u,t} on save and appended to every change alert (changeMsg wrapper, 20-min window); admin alarm push says by whom; Downloads Aadhaar section starts collapsed.
-NOT DONE: Supabase switched on and tested; real push notifications (needs server; calendar alarms instead); Hindi; fetching photos from Google Photos (Google does not allow it for shared albums: the button opens the album); WhatsApp-only features (calls, end-to-end encryption, status); family info cards with verified Hindi video links; food stops; coach orders for other trains (owner will send screenshots); detailed itinerary (owner will send); NITR voucher 6006386739 PDF (upload was overwritten, ask owner to re-send); unverified Where Is My Train package name com.whereismytrain.android.
+DONE v49 (24 Nov): guided Google Drive key setup gdWizard() (admin) – 6 steps with Google Console links, copy buttons (project name, site restriction location.origin+'/*'), live key test against the Yatra root folder with plain-language error causes, Save for everyone via gdKeySave; entry from Downloads warning, Settings → Documents box and Settings list; v49dw and v47rd added to the back-button overlay list.
+DONE v50 (24 Nov): documents ready on the phone – Drive sync starts at 0.3 s, prefetch 4 at a time in order darshan > tickets > stays (videos skipped), event gdready; pdf.js + pdf-lib preloaded; pass crop boxes and photo crops cached (localStorage yatra_bbc + Cache yatra-dl crop|path|version); Aadhaar pages memoised per person+images+watermark; the ticked set is built in the background and kept as Cache yatra-dl ready/<signature of file versions> (meta yatra_ready, 6 kept) so Download/View of it is instant, rebuilt only when a file changes; 'Saved on this phone' list and file-count line removed; viewers (.vw, sheets) open above Downloads; sheets get ← Back; phone back closes the viewer before Downloads (vwo token, __ovPop skips while #vw open); drawer closes on back.
+DONE v51 (24 Nov): alerts log – table yatra_notes (anon select only), edge notify v2 writes every alert there (and test pushes reach the sender), tick v4 logs alarms; bell (#nbell → notifOpen) lists all alerts for me (to_u null or mine, not my own), unread count on #nbd, ✕ per alert, Clear all (cutoff id), local banners kept too (deduped), push on/off card; polling 45 s. Voices: edge function tts (keys sarvam_key, google_tts_key, bh_uid, bh_key and usage tts_usage in yatra_secrets): Sarvam until 95% of limit (default 333000 chars, off on 402/403/429) → Google Cloud TTS until 95% of each voice type's free monthly chars (Chirp3-HD/Neural2 1M, WaveNet/Standard 4M) → Bhashini → phone; phGen2 and story voice (elMake) use it; ElevenLabs removed; old phone-stored keys move to the server once; Bhashini WAV stored as 'W:' in phrase packs. Push itself was already live since v6 (yatra_push, VAPID in yatra_secrets, cron yatra-tick every minute).
+NOT DONE: Supabase switched on and tested; Hindi; fetching photos from Google Photos (Google does not allow it for shared albums: the button opens the album); WhatsApp-only features (calls, end-to-end encryption, status); family info cards with verified Hindi video links; food stops; coach orders for other trains (owner will send screenshots); detailed itinerary (owner will send); NITR voucher 6006386739 PDF (upload was overwritten, ask owner to re-send); unverified Where Is My Train package name com.whereismytrain.android.
 OPEN DECISIONS: Trivandrum and Kanyakumari stays are FINALISED; TVC to Kanyakumari travel (16649 or road); Madurai to Rameswaram (16343 or 56711); Tirupati to Kanchipuram (16204, or Arakkonam by train then road); accommodation for TVC night 30 Nov, Madurai, Rameswaram, Tirupati, Kanchipuram; Atul Jabalpur to Itarsi ticket; Vinit cancellations; one duplicate Trichy to Tirupati set.
 V7 PHASE 1 (5 Nov 2026): one-row header (Aa, हिं, theme button, avatar; title always visible); sheets with close bar; ticket-card letter-spacing bug fixed (.tk); Today: Photos/Chat buttons restored (games CSS .bigb override neutralised), story cards above notification card; carousel no longer changes theme, auto theme only during trip by itinerary; past events fold; either/or journeys dropdown (ST.choice, ST.opts; admin only; shared keys); expense form all options in 2 columns, split-how dropdown default Nil; text size 80-170% via --fs on every font-size; per-user prefs pf_<user> (install/notification choices, background) sync via kv once Supabase is live; backgrounds (presets + own photo, photo local); calmer shankh/train animations. ORIGINAL FILES NOW OPEN FROM GOOGLE DRIVE: DRV map (path -> Drive file id) is baked into the script from folder 1LIZ-maFCtxpuACoplwml-FHN4zhlHduI (tickets/, stays/, reference/); viewer = Drive /preview iframe. New files added to Drive need their ids added to DRV. NEXT: phase 2 map, phase 3 games.
 -->
@@ -1345,7 +1348,7 @@ const pgState=()=>({tab:ST.tab,vw:ST.vw,mv:ST.mv});
 function go(tab){ST.tab=tab;if(tab=='money')ST.mv='add';save();render()}
 function histSync(){if(HS.pop){HS.last=stKey();return}if(stKey()!=HS.last){try{history.pushState(pgState(),'','#'+ST.tab)}catch(e){}HS.last=stKey();window.scrollTo(0,0)}}
 addEventListener('popstate',e=>{if(window.__ovPop&&window.__ovPop(e))return;if(HS.ign>0){HS.ign--;return}const s=e.state||{};
-if($('#vw').classList.contains('show')&&!s.vwo){closeVw(true);return}
+if($('#vw').classList.contains('show')&&(!s.vwo||(window.__vwTok&&s.vwo!==window.__vwTok))){closeVw(true);return}
 if($('#md').classList.contains('show')&&!s.modal){$('#md').classList.remove('show');return}
 if(!ST.sess)return;HS.pop=1;if(s.tab){ST.tab=s.tab;ST.vw=s.vw;ST.mv=s.mv}else{ST.tab='today'}render();HS.pop=0});
 new MutationObserver(()=>{const open=$('#md').classList.contains('show'),st=history.state||{};if(open&&!st.modal){try{history.pushState({...pgState(),modal:1},'')}catch(e){}}else if(!open&&st.modal){HS.ign++;history.back()}}).observe($('#md'),{attributes:true,attributeFilter:['class']});
@@ -1358,7 +1361,7 @@ let VWZ=1;
 function viewOrig(id,title,pdf){const pg=SCANS[id]||[];if(!pg.length)return toast('Original not added yet');VWZ=1;
 const hasPdf=pdf||(FL[id]&&FL[id].includes('pdf')?pdfPath(id):'');
 $('#vw').innerHTML=`<div class="vwt"><button onclick="history.back()" aria-label="Back">←</button><b>${title||id}</b><span class="sp"></span>${hasPdf?`<a class="btn" href="${hasPdf}" target="_blank" rel="noopener">PDF</a>`:''}<button onclick="vwZoom(-1)">−</button><button onclick="vwZoom(1)">+</button><button onclick="vwShare('${id}')">Share</button></div><div class="vwb" id="vwb">${pg.map((p,i)=>`<figure><img src="${p}" alt="${id} page ${i+1}" loading="lazy" style="width:calc(${VWZ*100}vw - 16px)"><figcaption>${pg.length>1?'Page '+(i+1)+' of '+pg.length+' · ':''}<a href="${p}" download>Save image</a></figcaption></figure>`).join('')}</div>`;
-$('#vw').classList.add('show');try{history.pushState({...pgState(),vwo:1},'')}catch(e){}}
+$('#vw').classList.add('show');try{history.pushState({...pgState(),vwo:(window.__vwTok=Date.now())},'')}catch(e){}}
 function vwZoom(d){VWZ=Math.min(3.2,Math.max(1,VWZ+d*.6));document.querySelectorAll('#vwb img').forEach(i=>i.style.width='calc('+VWZ*100+'vw - 16px)')}
 async function vwShare(id){const p=(SCANS[id]||[])[0];if(!p)return;try{const b=await(await fetch(p)).blob(),f=new File([b],id+'.jpg',{type:'image/jpeg'});if(navigator.canShare&&navigator.canShare({files:[f]}))return navigator.share({files:[f],title:'Ticket '+id});}catch(e){}
 if(navigator.share)navigator.share({title:'Ticket '+id,url:new URL(p,location.href).href}).catch(()=>{});else toast('Use Save image')}
@@ -2115,7 +2118,7 @@ pdfPath=function(id){const f=drvList(id).find(x=>x.pdf);return f?drvView(f):''};
 orig=function(id){const l=drvList(id);if(!l.length)return '<span class="mut">Original not added yet</span>';const p=l.find(x=>x.pdf);return `<button class="btn p" onclick="viewOrig('${id}')">📄 Open original</button>`+(p?`<a class="btn" href="${drvView(p)}" target="_blank" rel="noopener">PDF file</a>`:'')};
 let DVL=[],DVI=0,DVT='';
 function dvPaint(){const f=DVL[DVI];if(!f)return;$('#vw').innerHTML=`<div class="vwt"><button onclick="history.back()" aria-label="Back">←</button><b>${escx(DVT)}</b><span class="sp"></span><a class="btn" href="${drvView(f)}" target="_blank" rel="noopener">${f.u?'Open file':'Open in Drive'}</a><a class="btn" href="${drvDl(f)}" ${f.u?'download':''} target="_blank" rel="noopener" aria-label="Download">⬇</a><button onclick="vwShare()">Share</button></div>${DVL.length>1?`<div class="dvt">${DVL.map((x,i)=>`<button class="${i==DVI?'on':''}" onclick="DVI=${i};dvPaint()">${x.l}</button>`).join('')}</div>`:''}<iframe class="dvf" src="${f.u?f.u:'https://drive.google.com/file/d/'+f.id+'/preview'}" allow="autoplay" title="${escx(DVT)}"></iframe><div class="dvn">If the file does not show, tap Open in Drive.</div>`}
-viewOrig=function(id,title,pdf){const l=drvList(id);if(!l.length)return toast('Original not added yet');DVL=l;DVI=0;DVT=title||(T.find(t=>t[0]==id)?(()=>{const t=T.find(t=>t[0]==id);return t[1]+' · '+t[2]+' → '+t[3]})():id);dvPaint();$('#vw').classList.add('show');try{history.pushState({...pgState(),vwo:1},'')}catch(e){}};
+viewOrig=function(id,title,pdf){const l=drvList(id);if(!l.length)return toast('Original not added yet');DVL=l;DVI=0;DVT=title||(T.find(t=>t[0]==id)?(()=>{const t=T.find(t=>t[0]==id);return t[1]+' · '+t[2]+' → '+t[3]})():id);dvPaint();$('#vw').classList.add('show');try{history.pushState({...pgState(),vwo:(window.__vwTok=Date.now())},'')}catch(e){}};
 vwShare=async function(){const f=DVL[DVI];if(!f)return;const url=drvView(f);if(navigator.share)navigator.share({title:DVT,url}).catch(()=>{});else{try{await navigator.clipboard.writeText(url);toast('Drive link copied')}catch(e){toast(url)}}};
 filesCheck=function(){const ids=[...new Set([...T.map(t=>t[0]),...S.map(s=>s[7])])],miss=ids.filter(i=>!drvList(i).length);
  show(`<h3>Original files (Google Drive)</h3><p class="big">${ids.length-miss.length} of ${ids.length} bookings have a file</p>${miss.length?`<p class="err">No file for: ${miss.join(', ')}</p>`:''}<p class="mut small">Tickets, stays and reference pages open from your Drive folder. Keep its sharing at <b>Anyone with the link · Viewer</b> so every traveller can open them. If you add new files to Drive later, send them to me so the links can be added.</p><div class="btns"><a class="btn p" href="${LK().drive}" target="_blank" rel="noopener">Open Drive folder</a></div>`)};
@@ -2547,7 +2550,7 @@ if(!SB.url)return null;try{const r=await(await sbf('yatra_kv?select=val&key=eq.i
 function phVoice(l){const sc=v=>(/enhanced|premium|neural|natural/i.test(v.name)?4:0)+(/google/i.test(v.name)?3:0)+(v.localService?0:1)-(/compact|eloquence|espeak/i.test(v.name)?5:0);return speechSynthesis.getVoices().filter(v=>v.lang.replace('_','-').toLowerCase().startsWith(l)).sort((a,b)=>sc(b)-sc(a))[0]}
 function phAud(a){if(PH.a){try{PH.a.pause()}catch(e){}}PH.a=a;const p=a.play();if(p&&p.catch)p.catch(()=>toast('No '+PHN[PH.l]+' voice available on this phone – use the 🌐 Translate button'))}
 function phSay(i){const l=PH.l,t=PHD[l][i][3],p=PHA[l]&&PHA[l][i];try{speechSynthesis.cancel()}catch(e){}
-if(p){phAud(new Audio('data:audio/mpeg;base64,'+p));return}
+if(p){phAud(new Audio(String(p).startsWith('W:')?'data:audio/wav;base64,'+p.slice(2):'data:audio/mpeg;base64,'+p));return}
 let v;try{v=phVoice(l)}catch(e){}
 if(v){const u=new SpeechSynthesisUtterance(t);u.voice=v;u.lang=v.lang;u.rate=.88;u.pitch=1;speechSynthesis.speak(u);return}
 phAud(new Audio('https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl='+l+'&q='+encodeURIComponent(t)))}
@@ -3915,16 +3918,16 @@ const EL={key:'',voice:'',k0:0,au:null};
 async function elLoad(){if(EL.k0||!SB.url)return;EL.k0=1;try{const[a,b]=await Promise.all([tuGet('elkey'),tuGet('elvoice')]);if(typeof a=='string')EL.key=a;if(typeof b=='string')EL.voice=b}catch(e){}}
 const elUrl=(m,i,hi)=>SB.url+'/storage/v1/object/public/story-audio/'+m.k+'_'+(hi?'hi':'en')+'_'+i+'.mp3';
 async function elHas(u){try{const r=await fetch(u,{method:'HEAD'});return r.ok}catch(e){return false}}
-async function elMake(m,i,hi,text){if(!EL.key||!EL.voice)return false;try{const r=await fetch('https://api.elevenlabs.io/v1/text-to-speech/'+encodeURIComponent(EL.voice)+'?output_format=mp3_44100_128',{method:'POST',headers:{'xi-api-key':EL.key,'Content-Type':'application/json',Accept:'audio/mpeg'},body:JSON.stringify({text,model_id:'eleven_multilingual_v2',voice_settings:{stability:.45,similarity_boost:.8,style:.25,use_speaker_boost:true}})});if(!r.ok)throw new Error('ElevenLabs '+r.status);const bl=await r.blob();const up=await fetch(SB.url+'/storage/v1/object/story-audio/'+m.k+'_'+(hi?'hi':'en')+'_'+i+'.mp3',{method:'POST',headers:{...H,'Content-Type':'audio/mpeg','x-upsert':'true'},body:bl});return up.ok}catch(e){toast(String(e.message||e));return false}}
+async function elMake(m,i,hi,text){try{const r=await window.ttsSay(hi?'hi':'en',text);if(!r||!r.audio)throw new Error(r&&r.error||'no voice');const by=Uint8Array.from(atob(r.audio),c=>c.charCodeAt(0));const bl=new Blob([by],{type:r.mime||'audio/mpeg'});const up=await fetch(SB.url+'/storage/v1/object/story-audio/'+m.k+'_'+(hi?'hi':'en')+'_'+i+'.mp3',{method:'POST',headers:{...H,'Content-Type':r.mime||'audio/mpeg','x-upsert':'true'},body:bl});return up.ok}catch(e){toast(String(e.message||e));return false}}
 function mgChapTexts(m,sc){const hi=mgL(),secs=[...sc.querySelectorAll('.mgs')];const intro=MGN[hi?'hi':'en'][0].replace('{n}',m.n[hi?1:0]);return [intro,...secs.map(s=>[(s.querySelector('.mgnar')||{}).textContent,(s.querySelector('h2')||{}).textContent,(s.querySelector('.mgp')||{}).textContent].filter(Boolean).join('. ').replace(/^🎙\s*/,''))]}
 function mgSay(){if(MGS.on)return mgStop();const m=MAG.find(x=>x.k==MG.cur),sc=$('#mag .mgsc');if(!m||!sc)return;elLoad();const hi=!!mgL(),secs=[...sc.querySelectorAll('.mgs')],tx=mgChapTexts(m,sc);MGS.on=1;MGS.i=0;const b=$('#mgsay');if(b)b.textContent='⏹ '+rt2('Stop','रोकें');
  const play=async()=>{if(!MGS.on)return;const i=MGS.i;if(i>=tx.length){mgStop();return}secs.forEach(x=>x.classList.remove('rd'));if(i>0&&secs[i-1]){secs[i-1].classList.add('rd');secs[i-1].scrollIntoView({behavior:'smooth',block:'center'})}MGS.i++;const nx=()=>setTimeout(play,350);
-  let url=elUrl(m,i,hi),ok=SB.url?await elHas(url):false;if(!ok&&isAdm()&&EL.key&&EL.voice){toast(rt2('Creating AI voice…','AI आवाज़ बना रहे हैं…'));ok=await elMake(m,i,hi,tx[i])}
+  let url=elUrl(m,i,hi),ok=SB.url?await elHas(url):false;if(!ok&&isAdm()&&window.__ttsOk&&__ttsOk()){toast(rt2('Creating AI voice…','AI आवाज़ बना रहे हैं…'));ok=await elMake(m,i,hi,tx[i])}
   if(ok&&MGS.on){try{if(EL.au)EL.au.pause()}catch(e){}EL.au=new Audio(url);EL.au.onended=nx;EL.au.onerror=()=>vcSpeak(tx[i],hi,nx);EL.au.play().catch(()=>vcSpeak(tx[i],hi,nx))}else vcSpeak(tx[i],hi,nx)};
  try{speechSynthesis.getVoices()}catch(e){}play()}
 {const _ms=mgStop;mgStop=function(){try{if(EL.au)EL.au.pause()}catch(e){}return _ms.apply(this,arguments)}}
-function mgAiSetup(){elLoad();show(`<h3 style="margin:0 0 8px">🎙 ${rt2('AI voice (ElevenLabs)','AI आवाज़ (ElevenLabs)')}</h3><p class="mut" style="font-size:.85rem">${rt2('Paste your ElevenLabs key and voice ID once. Then tap “Create voice for this place”: each chapter is made once, saved for everyone and played on every phone.','अपनी ElevenLabs कुंजी और वॉइस ID एक बार चिपकाएँ। फिर “इस जगह की आवाज़ बनाएँ” दबाएँ: हर अध्याय एक बार बनता है, सबके लिए सहेजा जाता है और हर फ़ोन पर चलता है।')}</p><input id="elk" placeholder="API key" value="${escx(EL.key)}" style="width:100%;box-sizing:border-box;margin:4px 0"><input id="elv" placeholder="Voice ID" value="${escx(EL.voice)}" style="width:100%;box-sizing:border-box;margin:4px 0"><div class="btns"><button class="p" onclick="mgAiSave()">${rt2('Save','सहेजें')}</button><button onclick="mgAiAll()">${rt2('Create voice for this place','इस जगह की आवाज़ बनाएँ')}</button></div>`)}
-function mgAiSave(){EL.key=($('#elk')||{}).value.trim();EL.voice=($('#elv')||{}).value.trim();tuSet('elkey',EL.key);tuSet('elvoice',EL.voice);toast(rt2('Saved','सहेजा गया'))}
+function mgAiSetup(){show(`<h3 style="margin:0 0 8px">🎙 ${rt2('Natural voice for this place','इस जगह की प्राकृतिक आवाज़')}</h3><p class="mut" style="font-size:.85rem">${rt2('Uses the free voices in this order: Sarvam (until 95% of its free credits) → Google (until 95% of its free monthly limit) → Bhashini (free). Keys are set once in Phrases → Natural voice pack. Each chapter is made once, saved for everyone and plays on every phone.','मुफ़्त आवाज़ें इस क्रम में: Sarvam (मुफ़्त क्रेडिट के 95% तक) → Google (मासिक मुफ़्त सीमा के 95% तक) → Bhashini (मुफ़्त)। कुंजियाँ एक बार वाक्य → प्राकृतिक आवाज़ पैक में डालें। हर अध्याय एक बार बनता है, सबके लिए सहेजा जाता है।')}</p><div class="btns"><button class="p" onclick="mgAiAll()">${rt2('Create voice for this place','इस जगह की आवाज़ बनाएँ')}</button></div>`)}
+function mgAiSave(){}
 async function mgAiAll(){mgAiSave();const m=MAG.find(x=>x.k==MG.cur),sc=$('#mag .mgsc');if(!m||!sc)return;const hi=!!mgL(),tx=mgChapTexts(m,sc);let n=0;for(let i=0;i<tx.length;i++){toast((i+1)+' / '+tx.length);if(await elMake(m,i,hi,tx[i]))n++}toast(rt2(n+' chapters ready','अध्याय तैयार: '+n))}
 {const _mp9=magPaint;magPaint=function(top){_mp9.apply(this,arguments);if(!isAdm())return;const sc=$('#mag .mgsc');const c=sc&&sc.querySelector('.mgguideint .mgct');if(c&&!c.querySelector('.mgai'))c.insertAdjacentHTML('beforeend','<button class="mgai" onclick="mgAiSetup()" aria-label="AI voice">🎙 AI</button>')}}
 /* ===== videos: only Hindi or English ===== */
@@ -5936,7 +5939,7 @@ window.sbShare=async function(p,title){try{await fetchDoc(p);const b=DOCS.blob[p
 {const _dp=dvPaint;dvPaint=function(){const f=DVL[DVI];if(!f||!f.path||!has(f.path))return _dp.apply(this,arguments);const vw=$q('#vw');
  vw.innerHTML=`<div class="vwt"><button onclick="history.back()" aria-label="Back">←</button><b>${E(DVT)}</b><span class="sp"></span><button onclick="sbDl('${E(f.path)}')" aria-label="Download">⬇</button><button onclick="sbShare('${E(f.path)}','${E(DVT).replace(/'/g,'')}')">${tt('Share','भेजें')}</button></div>${DVL.length>1?`<div class="dvt">${DVL.map((x,i)=>`<button class="${i==DVI?'on':''}" onclick="DVI=${i};dvPaint()">${E(x.l)}</button>`).join('')}</div>`:''}<div class="sbv" id="sbv"></div>`;
  paintDoc($q('#sbv'),f.path,!!f.pdf||/\.pdf$/i.test(f.path))}}
-window.sbOpen=function(p,title){DVL=[{l:'',path:p,pdf:/\.pdf$/i.test(p)}];DVI=0;DVT=title||fname(p);dvPaint();$q('#vw').classList.add('show');try{history.pushState({...pgState(),vwo:1},'')}catch(e){}};
+window.sbOpen=function(p,title){DVL=[{l:'',path:p,pdf:/\.pdf$/i.test(p)}];DVI=0;DVT=title||fname(p);dvPaint();$q('#vw').classList.add('show');try{history.pushState({...pgState(),vwo:(window.__vwTok=Date.now())},'')}catch(e){}};
 /* links and pictures that point at a moved file */
 window.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a[href]');if(!a)return;const p=pathOfUrl(a.getAttribute('href'));if(p&&has(p)){e.preventDefault();e.stopImmediatePropagation();if(a.hasAttribute('download'))sbDl(p);else sbOpen(p,a.textContent.trim()||fname(p))}},true);
 const fixI=i=>{const s=i.getAttribute&&i.getAttribute('src')||'';if(!s||/^(blob|data):/.test(s))return;const p=pathOfUrl(s);if(!p)return;const jp=has(p)?p:has(p.replace(/\.(png|jpe?g)$/i,'.jpg'))?p.replace(/\.(png|jpe?g)$/i,'.jpg'):null;if(!jp||/\.pdf$/i.test(jp))return;const u=window.__docU(jp);if(u)i.src=u;else fetchDoc(jp).then(u=>{if(u&&i.isConnected)i.src=u})};
@@ -5991,13 +5994,16 @@ async function cropBox(lib,page){const v=page.getViewport({scale:1});let top=0,b
 /* ---- print PDF: two passes on each A4 page ---- */
 const dpSortKey=p=>[+new Date((DPK[p.k]||{}).d||0),p.k,ORDER.indexOf(p.u)];
 const byKey=(a,b)=>{const x=dpSortKey(a),y=dpSortKey(b);for(let i=0;i<3;i++){if(x[i]<y[i])return -1;if(x[i]>y[i])return 1}return 0};
+const BBC=window.__BBC=(()=>{try{return JSON.parse(localStorage.getItem('yatra_bbc')||'{}')||{}}catch(e){return{}}})(),bbSave=()=>{try{localStorage.setItem('yatra_bbc',JSON.stringify(BBC))}catch(e){}};
+const fver=pp=>((window.GDRIVE&&GDRIVE.files[pp])||{}).mt||((window.DOCS&&DOCS.idx[pp])||{}).t||'';
+async function cropC(pp){const k='crop|'+pp+'|'+fver(pp),m=BBC[k],u='https://dl.local/'+encodeURIComponent(k);if(m){try{const r=await(await caches.open('yatra-dl')).match(u);if(r)return{blob:await r.blob(),w:m.w,h:m.h}}catch(e){}}const cr=await cropShot(await window.docBlob(pp));try{await(await caches.open('yatra-dl')).put(u,new Response(cr.blob,{headers:{'Content-Type':cr.blob.type||'image/jpeg'}}));BBC[k]={w:cr.w,h:cr.h};bbSave()}catch(e){}return cr}
 window.dpsPrint=async function(mode){const lib0=await pdfLib().catch(()=>null);if(!lib0)return say(tt('Needs internet once to make the PDF','PDF बनाने के लिए एक बार इंटरनेट चाहिए'));
  const{PDFDocument,StandardFonts,rgb}=lib0;const X=arguments[1]||null;let list=DP.slice().sort(byKey);if(Array.isArray(mode))list=list.filter(p=>mode.includes(p.id));else if(mode=='mine')list=list.filter(p=>p.u==me());else if(mode&&mode!='all')list=list.filter(p=>p.k==mode);
  const seen=new Set();list=list.filter(p=>{const k=p.shared?p.shared:p.id;if(p.shared&&seen.has(k))return false;seen.add(k);return true});
  if(!X)say(tt('Making the PDF… ','PDF बन रहा है… ')+list.length);const out=X&&X.out||await PDFDocument.create(),font=X&&X.font||await out.embedFont(StandardFonts.Helvetica);
  const items=[];let miss=0;
- for(const p of list){const b=dpBase(p);try{if(has(b+'.pdf')&&!(p.k=='ttd'&&(has(b+'.jpg')||has(b+'.png')))){const bl=await window.docBlob(b+'.pdf'),by=await ab(bl);const src=await PDFDocument.load(by.slice(0));const pg=src.getPage(0),{width,height}=pg.getSize();let bb=null;try{const pj=await pdfJs2(),d2=await pj.getDocument({data:new Uint8Array(by.slice(0))}).promise,c=await cropBox(pj,await d2.getPage(1));if(c&&(c.w<width*.98||c.h<height*.98))bb={left:c.x,bottom:height-c.y-c.h,right:c.x+c.w,top:height-c.y}}catch(x){}const e=bb?await out.embedPage(pg,bb):(await out.embedPdf(src,[0]))[0];items.push({e,w:bb?bb.right-bb.left:width,h:bb?bb.top-bb.bottom:height,p})}
-  else if(has(b+'.jpg')||has(b+'.png')){const pp=has(b+'.jpg')?b+'.jpg':b+'.png';const bl=await window.docBlob(pp);const cr=await cropShot(bl);const by=new Uint8Array(await ab(cr.blob));const e=(cr.blob.type=='image/png')?await out.embedPng(by):await out.embedJpg(by);items.push({e,w:cr.w,h:cr.h,p,img:1})}
+ for(const p of list){const b=dpBase(p);try{if(has(b+'.pdf')&&!(p.k=='ttd'&&(has(b+'.jpg')||has(b+'.png')))){const bl=await window.docBlob(b+'.pdf'),by=await ab(bl);const src=await PDFDocument.load(by.slice(0));const pg=src.getPage(0),{width,height}=pg.getSize();let bb=null;const bk='bb|'+b+'.pdf|'+fver(b+'.pdf');if(bk in BBC)bb=BBC[bk];else{let okc=0;try{const pj=await pdfJs2(),d2=await pj.getDocument({data:new Uint8Array(by.slice(0))}).promise,c=await cropBox(pj,await d2.getPage(1));okc=1;if(c&&(c.w<width*.98||c.h<height*.98))bb={left:c.x,bottom:height-c.y-c.h,right:c.x+c.w,top:height-c.y};try{d2.destroy()}catch(x){}}catch(x){}if(okc){BBC[bk]=bb;bbSave()}}const e=bb?await out.embedPage(pg,bb):(await out.embedPdf(src,[0]))[0];items.push({e,w:bb?bb.right-bb.left:width,h:bb?bb.top-bb.bottom:height,p})}
+  else if(has(b+'.jpg')||has(b+'.png')){const pp=has(b+'.jpg')?b+'.jpg':b+'.png';const cr=await cropC(pp);const by=new Uint8Array(await ab(cr.blob));const e=(cr.blob.type=='image/png')?await out.embedPng(by):await out.embedJpg(by);items.push({e,w:cr.w,h:cr.h,p,img:1})}
   else miss++}catch(x){console.warn(x);miss++}}
  if(mode=='all'||!mode){try{if(has('tickets/P-06400122.pdf')){const src=await PDFDocument.load(await ab(await window.docBlob('tickets/P-06400122.pdf')));const pg=src.getPage(0),{width,height}=pg.getSize();const[e]=await out.embedPdf(src,[0]);items.push({e,w:width,h:height,p:{name:'All 8 pilgrims',k:'_fy'},fy:1})}}catch(x){}}
  if(!items.length){if(X)return{n:0,miss};return say(tt('No passes in the store yet. Admin: import the pack first.','अभी कोई पास नहीं। एडमिन: पहले पैक इम्पोर्ट करें।'))}
@@ -6679,8 +6685,8 @@ async function get(p){if(URLS[p])return URLS[p];if(BUSY[p])return BUSY[p];const 
 window.gdGet=get;window.gdBlob=async p=>{await get(p);return BLOBS[p]||null};
 /* background: every file once, then only new/changed; old versions removed */
 let preOn=0;async function pre(){if(preOn||!navigator.onLine||!window.caches)return;preOn=1;try{const c=await caches.open(CN),keys=await c.keys(),want=new Set(Object.keys(GD.files).map(ck));for(const k of keys)if(!want.has(k.url))await c.delete(k);
- const todo=[];for(const p in GD.files){if(!await c.match(ck(p)))todo.push(p)}const n=todo.length;let i=0;const bar=prog();
- const w=async()=>{while(todo.length){const p=todo.shift();await get(p);i++;bar(i,n)}};await Promise.all([w(),w(),w()]);bar(n,n,1)}finally{preOn=0}}
+ const todo=[];for(const p in GD.files){if(/^videos\//.test(p))continue;if(!await c.match(ck(p)))todo.push(p)}const pri=p=>/^darshan\//.test(p)?0:/^tickets\//.test(p)?1:/^stays\//.test(p)?2:3;todo.sort((a,b)=>pri(a)-pri(b));const n=todo.length;let i=0;const bar=prog();
+ const w=async()=>{while(todo.length){const p=todo.shift();await get(p);i++;bar(i,n)}};await Promise.all([w(),w(),w(),w()]);try{window.__gdReady=Date.now();dispatchEvent(new Event('gdready'))}catch(e){};bar(n,n,1)}finally{preOn=0}}
 function prog(){let el=document.getElementById('offp');return (i,n,done)=>{if(!n)return;if(!el){el=document.createElement('div');el.id='offp';document.body.appendChild(el)}el.classList.remove('hide');el.textContent=done?'✓ '+tt('All documents saved on this phone','सभी दस्तावेज़ इस फ़ोन में सहेजे गए'):'⬇ '+i+'/'+n+' '+tt('documents saved for offline','दस्तावेज़ ऑफ़लाइन के लिए');if(done)setTimeout(()=>el.classList.add('hide'),2500)}}
 const gdHas=p=>!!GD.files[p];
 {const _dl=drvList;drvList=function(id){const l=_dl(id)||[];const seen=new Set(l.map(f=>f.path).filter(Boolean));const d=(typeof S!='undefined'&&S.some(s=>s[7]==id))?'stays':'tickets';
@@ -6708,7 +6714,7 @@ function docAdminDrive(){const s=$q('#sh .sheet')||$q('#md .sheet');}
 {const _da=window.docAdmin;window.docAdmin=function(){_da&&_da.apply(this,arguments);try{const sh=document.querySelector('#md .sheet, .modal.show .sheet')||document.querySelector('.sheet');if(!sh)return;const n=Object.keys(GD.files).length;
  sh.insertAdjacentHTML('afterbegin',`<div class="gdbox"><b>📁 Google Drive</b><small>${n?n+' '+tt('files found','फ़ाइलें मिलीं')+(GD.t?' · '+tt('checked ','जाँचा ')+new Date(GD.t).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):''):tt('Not connected yet','अभी नहीं जुड़ा')}${GD.err?' · ⚠ '+E(GD.err):''}</small>
  <label>${tt('Google API key (Drive API on)','Google API कुंजी (Drive API चालू)')}<input id="gdk" value="${E(GD.key)}" placeholder="AIza…" autocomplete="off"></label><div class="btns"><button type="button" class="p" onclick="gdKeySave()">💾 ${tt('Save & check Drive','सहेजें और ड्राइव जाँचें')}</button><button type="button" onclick="gdSync().then(()=>docAdmin())">🔄 ${tt('Check now','अभी जाँचें')}</button><a class="btn" href="${E(LK().drive||'https://drive.google.com/drive/folders/'+ROOT)}" target="_blank" rel="noopener">${tt('Open folder','फ़ोल्डर खोलें')}</a></div></div>`)}catch(e){}}}
-setTimeout(()=>sync(false),2500);setInterval(()=>{if(!document.hidden)sync(false)},60e3);document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync(false)});addEventListener('online',()=>sync(true));
+setTimeout(()=>sync(false),300);setInterval(()=>{if(!document.hidden)sync(false)},60e3);document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync(false)});addEventListener('online',()=>sync(true));
 
 /* ================= scenes ================= */
 const NG=ph=>ph=='night'||ph=='dusk';
@@ -7153,7 +7159,7 @@ function catalog(){const C=[];
  try{localStorage.setItem('yatra_dlcat',JSON.stringify(C))}catch(e){}
  return C}
 const allIt=C=>C.flatMap(c=>c.g.flatMap(g=>g.it));
-const DL={sel:null,open:{},use:null};
+const DL=window.__DL={sel:null,open:{},use:null};
 function selLoad(C){if(DL.sel)return;let s=null;try{s=JSON.parse(localStorage.getItem('yatra_dlsel')||'null')}catch(e){}DL.sel=new Set(s||C.filter(c=>c.k=='pass'||c.k=='aa').flatMap(c=>c.g.flatMap(g=>g.it.map(x=>x.id)))) }
 const selSave=()=>{try{localStorage.setItem('yatra_dlsel',JSON.stringify([...DL.sel]))}catch(e){}};
 
@@ -7265,11 +7271,10 @@ function dlPaint(){const o=$q('#dlc');if(!o)return;const C=CAT,n=DL.sel.size,sav
   ${op?`<div class="dlcb"><div class="dlca"><button type="button" onclick='dlSet(${JSON.stringify(ids)},true)'>☑ ${tt('Check all','सब चुनें')}</button><button type="button" onclick='dlSet(${JSON.stringify(ids)},false)'>☐ ${tt('Uncheck all','सब हटाएँ')}</button></div>${c.k=='aa'?`<div class="dluse"><span>💧 ${tt('Watermark on the Aadhaar pages','आधार पेज पर वॉटरमार्क')}</span>${wmChips('dlPaint()')}</div>`:''}
   ${c.g.map(g=>{const gi=g.it.map(x=>x.id),gs=triState(gi);return `<div class="dlg">${c.g.length>1||c.k!='aa'?`<label class="dlgh">${box(gs,`dlSet(${JSON.stringify(gi).replace(/"/g,'&quot;')},this.checked)`)}<span><b>${E(g.l)}</b><small>${E(g.sub||'')}</small></span></label>`:''}
    ${g.it.map(x=>`<div class="dlr"><label>${box(DL.sel.has(x.id)?2:0,`dlSet(['${x.id}'],this.checked)`)}<span><b>${E(x.l)}</b><small>${E(x.sub||'')}</small></span></label><button type="button" onclick="dlItem('${x.id}','view')" aria-label="View">👁</button><button type="button" onclick="dlItem('${x.id}','dl')" aria-label="Download">⬇</button></div>`).join('')}</div>`}).join('')}</div>`:''}</section>`}).join('')}
- ${saved.length?`<section class="dlcat op dlsv"><header><span class="dli">💾</span><b>${tt('Saved on this phone','इस फ़ोन में सहेजे')}</b></header><div class="dlcb">${saved.map(s=>`<div class="dlr"><span><b>${E(s.name)}</b><small>${new Date(s.t).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})} · ${s.n} ${tt('pages','पेज')} · ${(s.sz/1048576).toFixed(1)} MB</small></span><button type="button" onclick="dlSaved('${E(s.name)}','view')">👁</button><button type="button" onclick="dlSaved('${E(s.name)}','share')">🟢</button><button type="button" onclick="dlForget('${E(s.name)}')">🗑</button></div>`).join('')}</div></section>`:''}
- <p class="dlof" id="dlof">${WARM.txt||''}</p><div style="height:90px"></div></div>
+ <div style="height:90px"></div></div>
  <div class="dlbar"><span><b>${n}</b> ${tt('selected','चुने')}</span><button type="button" ${n?'':'disabled'} onclick="dlGo('view')">👁 ${tt('View','देखें')}</button><button type="button" class="p" ${n?'':'disabled'} onclick="dlGo('dl')">⬇ ${tt('Download PDF','PDF डाउनलोड')}</button></div>`;
  o.querySelectorAll('input[data-ind="1"]').forEach(i=>i.indeterminate=true)}
-window.dlTog=k=>{DL.open[k]=!DL.open[k];dlPaint()};
+window.dlTog=k=>{DL.open[k]=!DL.open[k];dlPaint()};window.__dlBuild=build;window.__dlCatalog=catalog;window.__allIt=allIt;
 window.dlSet=(ids,on)=>{ids.forEach(i=>on?DL.sel.add(i):DL.sel.delete(i));selSave();dlPaint()};
 window.dlQuick=m=>{const all=allIt(CAT);DL.sel=new Set(m=='all'?all.map(x=>x.id):m=='pa'?CAT.filter(c=>c.k=='pass'||c.k=='aa').flatMap(c=>c.g.flatMap(g=>g.it.map(x=>x.id))):[]);selSave();dlPaint()};
 window.dlItem=async function(id,mode){const it=allIt(CAT).find(x=>x.id==id);if(!it)return;
@@ -7281,9 +7286,9 @@ async function img2pdf(b,cap){const lib=await pdfLib(),{PDFDocument,StandardFont
  const pg=out.addPage(A4),M=30,s=Math.min((A4[0]-2*M)/im.width,(A4[1]-2*M-24)/im.height),w=im.width*s,h=im.height*s;pg.drawImage(im,{x:(A4[0]-w)/2,y:A4[1]-M-24-h,width:w,height:h});if(cap)pg.drawText(String(cap).replace(/[^\x20-\x7E]/g,'').slice(0,90),{x:M,y:A4[1]-M-8,size:9,font,color:rgb(.35,.35,.35)});return new Blob([await out.save()],{type:'application/pdf'})}
 window.img2pdf=img2pdf;
 window.dlGo=async function(mode){const bar=$q('#dlc .dlbar');const pr=m=>{if(bar)bar.querySelector('span').innerHTML='⏳ '+E(m)};pr(tt('Making the PDF…','PDF बन रहा है…'));
- try{const r=await build(DL.sel,pr);if(!r.bytes){dlPaint();return say(tt('Nothing could be added – files not ready yet','कुछ नहीं जुड़ा – फ़ाइलें अभी तैयार नहीं'))}
+ try{const r=await (window.__readyGet?__readyGet(DL.sel,pr,build):build(DL.sel,pr));if(!r.bytes){dlPaint();return say(tt('Nothing could be added – files not ready yet','कुछ नहीं जुड़ा – फ़ाइलें अभी तैयार नहीं'))}
   const C=CAT,parts=C.filter(c=>c.g.some(g=>g.it.some(x=>DL.sel.has(x.id)))).map(c=>({pass:'passes',aa:'aadhaar',tk:'tickets',st:'stays'})[c.k]),nw=new Date(),z=v=>String(v).padStart(2,'0'),name='Yatra2026-'+parts.join('-')+'-'+z(nw.getDate())+MN[nw.getMonth()]+'-'+z(nw.getHours())+z(nw.getMinutes())+'.pdf';
-  const blob=new Blob([r.bytes],{type:'application/pdf'});await keep(name,blob,r.n);dlPaint();
+  const blob=new Blob([r.bytes],{type:'application/pdf'});dlPaint();
   if(r.miss.length)say(tt('Not ready yet: ','अभी तैयार नहीं: ')+r.miss.slice(0,3).join(', ')+(r.miss.length>3?' …':''));
   if(mode=='view')pdfView(blob,name);else saveBlob(blob,name)}catch(e){console.error(e);dlPaint();say(tt('Could not make the PDF – needs internet once','PDF नहीं बना – एक बार इंटरनेट चाहिए'))}};
 
@@ -7295,7 +7300,7 @@ async function warm(){if(WARM.on||!navigator.onLine)return;const sg=wsig();if(WA
    const fs=await itemFiles(it);for(const f of fs){tot++;const b=await fBlob(f,it.id+'|'+(f.path||f.l));if(b)ok++}
    WARM.txt='📥 '+ok+'/'+tot+' '+tt('files on this phone','फ़ाइलें इस फ़ोन में');const e=$q('#dlof');if(e)e.textContent=WARM.txt;await new Promise(z=>setTimeout(z,60))}
   WARM.txt=!tot?'':(ok==tot?'✅ ':'📥 ')+ok+'/'+tot+' '+tt('files saved on this phone','फ़ाइलें इस फ़ोन में सहेजी');const e=$q('#dlof');if(e)e.textContent=WARM.txt;WARM.done=1}finally{WARM.on=0}}
-setInterval(()=>{if(ST&&ST.sess&&document.visibilityState=='visible'){try{warm()}catch(e){}}},60000);setTimeout(()=>{try{if(ST&&ST.sess)warm()}catch(e){}},30000);
+setInterval(()=>{if(ST&&ST.sess&&document.visibilityState=='visible'){try{warm()}catch(e){}}},60000);setTimeout(()=>{try{if(ST&&ST.sess)warm()}catch(e){}},4000);
 
 /* top bar button + Settings row */
 setInterval(()=>{const h=$q('header.top');if(!h||$q('#dlb'))return;const b=document.createElement('button');b.id='dlb';b.className='ic';b.setAttribute('aria-label','Downloads');b.innerHTML='⬇';b.onclick=()=>dlOpen();const s=$q('#nbell')||$q('#stgb');if(s)s.before(b);else h.appendChild(b)},1200);
@@ -7422,15 +7427,15 @@ try{history.scrollRestoration='manual'}catch(e){}
  [0,200,600,1200,2200,3500,5000].forEach(t=>setTimeout(()=>{if(!touched&&scrollY>0)scrollTo(0,0)},t))}
 
 /* ---------- 5. Back: phone / browser back closes the open sheet or page, then goes to the previous page ---------- */
-const OV=['dlc','dlv','aav','wm','tkm','idv2','mag','lvback'];
-const ovOpen=id=>{const e=document.getElementById(id);if(!e)return false;if(id=='mag')return e.classList.contains('show');if(id=='lvback')return false;return true};
+const OV=['dlc','dlv','aav','wm','tkm','idv2','mag','lvback','v49dw','v47rd','drw'];
+const ovOpen=id=>{const e=document.getElementById(id);if(!e)return false;if(id=='mag')return e.classList.contains('show');if(id=='lvback')return false;if(id=='drw')return e.classList.contains('show');return true};
 const OVS=[];let OVpop=0;
-function ovClose(id){if(id=='mag'){try{magClose()}catch(e){}return}if(id=='wm'){try{rrClose()}catch(e){}return}if(id=='tkm'){try{tkClose()}catch(e){}return}if(id=='idv2'){try{idVClose()}catch(e){const e2=document.getElementById(id);if(e2)e2.remove()}return}const e=document.getElementById(id);if(e)e.remove()}
+function ovClose(id){if(id=='drw'){try{drwX()}catch(e){}return}if(id=='mag'){try{magClose()}catch(e){}return}if(id=='wm'){try{rrClose()}catch(e){}return}if(id=='tkm'){try{tkClose()}catch(e){}return}if(id=='idv2'){try{idVClose()}catch(e){const e2=document.getElementById(id);if(e2)e2.remove()}return}const e=document.getElementById(id);if(e)e.remove()}
 function ovScan(){OV.forEach(id=>{const o=ovOpen(id),i=OVS.indexOf(id);if(o&&i<0){OVS.push(id);try{history.pushState(Object.assign({},(typeof pgState=='function'?pgState():{}),{ov:id}),'')}catch(e){}}
  else if(!o&&i>=0){OVS.splice(i,1);if(OVpop){OVpop--;return}const st=history.state||{};if(st.ov==id){try{HS.ign=(HS.ign||0)+1}catch(e){}history.back()}}})}
 new MutationObserver(()=>{clearTimeout(ovScan.t);ovScan.t=setTimeout(ovScan,30)}).observe(document.body,{childList:true,attributes:true,attributeFilter:['class'],subtree:false});
 setInterval(ovScan,800);
-window.__ovPop=e=>{if(!OVS.length)return false;const id=OVS[OVS.length-1];if(ovOpen(id)){ovClose(id);OVS.pop();return true}return false};
+window.__ovPop=e=>{try{const v=document.getElementById('vw');if(v&&v.classList.contains('show'))return false}catch(x){}if(!OVS.length)return false;const id=OVS[OVS.length-1];if(ovOpen(id)){ovClose(id);OVS.pop();return true}return false};
 /* back button in the top bar on every page except Today */
 function bkBtn(){const h=$q('header.top');if(!h)return;let b=$q('#bkb');if(!b){b=document.createElement('button');b.id='bkb';b.className='ic';b.type='button';b.setAttribute('aria-label','Back');b.textContent='←';
   b.onclick=()=>{const st=history.state||{};if(st&&(st.tab||st.ov||st.modal||st.vwo))history.back();else{try{go('today')}catch(e){}}};h.insertBefore(b,h.firstChild)}
@@ -7566,7 +7571,7 @@ const st=document.createElement('style');st.textContent=`
 (function(){
 const $q=s=>document.querySelector(s);
 const tt=(a,b)=>{try{return rt2(a,b)}catch(e){return a}};
-const BUILD='v48-20261124';
+const BUILD='v51-20261124';
 
 /* ---------- 1. pause what is off screen ---------- */
 const SEL='#mgrow > *, #wx8s, .wx8s, .cvg, #v svg.s7svg, #v .mgi, #v .p4h, #v .pzh, #v .dpg > *, #wm svg';
@@ -7746,6 +7751,315 @@ const st=document.createElement('style');st.textContent=`
 .simokl label{display:flex;gap:7px;align-items:center;padding:8px 12px;border-radius:99px;background:var(--soft);font-weight:600}
 .simokl input{width:20px;height:20px;accent-color:#6d28d9}
 .simokw{margin:0;font-size:.82rem;color:#b45309}
+`;document.head.appendChild(st);
+})();
+
+</script>
+<script id="v49js">
+/* v49: guided Google Drive API key setup (admin) – 6 steps, opens the right Google pages, tests the key from this site, saves it for every phone */
+(function(){
+const $q=s=>document.querySelector(s);
+const tt=(a,b)=>{try{return rt2(a,b)}catch(e){return a}};
+const E=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+const adm=()=>{try{return ST.sess=='a'||(typeof isAdm=='function'&&isAdm())}catch(e){return false}};
+const ROOT=(()=>{try{const m=/folders\/([\w-]{20,})/.exec((LK()||{}).drive||'');if(m)return m[1]}catch(e){}return '1LIZ-maFCtxpuACoplwml-FHN4zhlHduI'})();
+const SITE=location.origin+'/*';
+const W={i:0,key:'',res:null,busy:0};
+try{W.i=+localStorage.getItem('yatra_gdw')||0}catch(e){}
+const gd=()=>window.GDRIVE||{files:{}};
+const nFiles=()=>Object.keys(gd().files||{}).length;
+const ok=()=>!!(gd().key&&nFiles());
+
+const L=(href,label)=>`<a class="gdwl" href="${href}" target="_blank" rel="noopener">${label} ↗</a>`;
+const C=(v,label)=>`<span class="gdwc"><code>${E(v)}</code><button type="button" onclick="gdwCopy(this,'${E(v)}')">⧉ ${tt('Copy','कॉपी')}</button></span>`;
+const STEPS=[
+ {t:tt('Open Google Cloud','Google Cloud खोलें'),ic:'🔑',
+  w:tt('Free. No card or billing is needed for this.','मुफ़्त। इसके लिए कार्ड या बिलिंग नहीं चाहिए।'),
+  b:()=>`<ol><li>${tt('Tap the button below. A laptop is easiest, but a phone works.','नीचे का बटन दबाएँ। लैपटॉप आसान है, पर फ़ोन भी चलेगा।')}</li>
+  <li>${tt('Sign in with','इससे साइन इन करें')} <b>ashishktrip@gmail.com</b> ${tt('– the account that owns the Yatra Drive folder.','– यात्रा ड्राइव फ़ोल्डर इसी खाते का है।')}</li>
+  <li>${tt('First time only: pick country <b>India</b>, tick the terms box, tap <b>Agree and continue</b>.','सिर्फ़ पहली बार: देश <b>India</b> चुनें, शर्तों पर टिक करें, <b>Agree and continue</b> दबाएँ।')}</li></ol>
+  ${L('https://console.cloud.google.com/',tt('Open Google Cloud Console','Google Cloud Console खोलें'))}`},
+ {t:tt('Create a project','प्रोजेक्ट बनाएँ'),ic:'📁',
+  w:tt('A project is just a box that holds the key.','प्रोजेक्ट बस एक डिब्बा है जिसमें कुंजी रहती है।'),
+  b:()=>`<ol><li>${tt('Tap the button below.','नीचे का बटन दबाएँ।')}</li>
+  <li>${tt('Project name:','प्रोजेक्ट का नाम:')} ${C('Yatra 2026')}</li>
+  <li>${tt('Leave Location as it is, tap <b>Create</b>.','Location जैसा है रहने दें, <b>Create</b> दबाएँ।')}</li>
+  <li>${tt('Wait about 20 seconds. At the top of the page the project picker must show <b>Yatra 2026</b> – if not, tap it and choose Yatra 2026.','लगभग 20 सेकंड रुकें। पेज के ऊपर प्रोजेक्ट में <b>Yatra 2026</b> दिखना चाहिए – नहीं तो उस पर दबाकर Yatra 2026 चुनें।')}</li></ol>
+  ${L('https://console.cloud.google.com/projectcreate',tt('Create project','प्रोजेक्ट बनाएँ'))}`},
+ {t:tt('Turn on the Drive API','Drive API चालू करें'),ic:'⚙️',
+  w:tt('This lets the key read Drive files.','इससे कुंजी ड्राइव की फ़ाइलें पढ़ सकेगी।'),
+  b:()=>`<ol><li>${tt('Tap the button below (check the top still shows Yatra 2026).','नीचे का बटन दबाएँ (ऊपर अब भी Yatra 2026 दिखे)।')}</li>
+  <li>${tt('Tap the blue <b>Enable</b> button. If it says <b>Manage</b> instead, it is already on.','नीला <b>Enable</b> बटन दबाएँ। अगर <b>Manage</b> लिखा है तो यह पहले से चालू है।')}</li></ol>
+  ${L('https://console.cloud.google.com/apis/library/drive.googleapis.com',tt('Open Google Drive API','Google Drive API खोलें'))}`},
+ {t:tt('Create the API key','API कुंजी बनाएँ'),ic:'🗝️',
+  w:tt('This is the key the app needs.','यही कुंजी ऐप को चाहिए।'),
+  b:()=>`<ol><li>${tt('Tap the button below.','नीचे का बटन दबाएँ।')}</li>
+  <li>${tt('At the top tap <b>+ Create credentials</b> → <b>API key</b>.','ऊपर <b>+ Create credentials</b> → <b>API key</b> दबाएँ।')}</li>
+  <li>${tt('If Google first asks for a name or restrictions, name it <b>Yatra</b> and you may set the step 5 settings right there.','अगर Google पहले नाम या प्रतिबंध पूछे, तो नाम <b>Yatra</b> रखें; चरण 5 की सेटिंग वहीं कर सकते हैं।')}</li>
+  <li>${tt('A box shows the key (it starts with <b>AIza</b>). Tap the copy icon next to it.','एक बॉक्स में कुंजी दिखेगी (<b>AIza</b> से शुरू)। उसके पास कॉपी आइकन दबाएँ।')}</li>
+  <li>${tt('Paste it in the box here so it is not lost:','खोने न पाए, इसलिए यहाँ बॉक्स में चिपकाएँ:')}</li></ol>
+  <input id="gdwk" class="gdwin" placeholder="AIza…" autocomplete="off" autocapitalize="off" spellcheck="false" value="${E(W.key)}" oninput="gdwKey(this.value)">
+  ${L('https://console.cloud.google.com/apis/credentials',tt('Open Credentials','Credentials खोलें'))}`},
+ {t:tt('Lock the key to this app','कुंजी को इस ऐप तक सीमित करें'),ic:'🔒',
+  w:tt('Recommended: then nobody can use the key on another website.','सलाह: फिर कोई और वेबसाइट इस कुंजी का उपयोग नहीं कर सकेगी।'),
+  b:()=>`<ol><li>${tt('On the Credentials page tap the key name (API key 1) to open it.','Credentials पेज पर कुंजी के नाम (API key 1) पर दबाएँ।')}</li>
+  <li>${tt('<b>Application restrictions</b> → choose <b>Websites</b> → <b>Add</b> and paste:','<b>Application restrictions</b> → <b>Websites</b> चुनें → <b>Add</b> दबाकर चिपकाएँ:')} ${C(SITE)}</li>
+  <li>${tt('<b>API restrictions</b> → <b>Restrict key</b> → tick <b>Google Drive API</b> → OK.','<b>API restrictions</b> → <b>Restrict key</b> → <b>Google Drive API</b> पर टिक → OK।')}</li>
+  <li>${tt('Tap <b>Save</b>. Google takes up to 5 minutes to apply it.','<b>Save</b> दबाएँ। Google को लागू करने में 5 मिनट तक लगते हैं।')}</li></ol>
+  <p class="gdwn">${tt('Open the app from this same address on every phone:','हर फ़ोन पर ऐप इसी पते से खोलें:')} <b>${E(location.origin)}</b></p>
+  ${L('https://console.cloud.google.com/apis/credentials',tt('Open Credentials','Credentials खोलें'))}`},
+ {t:tt('Test and save','जाँचें और सहेजें'),ic:'✅',
+  w:tt('The app checks the key against the Yatra folder, then saves it for every phone.','ऐप कुंजी को यात्रा फ़ोल्डर पर जाँचता है, फिर सब फ़ोन के लिए सहेजता है।'),
+  b:()=>`<input id="gdwk" class="gdwin" placeholder="AIza…" autocomplete="off" autocapitalize="off" spellcheck="false" value="${E(W.key)}" oninput="gdwKey(this.value)">
+  <div class="gdwbt"><button type="button" class="gdwp" onclick="gdwTest()" ${W.busy?'disabled':''}>${W.busy?'⏳ '+tt('Checking…','जाँच रहे हैं…'):'🔍 '+tt('Test key','कुंजी जाँचें')}</button>${W.res&&W.res.ok?`<button type="button" class="gdwp g" onclick="gdwSave()">💾 ${tt('Save for everyone','सबके लिए सहेजें')}</button>`:''}</div>
+  <div id="gdwr">${W.res?res(W.res):''}</div>`}
+];
+function res(r){if(r.ok)return `<div class="gdwok"><b>✅ ${tt('The key works','कुंजी काम कर रही है')}</b><small>${tt('Folders found:','फ़ोल्डर मिले:')} ${r.names.map(E).join(', ')}</small>${r.saved?`<small>💾 ${tt('Saved for every phone.','हर फ़ोन के लिए सहेजी गई।')} ${r.n?r.n+' '+tt('files found in Drive.','फ़ाइलें ड्राइव में मिलीं।'):tt('Reading the files…','फ़ाइलें पढ़ी जा रही हैं…')}</small><button type="button" class="gdwp" onclick="gdwClose();dlOpen()">⬇ ${tt('Open Downloads','डाउनलोड खोलें')}</button>`:''}</div>`;
+ return `<div class="gdwbad"><b>⚠ ${E(r.h)}</b><small>${E(r.d)}</small>${r.go!=null?`<button type="button" onclick="gdwGo(${r.go})">↩ ${tt('Go to step','चरण पर जाएँ')} ${r.go+1}</button>`:''}${r.raw?`<details><summary>${tt('Google’s message','Google का संदेश')}</summary><code>${E(r.raw)}</code></details>`:''}</div>`}
+function why(j,st){const er=(j&&j.error)||{},m=String(er.message||''),rs=JSON.stringify(er.details||er.errors||'')+' '+(er.status||'');
+ if(/API_KEY_INVALID|API key not valid/i.test(m+rs))return{h:tt('Google says the key is not valid','Google के अनुसार कुंजी सही नहीं'),d:tt('Copy it again from Credentials – the whole key, starting with AIza, no spaces.','Credentials से फिर कॉपी करें – पूरी कुंजी, AIza से शुरू, बिना स्पेस।'),go:3};
+ if(/SERVICE_DISABLED|accessNotConfigured|has not been used|is disabled/i.test(m+rs))return{h:tt('The Drive API is not on for this project','इस प्रोजेक्ट में Drive API चालू नहीं'),d:tt('Do step 3 (Enable). If you just did it, wait 2–3 minutes and test again.','चरण 3 (Enable) करें। अभी किया है तो 2–3 मिनट रुककर फिर जाँचें।'),go:2};
+ if(/REFERRER|referer/i.test(m+rs))return{h:tt('The key is locked to a different website','कुंजी किसी और वेबसाइट तक सीमित है'),d:tt('In step 5 the website must be exactly ','चरण 5 में वेबसाइट ठीक यह होनी चाहिए ')+SITE+tt(' – or wait 5 minutes after saving it.',' – या सहेजने के 5 मिनट बाद जाँचें।'),go:4};
+ if(/API_KEY_SERVICE_BLOCKED|blocked/i.test(m+rs))return{h:tt('The key is not allowed to use the Drive API','कुंजी को Drive API की अनुमति नहीं'),d:tt('In step 5, under API restrictions, tick Google Drive API and Save.','चरण 5 में API restrictions में Google Drive API पर टिक करके Save करें।'),go:4};
+ if(st==404||/notFound|File not found/i.test(m+rs))return{h:tt('The Yatra folder cannot be seen','यात्रा फ़ोल्डर नहीं दिख रहा'),d:tt('In Drive, the Yatra folder must be shared as “Anyone with the link – Viewer”.','ड्राइव में यात्रा फ़ोल्डर “Anyone with the link – Viewer” से शेयर होना चाहिए।'),go:null,raw:m};
+ return{h:tt('Google did not accept the key','Google ने कुंजी स्वीकार नहीं की'),d:tt('Check each step again, or wait a few minutes and test again.','हर चरण फिर देखें, या कुछ मिनट रुककर फिर जाँचें।'),go:null,raw:m||('HTTP '+st)}}
+window.gdwKey=v=>{W.key=String(v||'').replace(/\s+/g,'');W.res=null;document.querySelectorAll('#gdwk').forEach(i=>{if(i.value!==v)i.value=W.key})};
+window.gdwTest=async function(){const k=W.key;if(!/^AIza[\w-]{30,}$/.test(k)){W.res={h:tt('That does not look like an API key','यह API कुंजी जैसी नहीं लगती'),d:tt('It starts with AIza and is about 39 letters long.','यह AIza से शुरू होती है और लगभग 39 अक्षर की होती है।'),go:3};return paint()}
+ if(!navigator.onLine){W.res={h:tt('No internet','इंटरनेट नहीं'),d:tt('Connect and test again.','इंटरनेट जोड़कर फिर जाँचें।'),go:null};return paint()}
+ W.busy=1;paint();try{const u='https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(`'${ROOT}' in parents and trashed=false`)+'&fields='+encodeURIComponent('files(name,mimeType)')+'&pageSize=100&key='+encodeURIComponent(k);
+  const r=await fetch(u),j=await r.json().catch(()=>({}));
+  if(r.ok&&!j.error){const fs=j.files||[];if(!fs.length)W.res={h:tt('The key works, but the folder looks empty','कुंजी चलती है, पर फ़ोल्डर खाली दिखता है'),d:tt('Share the Yatra folder as “Anyone with the link – Viewer” and test again.','यात्रा फ़ोल्डर “Anyone with the link – Viewer” से शेयर करें और फिर जाँचें।'),go:null};
+   else W.res={ok:1,names:fs.filter(f=>/folder/.test(f.mimeType)).map(f=>f.name).sort().concat(fs.some(f=>!/folder/.test(f.mimeType))?[fs.filter(f=>!/folder/.test(f.mimeType)).length+' '+tt('files','फ़ाइलें')]:[])}}
+  else W.res=why(j,r.status)}catch(e){W.res={h:tt('Could not reach Google','Google तक नहीं पहुँचे'),d:tt('Check the internet and test again.','इंटरनेट देखें और फिर जाँचें।'),go:null,raw:String(e.message||e)}}
+ W.busy=0;paint()};
+window.gdwSave=async function(){if(!W.res||!W.res.ok)return;document.querySelectorAll('#gdk').forEach(i=>i.value=W.key);let tmp=null;if(!$q('#gdk')){tmp=document.createElement('input');tmp.id='gdk';tmp.type='hidden';tmp.value=W.key;document.body.appendChild(tmp)}
+ try{await gdKeySave()}catch(e){}if(tmp)tmp.remove();W.res.saved=1;W.res.n=nFiles();paint();
+ let t=0;const iv=setInterval(()=>{t++;if(!$q('#v49dw')||t>30){clearInterval(iv);return}const n=nFiles();if(n!==W.res.n){W.res.n=n;paint()}if(n)clearInterval(iv)},1500);
+ try{localStorage.setItem('yatra_gdw','0')}catch(e){}};
+window.gdwCopy=async function(b,v){try{await navigator.clipboard.writeText(v)}catch(e){const t=document.createElement('textarea');t.value=v;document.body.appendChild(t);t.select();try{document.execCommand('copy')}catch(x){}t.remove()}const o=b.textContent;b.textContent='✓ '+tt('Copied','कॉपी हुआ');setTimeout(()=>{b.textContent=o},1400)};
+window.gdwGo=i=>{W.i=Math.max(0,Math.min(STEPS.length-1,i));try{localStorage.setItem('yatra_gdw',String(W.i))}catch(e){}paint();const b=$q('#v49dw .gdwm');if(b)b.scrollTop=0};
+window.gdwClose=()=>{const o=$q('#v49dw');if(o)o.remove()};
+function paint(){const o=$q('#v49dw');if(!o)return;const s=STEPS[W.i],last=W.i==STEPS.length-1;
+ const k=gd().key;const state=ok()?`<span class="gdws on">● ${tt('Connected','जुड़ा है')} · ${nFiles()} ${tt('files','फ़ाइलें')}</span>`:k?`<span class="gdws warn">● ${tt('Key saved, files not loading','कुंजी सहेजी, फ़ाइलें नहीं आ रहीं')}</span>`:`<span class="gdws off">● ${tt('Not connected','नहीं जुड़ा')}</span>`;
+ o.innerHTML=`<div class="gdwh"><button type="button" class="ic" onclick="gdwClose()" aria-label="Back">←</button><div><b>${tt('Google Drive setup','Google ड्राइव सेटअप')}</b>${state}</div></div>
+ <div class="gdwd">${STEPS.map((x,i)=>`<button type="button" class="${i==W.i?'on':i<W.i?'done':''}" onclick="gdwGo(${i})" aria-label="${tt('Step','चरण')} ${i+1}"><span>${i<W.i?'✓':i+1}</span><small>${E(x.t)}</small></button>`).join('')}</div>
+ <div class="gdwm"><div class="gdwcard"><div class="gdwt"><span>${s.ic}</span><div><small>${tt('Step','चरण')} ${W.i+1} / ${STEPS.length}</small><h3>${E(s.t)}</h3></div></div><p class="gdww">${s.w}</p>${s.b()}</div></div>
+ <div class="gdwf"><button type="button" onclick="gdwGo(${W.i-1})" ${W.i?'':'disabled'}>← ${tt('Back','पीछे')}</button>${last?`<button type="button" onclick="gdwClose()">${tt('Close','बंद करें')}</button>`:`<button type="button" class="gdwp" onclick="gdwGo(${W.i+1})">${tt('Done – next','हो गया – आगे')} →</button>`}</div>`}
+window.gdWizard=function(){if(!adm())return toast(tt('Only an admin can set up Drive','ड्राइव सेटअप केवल एडमिन कर सकते हैं'));W.key=W.key||gd().key||'';if(ok())W.i=STEPS.length-1;
+ let o=$q('#v49dw');if(!o){o=document.createElement('div');o.id='v49dw';document.body.appendChild(o)}paint()};
+
+/* entry points: Downloads warning, Settings → Documents box, Settings list */
+setInterval(()=>{if(!adm())return;const b=$q('#dlc .v47gd');if(b&&!b.querySelector('.gdwgo')){b.insertAdjacentHTML('beforeend',`<button type="button" class="gdwgo" onclick="gdWizard()">🧭 ${tt('Step-by-step setup (5 minutes)','चरण-दर-चरण सेटअप (5 मिनट)')}</button>`)}
+ const g=$q('.gdbox');if(g&&!g.querySelector('.gdwgo'))g.insertAdjacentHTML('beforeend',`<button type="button" class="gdwgo" onclick="$('#md').classList.remove('show');gdWizard()">🧭 ${tt('Step-by-step setup','चरण-दर-चरण सेटअप')}</button>`);
+ const sg=$q('#md .stg');if(sg&&!sg.querySelector('.v49st'))sg.insertAdjacentHTML('beforeend',`<button class="v49st" onclick="$('#md').classList.remove('show');gdWizard()"><span class="stgi">🧭</span><b>${tt('Google Drive setup','Google ड्राइव सेटअप')}</b><em>${ok()?tt('connected','जुड़ा'):tt('not connected','नहीं जुड़ा')}</em><i>›</i></button>`)},700);
+
+const st=document.createElement('style');st.textContent=`
+#v49dw{position:fixed;inset:0;z-index:9500;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top);animation:dlin .2s ease-out}
+.gdwh{display:flex;gap:10px;align-items:center;padding:10px 14px;max-width:720px;width:100%;margin:0 auto;box-sizing:border-box}
+.gdwh .ic{font-size:20px;border:0;background:var(--card);border-radius:12px;width:42px;height:42px;box-shadow:var(--shadow);flex:none}
+.gdwh>div{display:flex;flex-direction:column}.gdwh b{font-size:1.2rem}
+.gdws{font-size:.8rem;font-weight:700}.gdws.on{color:#1f9d55}.gdws.off{color:#c0262d}.gdws.warn{color:#b45309}
+.gdwd{display:flex;gap:4px;padding:2px 14px 10px;max-width:720px;width:100%;margin:0 auto;box-sizing:border-box}
+.gdwd button{flex:1;border:0;background:transparent;padding:0;display:flex;flex-direction:column;align-items:center;gap:3px;color:inherit;min-width:0}
+.gdwd span{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:.85rem;background:var(--soft);position:relative}
+.gdwd small{font-size:.62rem;opacity:.65;text-align:center;line-height:1.15;max-width:100%;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.gdwd .on span{background:#1a73e8;color:#fff;box-shadow:0 0 0 4px #1a73e833}.gdwd .on small{opacity:1;font-weight:700}
+.gdwd .done span{background:#1f9d55;color:#fff}
+.gdwm{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding:0 14px 14px}
+.gdwcard{max-width:692px;margin:0 auto;background:var(--card);border-radius:20px;padding:16px;box-shadow:var(--shadow)}
+.gdwt{display:flex;gap:12px;align-items:center}.gdwt>span{font-size:28px;width:52px;height:52px;border-radius:16px;background:#e8f0fe;display:grid;place-items:center;flex:none}
+.gdwt small{opacity:.6;font-weight:700;font-size:.75rem}.gdwt h3{margin:0;font-size:1.2rem;line-height:1.2}
+.gdww{margin:10px 0 4px;opacity:.75;font-size:.9rem}
+.gdwcard ol{margin:8px 0 12px;padding-left:22px;display:flex;flex-direction:column;gap:8px;font-size:.96rem;line-height:1.45}
+.gdwl{display:flex;justify-content:center;align-items:center;gap:6px;text-decoration:none;background:#1a73e8;color:#fff!important;font-weight:800;border-radius:14px;padding:14px;margin-top:6px}
+.gdwc{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px}.gdwc code{background:var(--soft);border-radius:8px;padding:5px 8px;font-size:.88rem;overflow-wrap:anywhere}
+.gdwc button{border:0;border-radius:9px;padding:6px 10px;font-weight:700;background:#e8f0fe;color:#1a56b8}
+.gdwin{width:100%;box-sizing:border-box;border:1.5px solid #1a73e855;border-radius:12px;padding:12px;font-size:16px;font-family:ui-monospace,Menlo,monospace;margin:4px 0 8px;background:var(--bg);color:var(--ink)}
+.gdwn{font-size:.85rem;background:var(--soft);border-radius:12px;padding:9px 11px;margin:0 0 6px;overflow-wrap:anywhere}
+.gdwbt{display:flex;gap:8px;flex-wrap:wrap}.gdwbt button{flex:1 1 140px}
+.gdwp{border:0;border-radius:14px;padding:13px 16px;font-weight:800;font-size:1rem;background:#1a73e8;color:#fff}.gdwp.g{background:#1f9d55}.gdwp:disabled{opacity:.6}
+#gdwr{margin-top:10px}
+.gdwok,.gdwbad{border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:6px}
+.gdwok{background:#e6f6ec;color:#14532d}.gdwbad{background:#fff4e5;color:#5a3300}
+.gdwok small,.gdwbad small{opacity:.9}.gdwbad button{align-self:flex-start;border:0;border-radius:10px;padding:8px 12px;font-weight:700;background:#fff;color:inherit}
+.gdwbad code{font-size:.78rem;overflow-wrap:anywhere}
+.gdwf{display:flex;gap:10px;padding:10px 14px calc(10px + env(safe-area-inset-bottom));max-width:720px;width:100%;margin:0 auto;box-sizing:border-box;border-top:1px solid #8882;background:var(--bg)}
+.gdwf button{flex:1;border:0;border-radius:14px;padding:14px;font-weight:800;font-size:1rem;background:var(--soft);color:inherit}.gdwf button:disabled{opacity:.4}.gdwf .gdwp{flex:1.6;background:#1a73e8;color:#fff}
+.gdwgo{border:0;border-radius:12px;padding:12px;font-weight:800;background:#1a73e8;color:#fff;margin-top:4px}
+`;document.head.appendChild(st);
+})();
+
+</script>
+<script id="v50js">
+/* v50: documents ready on the phone – files fetched at start, PDFs prepared in the background, view/download start at once */
+(function(){
+const tt=(a,b)=>{try{return rt2(a,b)}catch(e){return a}};
+const DLC='yatra-dl',U=k=>'https://dl.local/'+encodeURIComponent(k);
+const ver=p=>((window.GDRIVE&&GDRIVE.files&&GDRIVE.files[p])||{}).mt||((window.DOCS&&DOCS.idx&&DOCS.idx[p])||{}).t||'';
+const h32=s=>{let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;return (h>>>0).toString(36)};
+
+/* 1. libraries ready before anyone asks */
+function libs(){try{window.pdfJs2&&pdfJs2().then(lib=>{try{const d=lib.getDocument({data:new Uint8Array(atob('JVBERi0xLjEKMSAwIG9iajw8L1R5cGUvQ2F0YWxvZy9QYWdlcyAyIDAgUj4+ZW5kb2JqCjIgMCBvYmo8PC9UeXBlL1BhZ2VzL0tpZHNbMyAwIFJdL0NvdW50IDE+PmVuZG9iagozIDAgb2JqPDwvVHlwZS9QYWdlL1BhcmVudCAyIDAgUi9NZWRpYUJveFswIDAgMyAzXT4+ZW5kb2JqCnRyYWlsZXI8PC9Sb290IDEgMCBSPj4=').split('').map(c=>c.charCodeAt(0)))});d.promise.then(x=>x.destroy()).catch(()=>{})}catch(e){}}).catch(()=>{})}catch(e){}
+ if(!window.PDFLib){const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js';s.async=true;document.head.appendChild(s)}}
+setTimeout(libs,1500);
+
+/* 2. Aadhaar pages are drawn once per person + watermark, then reused */
+const AAM=new Map();
+const aaSig=u=>{let r={};try{r=pR(u)||{}}catch(e){}const im=(window.IDC&&IDC.ims&&IDC.ims[u])||ST['img_aa_'+u]||{};const L=x=>x?String(x).length+String(x).slice(-24):'';
+ return [u,P[u],r.age,r.aa,L(im.f),L(im.b),window.IDC?JSON.stringify([IDC.mode,IDC.use,IDC.txt]):''].join('|')};
+if(typeof idPages=='function'){const _ip=idPages;idPages=async function(sel){const out=[],need=[];for(const u of sel){const k=aaSig(u),m=AAM.get(k);if(m)out.push(m);else{out.push(null);need.push(u)}}
+  if(need.length){const got=await _ip.call(this,need);for(const g of got){AAM.set(aaSig(g.u),g);const i=sel.indexOf(g.u);if(i>=0)out[i]=g}}
+  return out.filter(Boolean)};window.idPages=idPages}
+
+/* 3. the ticked set as one PDF: made in the background, kept on the phone, rebuilt only when a file changes */
+function sigOf(sel){const ids=[...sel].sort(),parts=[];
+ for(const id of ids){const [k,v]=[id.slice(0,2),id.slice(2)];
+  if(k=='p:'){const p=(window.DP||[]).find(x=>x.id==v);if(p){const b='darshan/'+p.f;parts.push(id+'@'+['.pdf','.jpg','.png'].map(e=>ver(b+e)).join(','))}else parts.push(id)}
+  else if(k=='a:')parts.push(id+'@'+aaSig(v));
+  else{let l=[];try{l=drvList(v)||[]}catch(e){}parts.push(id+'@'+l.map(f=>(f.path||f.id||f.u||'')+':'+(f.path?ver(f.path):'')).join(','))}}
+ return h32(parts.join(';'))+'-'+ids.length}
+const RM=new Map();let META={};try{META=JSON.parse(localStorage.getItem('yatra_ready')||'{}')||{}}catch(e){}
+const metaSave=()=>{try{const ks=Object.keys(META).sort((a,b)=>META[b].t-META[a].t);const keep={};ks.slice(0,6).forEach(k=>keep[k]=META[k]);META=keep;localStorage.setItem('yatra_ready',JSON.stringify(META))}catch(e){}};
+async function rGet(sig){if(RM.has(sig))return RM.get(sig);const m=META[sig];if(!m)return null;try{const r=await(await caches.open(DLC)).match(U('ready/'+sig));if(!r)return null;const by=new Uint8Array(await r.arrayBuffer());const o={bytes:by,n:m.n,miss:m.miss||[]};RM.set(sig,o);return o}catch(e){return null}}
+async function rPut(sig,o){RM.clear();RM.set(sig,o);if(o.miss&&o.miss.length)return;try{const c=await caches.open(DLC);await c.put(U('ready/'+sig),new Response(new Blob([o.bytes],{type:'application/pdf'})));META[sig]={n:o.n,miss:o.miss,t:Date.now()};metaSave();
+  for(const r of await c.keys()){const m=/ready%2F([^?]+)$/.exec(r.url);if(m&&!META[decodeURIComponent(m[1])])await c.delete(r)}}catch(e){}}
+const BUSY={};
+window.__readyGet=async function(sel,prog,build){const sig=sigOf(sel);const r=await rGet(sig);if(r&&r.bytes&&r.bytes.length)return r;
+ if(BUSY[sig]){try{prog&&prog(tt('Almost ready…','लगभग तैयार…'))}catch(e){}return await BUSY[sig]}
+ const p=BUSY[sig]=(async()=>{const o=await build(new Set(sel),prog);if(o&&o.bytes)await rPut(sig,o);return o})();try{return await p}finally{delete BUSY[sig]}};
+
+/* what to prepare: the person's current ticks (or passes + Aadhaar) */
+function curSel(){try{if(window.__DL&&__DL.sel&&__DL.sel.size)return new Set(__DL.sel)}catch(e){}
+ try{const s=JSON.parse(localStorage.getItem('yatra_dlsel')||'null');if(s&&s.length)return new Set(s)}catch(e){}
+ try{const C=__dlCatalog();return new Set(C.filter(c=>c.k=='pass'||c.k=='aa').flatMap(c=>c.g.flatMap(g=>g.it.map(x=>x.id))))}catch(e){return new Set()}}
+let prepT=0,prepOn=0,lastSig='';
+async function prep(){if(prepOn||!window.__dlBuild||!ST||!ST.sess||document.hidden)return;if(window.__SIM&&__SIM.off)return;
+ const sel=curSel();if(!sel.size)return;const sig=sigOf(sel);if(sig==lastSig&&RM.has(sig))return;
+ if(await rGet(sig)){lastSig=sig;return}
+ /* wait while Drive files are still arriving, so the PDF is complete */
+ if(window.GDRIVE&&GDRIVE.key&&!window.__gdReady&&!prep.waited){prep.waited=1;return}
+ prepOn=1;try{await __readyGet(sel,null,__dlBuild);lastSig=sig}catch(e){console.warn('prep',e)}finally{prepOn=0}}
+const soon=(ms)=>{clearTimeout(prepT);prepT=setTimeout(()=>{(window.requestIdleCallback||setTimeout)(()=>prep(),{timeout:3000})},ms||2500)};
+addEventListener('gdready',()=>soon(1500));
+setTimeout(()=>soon(1),12000);setInterval(()=>soon(1),90000);
+/* ticking in Downloads: prepare that set while the person looks */
+document.addEventListener('change',e=>{if(e.target&&e.target.closest&&e.target.closest('#dlc'))soon(1800)},true);
+document.addEventListener('click',e=>{if(e.target&&e.target.closest&&e.target.closest('#dlc .dlcq, #dlc .dlca, #dlc .wmg'))soon(1800)},true);
+
+/* 4. viewers open above the Downloads page, each with a back button; sheets get "← Back" at the top left */
+function shBack(){const m=document.getElementById('md');if(!m||!m.classList.contains('show'))return;const b=m.querySelector('.shbar');if(!b||b.querySelector('.shbk'))return;
+ b.insertAdjacentHTML('afterbegin',`<button type="button" class="shbk" onclick="$('#md').classList.remove('show')" aria-label="Back">← ${tt('Back','पीछे')}</button>`)}
+{const m=document.getElementById('md');if(m){new MutationObserver(shBack).observe(m,{attributes:true,attributeFilter:['class'],childList:true,subtree:true})}}
+const st=document.createElement('style');st.textContent=`
+.vw{z-index:9600!important}.vw .vwt button:first-child{font-size:20px;min-width:44px;min-height:40px}
+#md.modal,.modal{z-index:9650!important}
+#toast,.toast{z-index:10100!important}
+.shbar .shbk{position:absolute;left:10px;right:auto;top:5px;width:auto;height:36px;border-radius:99px;padding:0 14px;font-size:.92rem;font-weight:700;border:0;background:var(--soft);color:inherit}
+`;document.head.appendChild(st);
+})();
+
+</script>
+<script id="v51js">
+/* v51: bell keeps every alert until closed / Clear all; free voices through the server (Sarvam 95% → Google free tier 95% → Bhashini → phone) */
+(function(){
+const $q=s=>document.querySelector(s);
+const tt=(a,b)=>{try{return rt2(a,b)}catch(e){return a}};
+const E=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+const adm=()=>{try{return typeof isAdm=='function'?!!isAdm():ST.sess=='a'}catch(e){return false}};
+const LSg=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},LSs=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const simOn=!!(window.__SIM&&__SIM.off);
+
+/* ================= 1. voices through the server ================= */
+const FN=()=>SB.url+'/functions/v1/tts';
+async function ttsCall(body){const r=await fetch(FN(),{method:'POST',headers:{'Content-Type':'application/json','x-yatra-key':NK},body:JSON.stringify(body)});return await r.json().catch(()=>({error:'HTTP '+r.status}))}
+let TS=LSg('yatra_tts_st',null);
+async function ttsStatus(){try{const s=await ttsCall({action:'status'});if(s&&!s.error){TS=s;LSs('yatra_tts_st',s)}}catch(e){}return TS}
+window.ttsStatus=ttsStatus;
+window.__ttsOk=()=>!!(TS&&(TS.sarvam||TS.google||TS.bhashini));
+window.ttsSay=async function(l,text,p){try{return await ttsCall({l,text,p})}catch(e){return{error:String(e.message||e)}}};
+if(adm())setTimeout(ttsStatus,4000);
+/* old keys typed on this phone move to the server once, then leave the phone */
+async function migrate(){if(!adm()||LSg('yatra_tts_mig',0))return;const g=k=>{try{return localStorage.getItem(k)||''}catch(e){return ''}};
+ const b={action:'keys'},sv=g('yatra_sv_key'),bu=g('yatra_bh_uid'),bk=g('yatra_bh_key');let gk='';try{gk=(window.L&&L.g)?L.g('ph_gkey',''):''}catch(e){}
+ if(sv)b.sarvam=sv;if(gk)b.google=gk;if(bu)b.bh_uid=bu;if(bk)b.bh_key=bk;if(Object.keys(b).length>1){const r=await ttsCall(b);if(r&&!r.error){TS=r;LSs('yatra_tts_st',r)}}
+ ['yatra_sv_key','yatra_bh_uid','yatra_bh_key','yatra_ph_gkey','ph_gkey'].forEach(k=>{try{localStorage.removeItem(k)}catch(e){}});LSs('yatra_tts_mig',1)}
+setTimeout(()=>{try{migrate()}catch(e){}},5000);
+
+const val=s=>(($q(s)||{}).value||'').trim();
+const useTxt=()=>{if(!TS)return '';const u=TS.usage||{},sv=u.sarvam||{},g=(u.google||{}).fam||{},gl=Object.entries(g).map(([k,v])=>k+' '+Number(v).toLocaleString('en-IN')).join(', ');
+ return `${tt('Keys on server','सर्वर पर कुंजियाँ')}: Sarvam ${TS.sarvam?'✓':'✗'} · Google ${TS.google?'✓':'✗'} · Bhashini ${TS.bhashini?'✓':'✗'}<br>Sarvam ${Number(sv.chars||0).toLocaleString('en-IN')} / ${Number(sv.limit||0).toLocaleString('en-IN')}${sv.off?' · '+tt('paused','रुका'):''} · Google ${tt('this month','इस महीने')}: ${gl||'0'}`};
+function admBoxFix(){const b=$q('#v .p4adm');if(!b||b.dataset.v51)return;b.dataset.v51=1;
+ const p=b.querySelector('p');if(p)p.textContent=tt('Generated once, saved for everyone, works offline. Order: Sarvam (until 95% of its free credits) → Google (until 95% of its free monthly limit) → Bhashini (free) → phone voice. Keys are kept on the server, not on this phone.','एक बार बनता है, सबके लिए सहेजा जाता है, ऑफ़लाइन चलता है। क्रम: Sarvam (मुफ़्त क्रेडिट के 95% तक) → Google (मासिक मुफ़्त सीमा के 95% तक) → Bhashini (मुफ़्त) → फ़ोन की आवाज़। कुंजियाँ सर्वर पर रहती हैं, फ़ोन में नहीं।');
+ const set=(id,on)=>{const i=b.querySelector(id);if(i){i.value='';i.placeholder=on?tt('saved on server ✓ – type to replace','सर्वर पर सहेजी ✓ – बदलने के लिए लिखें'):tt('not set','नहीं डाली');i.type='password'}};
+ const paint=()=>{set('#phsk',TS&&TS.sarvam);set('#phk',TS&&TS.google);set('#phbu',TS&&TS.bhashini);set('#phbk',TS&&TS.bhashini);const l=b.querySelector('#phlim');if(l&&TS&&TS.usage)l.value=TS.usage.sarvam.limit;const u=b.querySelector('#phuse');if(u)u.innerHTML=useTxt()};
+ paint();ttsStatus().then(paint);
+ if(!b.querySelector('.v51sv'))(b.querySelector('#phuse')||b).insertAdjacentHTML('afterend',`<button type="button" class="v51sv" onclick="ttsKeys()">💾 ${tt('Save keys for everyone','कुंजियाँ सबके लिए सहेजें')}</button>`)}
+window.ttsKeys=async function(){const b={action:'keys'},sk=val('#phsk'),gk=val('#phk'),bu=val('#phbu'),bk=val('#phbk'),lim=+val('#phlim');
+ if(sk)b.sarvam=sk;if(gk)b.google=gk;if(bu)b.bh_uid=bu;if(bk)b.bh_key=bk;if(lim>1000)b.sarvam_limit=lim;
+ const r=await ttsCall(b);if(r&&!r.error){TS=r;LSs('yatra_tts_st',r);toast(tt('Keys saved on the server for everyone','कुंजियाँ सर्वर पर सबके लिए सहेजी गईं'));const x=$q('#v .p4adm');if(x){x.dataset.v51='';admBoxFix()}}else toast(tt('Could not save: ','सहेज नहीं सके: ')+((r&&r.error)||''));return r};
+new MutationObserver(()=>{if($q('#v .p4adm:not([data-v51])'))admBoxFix()}).observe(document.body,{childList:true,subtree:true});
+
+window.phGen2=async function(){if(!adm())return;const l=PH.l,d=PHD[l],g=$q('#phg');if(!d)return;
+ if(val('#phsk')||val('#phk')||val('#phbu')||val('#phbk')||+val('#phlim')>1000)await ttsKeys();await ttsStatus();
+ if(!window.__ttsOk()){if(g)g.innerHTML=tt('No voice key saved yet. Paste at least one key above, then Generate.','अभी कोई आवाज़ कुंजी नहीं। ऊपर कम से कम एक कुंजी डालें, फिर बनाएँ।');return}
+ const pack={},err=[],via=new Set();
+ for(let i=0;i<d.length;i++){const r=await window.ttsSay(l,d[i][3]);if(r&&r.audio){pack[i]=r.mime=='audio/wav'?'W:'+r.audio:r.audio;via.add(r.via)}else err.push((r&&r.error)||'?');
+  if(g)g.textContent=tt('Generating ','बना रहे हैं ')+(i+1)+'/'+d.length+(via.size?' · '+[...via].join(' + '):'')}
+ const n=Object.keys(pack).length;await ttsStatus();
+ if(n<d.length*.9){if(g)g.innerHTML=tt('Only ','केवल ')+n+'/'+d.length+tt(' made. ',' बने। ')+E([...new Set(err)].slice(0,2).join(' · '))+'<br>'+tt('The phone voice stays in use.','फ़ोन की आवाज़ चलती रहेगी।');return}
+ try{(window.PHFIX&&PHFIX[l]||[]).forEach(i=>pack['v34_'+i]=1)}catch(e){}pack.__v34=1;pack.__via=[...via].join(' + ');
+ ST['img_phaud_'+l]=pack;try{PHA[l]=pack}catch(e){}save('img_phaud_'+l);try{(await caches.open('ph-audio')).put('/_phaud/'+l,new Response(JSON.stringify(pack)))}catch(e){}
+ if(g)g.textContent='✅ '+pack.__via+' · '+n+' '+tt('phrases · everyone gets this voice','वाक्य · सबको यही आवाज़ मिलेगी');render()};
+
+/* ================= 2. the bell: every alert stays until you close it ================= */
+const NT={items:LSg('yatra_nt_cache',[]),loc:LSg('yatra_nt_loc',[]),last:0,seen:LSg('yatra_nt_seen',0),seenL:LSg('yatra_nt_seenl',0),dis:new Set(LSg('yatra_nt_dis',[])),cut:LSg('yatra_nt_cut',0),cutL:LSg('yatra_nt_cutl',0)};
+NT.last=NT.items.reduce((m,n)=>Math.max(m,n.id),0);
+const meU=()=>ST&&ST.sess;
+const mine=n=>{const u=meU();if(!u)return false;if(n.to_u&&n.to_u.length&&!n.to_u.includes(u))return false;if(n.from_u&&n.from_u===u)return false;return n.id>NT.cut&&!NT.dis.has(String(n.id))};
+const t0=x=>+new Date(x.at||x.t||0);
+function visible(){const srv=NT.items.filter(mine);
+ const loc=NT.loc.filter(x=>x.t>NT.cutL&&!NT.dis.has(x.id)&&!srv.some(n=>n.title==x.title&&String(n.body||'')==String(x.body||'')&&Math.abs(t0(n)-x.t)<15*60e3));
+ return [...srv.map(n=>({...n,k:String(n.id),srv:1})),...loc.map(x=>({...x,k:x.id,at:new Date(x.t).toISOString()}))].sort((a,b)=>t0(b)-t0(a))}
+const unread=()=>visible().filter(n=>n.srv?n.id>NT.seen:t0(n)>NT.seenL).length;
+function badge(){const d=$q('#nbd');if(!d)return;const n=unread();d.textContent=n>99?'99+':n?String(n):'';d.style.display=n?'flex':'none';d.classList.add('v51n')}
+async function ntPull(){if(!SB.url||!meU()||simOn)return;try{const q=NT.last?'yatra_notes?select=*&id=gt.'+NT.last+'&order=id.desc&limit=100':'yatra_notes?select=*&order=id.desc&limit=150';
+ const r=await (await sbf(q)).json();if(!Array.isArray(r)||!r.length){badge();return}
+ const ids=new Set(NT.items.map(n=>n.id));r.forEach(n=>{if(!ids.has(n.id))NT.items.push(n)});NT.items.sort((a,b)=>b.id-a.id);NT.items=NT.items.slice(0,200);NT.last=NT.items[0].id;LSs('yatra_nt_cache',NT.items);badge();if($q('#md.show .v51nt'))ntPaint()}catch(e){}}
+window.ntPull=ntPull;
+setTimeout(ntPull,1500);setInterval(()=>{if(document.visibilityState=='visible')ntPull()},45000);document.addEventListener('visibilitychange',()=>{if(document.visibilityState=='visible')ntPull()});
+/* alerts shown on this phone (banners) are kept too */
+try{const _bn=banner;banner=function(p){try{if(p&&(p.title||p.body)){NT.loc.unshift({id:'L'+Date.now()+Math.random().toString(36).slice(2,5),t:Date.now(),title:String(p.title||''),body:String(p.body||''),kind:p.kind||'info',url:p.url||''});NT.loc=NT.loc.slice(0,100);LSs('yatra_nt_loc',NT.loc);setTimeout(badge,50)}}catch(e){}return _bn.apply(this,arguments)}}catch(e){}
+try{nbellPaint=function(){badge()}}catch(e){}
+const IC={exp:'💸',pm:'💸',paid:'🧾',swaps:'🔁',delay:'🚆',links:'🔗',chat:'💬',alarm:'⏰',event:'📅',info:'🔔',change:'📝'};
+const ago=t=>{const m=Math.round((Date.now()-t)/6e4);if(m<1)return tt('just now','अभी');if(m<60)return m+' '+tt('min ago','मिनट पहले');const h=Math.round(m/60);if(h<24)return h+' '+tt('h ago','घंटे पहले');return new Date(t).toLocaleDateString('en-IN',{day:'numeric',month:'short'})+' '+new Date(t).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})};
+const pushOn=()=>{try{return !!(PUSH&&PUSH.on)}catch(e){return false}};
+function ntHtml(){const v=visible();
+ return `<div class="v51nt"><div class="v51h"><h3>🔔 ${tt('Notifications','सूचनाएँ')}${v.length?` <em>${v.length}</em>`:''}</h3>${v.length?`<button type="button" class="v51ca" onclick="ntClearAll()">${tt('Clear all','सब हटाएँ')}</button>`:''}</div>
+ <div class="v51ps ${pushOn()?'on':''}">${pushOn()?`✅ ${tt('Alerts arrive on this phone even when the app is closed.','ऐप बंद होने पर भी इस फ़ोन पर सूचनाएँ आएँगी।')}`:`<span>🔕 ${tt('Alerts are off on this phone. Turn them on to get them even when the app is closed.','इस फ़ोन पर सूचनाएँ बंद हैं। ऐप बंद होने पर भी पाने के लिए चालू करें।')}</span><button type="button" onclick="enablePush()">${tt('Turn on','चालू करें')}</button>`}</div>
+ ${v.length?`<div class="v51l">${v.map(n=>{const who=n.from_u&&P[n.from_u]?String(P[n.from_u]).split(' ')[0]:'',nw=n.srv?n.id>NT.seen:t0(n)>NT.seenL;
+   return `<div class="v51i ${nw?'nw':''}" onclick="ntGo('${E(n.k)}')"><span class="v51ic">${IC[n.kind]||'🔔'}</span><span class="v51tx"><b>${E(String(n.title||'').replace(/^(\p{Extended_Pictographic}|\uFE0F|\u200D)+\s*/u,''))}</b>${n.body?`<small>${E(n.body)}</small>`:''}<i>${who?E(who)+' · ':''}${ago(t0(n))}</i></span><button type="button" aria-label="Remove" onclick="event.stopPropagation();ntDel('${E(n.k)}')">✕</button></div>`}).join('')}</div>`
+  :`<p class="v51e">${tt('No notifications. New expenses, payments, train delays, alarms and messages will appear here and stay until you remove them.','कोई सूचना नहीं। नए खर्च, भुगतान, ट्रेन की देरी, अलार्म और संदेश यहाँ दिखेंगे और हटाने तक रहेंगे।')}</p>`}</div>`}
+function ntPaint(){const s=$q('#sh .v51nt');if(s){s.outerHTML=ntHtml();badge()}}
+window.notifOpen=notifOpen=function(){show(ntHtml());const v=visible();NT.seen=Math.max(NT.seen,...v.filter(n=>n.srv).map(n=>n.id),0);NT.seenL=Date.now();LSs('yatra_nt_seen',NT.seen);LSs('yatra_nt_seenl',NT.seenL);setTimeout(badge,50);ntPull()};
+window.ntDel=k=>{NT.dis.add(String(k));LSs('yatra_nt_dis',[...NT.dis].slice(-500));ntPaint();badge()};
+window.ntClearAll=()=>{NT.cut=Math.max(NT.cut,NT.last);NT.cutL=Date.now();LSs('yatra_nt_cut',NT.cut);LSs('yatra_nt_cutl',NT.cutL);ntPaint();badge()};
+window.ntGo=k=>{const n=visible().find(x=>x.k==k);if(!n)return;const h=String(n.url||'').split('#')[1]||({chat:'chat',alarm:'alarms',exp:'money',pm:'money',paid:'money',delay:'today',event:'today'})[n.kind]||'';try{$q('#md').classList.remove('show')}catch(e){}if(h)setTimeout(()=>{try{go(h)}catch(e){}},80)};
+setInterval(badge,5000);
+
+const st=document.createElement('style');st.textContent=`
+#nbd.v51n{width:auto;min-width:18px;height:18px;top:2px;right:2px;padding:0 5px;box-sizing:border-box;border-radius:99px;font:800 11px/18px system-ui,sans-serif;color:#fff;align-items:center;justify-content:center}
+.v51h{display:flex;align-items:center;gap:10px;margin:0 0 8px}.v51h h3{margin:0;flex:1}.v51h em{font-style:normal;font-size:.75rem;background:var(--soft);border-radius:99px;padding:2px 8px;vertical-align:middle}
+.v51ca{border:0;border-radius:99px;padding:8px 14px;font-weight:700;background:#fde8e8;color:#b42318}
+.v51ps{display:flex;gap:10px;align-items:center;justify-content:space-between;background:#fff4e5;color:#5a3300;border-radius:14px;padding:10px 12px;font-size:.85rem;margin:0 0 10px}.v51ps.on{background:#e6f6ec;color:#14532d}
+.v51ps button{border:0;border-radius:10px;padding:8px 12px;font-weight:800;background:#e8731a;color:#fff;flex:none}
+.v51l{display:flex;flex-direction:column;gap:6px}
+.v51i{display:flex;gap:10px;align-items:flex-start;padding:10px;border-radius:14px;background:var(--card);border:1px solid #8882;cursor:pointer}
+.v51i.nw{border-color:#e8731a;background:color-mix(in srgb,#e8731a 7%,var(--card))}
+.v51ic{font-size:20px;width:34px;height:34px;border-radius:10px;background:var(--soft);display:grid;place-items:center;flex:none}
+.v51tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.v51tx b{font-size:.92rem}.v51tx small{font-size:.82rem;opacity:.85;overflow-wrap:anywhere}.v51tx i{font-style:normal;font-size:.72rem;opacity:.6}
+.v51i>button{border:0;background:transparent;font-size:16px;opacity:.55;width:32px;height:32px;flex:none}
+.v51e{opacity:.7;font-size:.9rem;text-align:center;padding:18px 6px}
+.v51sv{border:0;border-radius:12px;padding:11px 14px;font-weight:800;background:#1f9d55;color:#fff;margin:6px 0}
 `;document.head.appendChild(st);
 })();
 
