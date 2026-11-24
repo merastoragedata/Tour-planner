@@ -35,6 +35,7 @@ DONE v50 (24 Nov): documents ready on the phone – Drive sync starts at 0.3 s, 
 DONE v51 (24 Nov): alerts log – table yatra_notes (anon select only), edge notify v2 writes every alert there (and test pushes reach the sender), tick v4 logs alarms; bell (#nbell → notifOpen) lists all alerts for me (to_u null or mine, not my own), unread count on #nbd, ✕ per alert, Clear all (cutoff id), local banners kept too (deduped), push on/off card; polling 45 s. Voices: edge function tts (keys sarvam_key, google_tts_key, bh_uid, bh_key and usage tts_usage in yatra_secrets): Sarvam until 95% of limit (default 333000 chars, off on 402/403/429) → Google Cloud TTS until 95% of each voice type's free monthly chars (Chirp3-HD/Neural2 1M, WaveNet/Standard 4M) → Bhashini → phone; phGen2 and story voice (elMake) use it; ElevenLabs removed; old phone-stored keys move to the server once; Bhashini WAV stored as 'W:' in phrase packs. Push itself was already live since v6 (yatra_push, VAPID in yatra_secrets, cron yatra-tick every minute).
 DONE v52 (24 Nov): pass PDF (Downloads + print): Srirangam passes sorted by person then time, page break at each person, so one person's Perumal + Thayar share a page (Divya's 3rd pass alone); next set starts on a new page; ready-PDF signature bumped (L2) so old bundles rebuild.
 DONE v53 (24 Nov): Divya's second Srirangam Perumal pass (srp, 3 PM) left out of Downloads (window.__dlSkip in catalog), still on the Passes page and its print.
+DONE v54 (24 Nov): NEW DOCUMENTS IN SUPABASE STORAGE, LOADED ONLY ON REQUEST. Files already in Drive stay in Drive (Drive file list now refreshed every 3 min instead of 15, so a file added to Drive shows within minutes). Every new upload from the app (Settings > Documents upload/replace, admin Add passes, Add train ticket, entry pass – all go through docPut) goes to the private Storage bucket 'docs' (20 MB limit; anon policies "docs read/insert/update/delete" on storage.objects) at the same path (tickets/<PNR>.pdf, stays/<id>.pdf, darshan/<set>-<ack>.pdf ...); docs_idx entry gets s:1. Old kv copies (img_doc_<path>) still open. A Supabase file is downloaded only when a person opens, shares or downloads it (fetchDoc via /storage/v1/object/authenticated/docs/<path>), then kept in Cache Storage yatra-sbdocs; lists, thumbnails, the Downloads warm-up and the background ready-PDF skip Supabase files nobody has opened yet (window.__sbNeed, sbWait). Tirupati Srinivasam receipt stays/IAJS24092606384460.pdf is in Drive (paid by Suresh, already DEFPAID u).
 NOT DONE: Supabase switched on and tested; Hindi; fetching photos from Google Photos (Google does not allow it for shared albums: the button opens the album); WhatsApp-only features (calls, end-to-end encryption, status); family info cards with verified Hindi video links; food stops; coach orders for other trains (owner will send screenshots); detailed itinerary (owner will send); NITR voucher 6006386739 PDF (upload was overwritten, ask owner to re-send); unverified Where Is My Train package name com.whereismytrain.android.
 OPEN DECISIONS: Trivandrum and Kanyakumari stays are FINALISED; TVC to Kanyakumari travel (16649 or road); Madurai to Rameswaram (16343 or 56711); Tirupati to Kanchipuram (16204, or Arakkonam by train then road); accommodation for TVC night 30 Nov, Madurai, Rameswaram, Tirupati, Kanchipuram; Atul Jabalpur to Itarsi ticket; Vinit cancellations; one duplicate Trichy to Tirupati set.
 V7 PHASE 1 (5 Nov 2026): one-row header (Aa, हिं, theme button, avatar; title always visible); sheets with close bar; ticket-card letter-spacing bug fixed (.tk); Today: Photos/Chat buttons restored (games CSS .bigb override neutralised), story cards above notification card; carousel no longer changes theme, auto theme only during trip by itinerary; past events fold; either/or journeys dropdown (ST.choice, ST.opts; admin only; shared keys); expense form all options in 2 columns, split-how dropdown default Nil; text size 80-170% via --fs on every font-size; per-user prefs pf_<user> (install/notification choices, background) sync via kv once Supabase is live; backgrounds (presets + own photo, photo local); calmer shankh/train animations. ORIGINAL FILES NOW OPEN FROM GOOGLE DRIVE: DRV map (path -> Drive file id) is baked into the script from folder 1LIZ-maFCtxpuACoplwml-FHN4zhlHduI (tickets/, stays/, reference/); viewer = Drive /preview iframe. New files added to Drive need their ids added to DRV. NEXT: phase 2 map, phase 3 games.
@@ -5888,6 +5889,13 @@ const GH=window.GHDOCS={};const has=p=>!!((DOCS.idx[p]&&!DOCS.idx[p].del)||GH[p]
 fetch('docs/index.json',{cache:'no-cache'}).then(r=>r.ok?r.json():{}).then(j=>{Object.assign(GH,j||{});if(Object.keys(GH).length){soon();pre()}}).catch(()=>{});
 const b64=async blob=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=()=>no(r.error);r.readAsDataURL(blob)});
 const d2b=u=>fetch(u).then(r=>r.blob());
+/* v54: new documents live in the private Storage bucket 'docs' (idx entry s:1) and are downloaded only when someone opens or downloads them */
+const sbPath=p=>String(p).split('/').map(encodeURIComponent).join('/');
+const SBH=()=>({apikey:SB.key,Authorization:'Bearer '+SB.key});
+const HAVE=window.__sbHave=new Set();
+const isSb=p=>{const i=DOCS.idx[p];if(!i||i.del)return false;if(window.GDRIVE&&GDRIVE.files[p]&&!(i.t>Date.parse(GDRIVE.files[p].mt)))return false;if(GH[p]&&!(i.t>(GH[p].t||0)))return false;return true};
+window.__sbOnly=isSb;window.__sbNeed=p=>!!p&&isSb(p)&&!HAVE.has(p)&&!DOCS.url[p];
+try{if(window.caches)caches.open(CN).then(c=>c.keys()).then(ks=>{for(const k of ks){const m=/^https:\/\/sbdocs\.local\/([^?]+)\?t=(.*)$/.exec(k.url);if(m){const q=decodeURI(m[1]);if(DOCS.idx[q]&&String(DOCS.idx[q].t)==m[2])HAVE.add(q)}}}).catch(()=>{})}catch(e){}
 async function idxLoad(){if(!SB.url)return;try{const r=await sbf('yatra_kv?select=val&key=eq.docs_idx').then(r=>r.json());if(!Array.isArray(r))return;const v=r[0]?r[0].val:{};const s1=JSON.stringify(DOCS.idx),s2=JSON.stringify(v||{});
  if(s1!==s2){DOCS.idx=v||{};try{localStorage.setItem(IK,s2)}catch(e){}for(const p in DOCS.url){if(!has(p)){try{URL.revokeObjectURL(DOCS.url[p])}catch(e){}delete DOCS.url[p]}}soon()}
  pre()}catch(e){}}
@@ -5895,23 +5903,26 @@ async function fetchDoc(p){if(!has(p))return null;if(DOCS.url[p])return DOCS.url
  return DOCS.busy[p]=(async()=>{try{let blob=null;if(window.caches){const c=await caches.open(CN);const m=await c.match(ckey(p));if(m)blob=await m.blob()}
   if(!blob&&window.GDRIVE&&GDRIVE.files[p]&&window.gdBlob&&!(DOCS.idx[p]&&DOCS.idx[p].t>Date.parse(GDRIVE.files[p].mt))){try{blob=await gdBlob(p)}catch(e){}}
   if(!blob&&GH[p]&&!(DOCS.idx[p]&&DOCS.idx[p].t>(GH[p].t||0))){try{const r=await fetch('docs/'+p.split('/').map(encodeURIComponent).join('/'));if(r.ok)blob=await r.blob()}catch(e){}}
-  if(!blob&&SB.url&&DOCS.idx[p]){const r=await sbf('yatra_kv?select=val&key=eq.'+encodeURIComponent('img_doc_'+p)).then(r=>r.json());const v=r&&r[0]&&r[0].val;if(v&&v.u){blob=await d2b(v.u);try{if(window.caches){const c=await caches.open(CN);await c.put(ckey(p),new Response(blob,{headers:{'Content-Type':v.mime||blob.type}}))}}catch(e){}}}
+  if(blob)HAVE.add(p);
+  if(!blob&&SB.url&&DOCS.idx[p]&&DOCS.idx[p].s){const r=await fetch(SB.url+'/storage/v1/object/authenticated/docs/'+sbPath(p),{headers:SBH()});if(r.ok){blob=await r.blob();if(DOCS.idx[p].mime&&blob.type!=DOCS.idx[p].mime)blob=new Blob([blob],{type:DOCS.idx[p].mime});HAVE.add(p);try{if(window.caches){const c=await caches.open(CN);await c.put(ckey(p),new Response(blob,{headers:{'Content-Type':blob.type}}))}}catch(e){}}}
+  if(!blob&&SB.url&&DOCS.idx[p]&&!DOCS.idx[p].s){const r=await sbf('yatra_kv?select=val&key=eq.'+encodeURIComponent('img_doc_'+p)).then(r=>r.json());const v=r&&r[0]&&r[0].val;if(v&&v.u){blob=await d2b(v.u);try{if(window.caches){const c=await caches.open(CN);await c.put(ckey(p),new Response(blob,{headers:{'Content-Type':v.mime||blob.type}}))}}catch(e){}}}
   if(!blob)return null;const u=URL.createObjectURL(blob);DOCS.url[p]=u;DOCS.blob=DOCS.blob||{};DOCS.blob[p]=blob;return u}catch(e){return null}finally{delete DOCS.busy[p]}})()}
 window.docBlob=async p=>{await fetchDoc(p);return (DOCS.blob||{})[p]||null};
 let soonT=0;function soon(){clearTimeout(soonT);soonT=setTimeout(()=>{const a=document.activeElement;if(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName))return soon();try{window.__v17skip=1;render();setTimeout(()=>{window.__v17skip=0},600)}catch(e){}},900)}
 /* sync lookup used by the page: returns a ready blob URL, or null and starts loading it */
-window.__docU=function(p){if(!p||!has(p))return null;if(DOCS.url[p])return DOCS.url[p];fetchDoc(p).then(u=>{if(u)soon()});return null};
+window.__docU=function(p){if(!p||!has(p))return null;if(DOCS.url[p])return DOCS.url[p];if(window.__sbNeed(p))return null;fetchDoc(p).then(u=>{if(u)soon()});return null};
 let preOn=0;async function pre(){if(preOn||!navigator.onLine)return;preOn=1;try{const ps=Object.keys(GH).filter(p=>!(DOCS.idx[p]&&DOCS.idx[p].t>(GH[p].t||0))).sort((a,b)=>pri(a)-pri(b));for(const p of ps){if(!DOCS.url[p])await fetchDoc(p)}}finally{preOn=0}}
 const pri=p=>{let m;try{if(m=/^tickets\/([^.\-]+)/.exec(p)){const t=T.find(x=>x[0]==m[1]);if(t)return Math.abs(+D(t[4])-Date.now())}if(m=/^darshan\/([a-z_0-9]+)-/.exec(p)){const K=DPK[m[1]];if(K)return Math.abs(+new Date(K.d)-Date.now())}}catch(e){}return 9e13};
 async function kvPut(key,val){const r=await sbf('yatra_kv?on_conflict=key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({key,val})});if(!r.ok)throw new Error('save '+r.status)}
 async function kvDel(key){try{await sbf('yatra_kv?key=eq.'+encodeURIComponent(key),{method:'DELETE'})}catch(e){}}
 async function idxSave(){await kvPut('docs_idx',DOCS.idx);try{localStorage.setItem(IK,JSON.stringify(DOCS.idx))}catch(e){}}
 /* put one file; batch=true skips the index save (caller saves once) */
-async function docPut(p,blob,batch){if(!SB.url)throw new Error('Supabase is off');const mime=blob.type||(/\.pdf$/i.test(p)?'application/pdf':'image/jpeg');const u=await b64(blob);
- await kvPut('img_doc_'+p,{u,mime});const old=DOCS.url[p];if(old){try{URL.revokeObjectURL(old)}catch(e){}delete DOCS.url[p]}
- DOCS.idx[p]={t:Date.now(),mime,n:blob.size,by:ST.sess||''};try{if(window.caches){const c=await caches.open(CN);await c.put(ckey(p),new Response(blob,{headers:{'Content-Type':mime}}))}}catch(e){}
+async function docPut(p,blob,batch){if(!SB.url)throw new Error('Supabase is off');const mime=blob.type||(/\.pdf$/i.test(p)?'application/pdf':/\.png$/i.test(p)?'image/png':'image/jpeg');
+ const r=await fetch(SB.url+'/storage/v1/object/docs/'+sbPath(p),{method:'POST',headers:{...SBH(),'Content-Type':mime,'x-upsert':'true'},body:blob});if(!r.ok){let m='';try{m=(await r.text()).slice(0,120)}catch(e){}throw new Error('upload '+r.status+' '+m)}
+ if(DOCS.idx[p]&&!DOCS.idx[p].s)kvDel('img_doc_'+p);const old=DOCS.url[p];if(old){try{URL.revokeObjectURL(old)}catch(e){}delete DOCS.url[p]}
+ DOCS.idx[p]={t:Date.now(),mime,n:blob.size,by:ST.sess||'',s:1};HAVE.add(p);try{if(window.caches){const c=await caches.open(CN);await c.put(ckey(p),new Response(blob,{headers:{'Content-Type':mime}}))}}catch(e){}
  DOCS.url[p]=URL.createObjectURL(blob);DOCS.blob=DOCS.blob||{};DOCS.blob[p]=blob;if(!batch)await idxSave()}
-async function docDel(p,batch){await kvDel('img_doc_'+p);delete DOCS.idx[p];if(DOCS.url[p]){try{URL.revokeObjectURL(DOCS.url[p])}catch(e){}delete DOCS.url[p]}if(!batch)await idxSave()}
+async function docDel(p,batch){if(DOCS.idx[p]&&DOCS.idx[p].s){try{await fetch(SB.url+'/storage/v1/object/docs/'+sbPath(p),{method:'DELETE',headers:SBH()})}catch(e){}HAVE.delete(p)}else await kvDel('img_doc_'+p);delete DOCS.idx[p];if(DOCS.url[p]){try{URL.revokeObjectURL(DOCS.url[p])}catch(e){}delete DOCS.url[p]}if(!batch)await idxSave()}
 window.docPut=docPut;window.docDel=docDel;
 const t0=setInterval(()=>{if(typeof SB=='undefined'||!ST||!ST.sess)return;clearInterval(t0);idxLoad();dpsLoad()},700);
 setInterval(()=>{if(ST&&ST.sess&&!document.hidden){idxLoad();dpsLoad()}},180000);
@@ -5944,7 +5955,7 @@ window.sbShare=async function(p,title){try{await fetchDoc(p);const b=DOCS.blob[p
 window.sbOpen=function(p,title){DVL=[{l:'',path:p,pdf:/\.pdf$/i.test(p)}];DVI=0;DVT=title||fname(p);dvPaint();$q('#vw').classList.add('show');try{history.pushState({...pgState(),vwo:(window.__vwTok=Date.now())},'')}catch(e){}};
 /* links and pictures that point at a moved file */
 window.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a[href]');if(!a)return;const p=pathOfUrl(a.getAttribute('href'));if(p&&has(p)){e.preventDefault();e.stopImmediatePropagation();if(a.hasAttribute('download'))sbDl(p);else sbOpen(p,a.textContent.trim()||fname(p))}},true);
-const fixI=i=>{const s=i.getAttribute&&i.getAttribute('src')||'';if(!s||/^(blob|data):/.test(s))return;const p=pathOfUrl(s);if(!p)return;const jp=has(p)?p:has(p.replace(/\.(png|jpe?g)$/i,'.jpg'))?p.replace(/\.(png|jpe?g)$/i,'.jpg'):null;if(!jp||/\.pdf$/i.test(jp))return;const u=window.__docU(jp);if(u)i.src=u;else fetchDoc(jp).then(u=>{if(u&&i.isConnected)i.src=u})};
+const fixI=i=>{const s=i.getAttribute&&i.getAttribute('src')||'';if(!s||/^(blob|data):/.test(s))return;const p=pathOfUrl(s);if(!p)return;const jp=has(p)?p:has(p.replace(/\.(png|jpe?g)$/i,'.jpg'))?p.replace(/\.(png|jpe?g)$/i,'.jpg'):null;if(!jp||/\.pdf$/i.test(jp))return;const u=window.__docU(jp);if(u)i.src=u;else if(!window.__sbNeed(jp))fetchDoc(jp).then(u=>{if(u&&i.isConnected)i.src=u})};
 new MutationObserver(ms=>ms.forEach(m=>{m.addedNodes.forEach(n=>{if(n.nodeType!=1)return;if(n.tagName=='IMG')fixI(n);n.querySelectorAll&&n.querySelectorAll('img').forEach(fixI)});if(m.type=='attributes'&&m.target.tagName=='IMG')fixI(m.target)})).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['src']});
 {const _fg=window.fileGet;window.fileGet=function(url,name){const p=pathOfUrl(url);if(p&&has(p))return sbDl(p);return _fg.apply(this,arguments)};try{fileGet=window.fileGet}catch(e){}}
 
@@ -6676,7 +6687,7 @@ const API='https://www.googleapis.com/drive/v3/files';
 async function keyLoad(){if(GD.key)return GD.key;try{const v=await tuGet('gdrive_key');if(v){GD.key=String(v);localStorage.setItem('yatra_gdkey',GD.key)}}catch(e){}return GD.key}
 async function list(folder,prefix,out){let pt='';do{const u=API+'?q='+encodeURIComponent(`'${folder}' in parents and trashed=false`)+'&fields='+encodeURIComponent('nextPageToken,files(id,name,mimeType,modifiedTime,size)')+'&pageSize=1000&key='+GD.key+(pt?'&pageToken='+pt:'');
  const j=await(await fetch(u)).json();if(j.error)throw new Error(j.error.message);for(const f of j.files||[]){if(f.mimeType=='application/vnd.google-apps.folder'){await list(f.id,prefix+f.name+'/',out)}else if(!/^application\/vnd\.google-apps/.test(f.mimeType)){const p=prefix+f.name;const o=out[p];if(!o||o.mt<f.modifiedTime)out[p]={id:f.id,mt:f.modifiedTime,n:+f.size||0,mime:f.mimeType}}}pt=j.nextPageToken||''}while(pt)}
-async function sync(force){if(GD.busy||!navigator.onLine)return;if(!force&&Date.now()-GD.t<15*60e3&&Object.keys(GD.files).length)return;if(!await keyLoad())return;GD.busy=1;
+async function sync(force){if(GD.busy||!navigator.onLine)return;if(!force&&Date.now()-GD.t<3*60e3&&Object.keys(GD.files).length)return;if(!await keyLoad())return;GD.busy=1;
  try{const out={};await list(ROOT,'',out);const old=JSON.stringify(GD.files);GD.files=out;GD.t=Date.now();try{localStorage.setItem('yatra_gdfiles',JSON.stringify(out))}catch(e){}
   for(const p in out){try{DRV[p]=out[p].id}catch(e){}}if(old!==JSON.stringify(out)){autoPasses();soon()}pre()}catch(e){console.warn('drive',e);GD.err=e.message}finally{GD.busy=0}}
 window.gdSync=()=>sync(true);
@@ -7304,7 +7315,7 @@ const WARM={on:0,done:0,txt:'',sig:''};
 const wsig=()=>{try{return Object.keys((window.GDRIVE||{}).files||{}).length+'|'+Object.keys((window.DOCS||{}).idx||{}).length+'|'+(window.TKDOC?Object.keys(TKDOC).length:0)}catch(e){return ''}};
 async function warm(){if(WARM.on||!navigator.onLine)return;const sg=wsig();if(WARM.done&&WARM.sig==sg)return;WARM.sig=sg;WARM.on=1;CAT=catalog();try{const its=allIt(CAT||catalog());let ok=0,tot=0;
   for(const it of its){if(it.kind=='aa'){tot++;try{const a=await pilAA(it.u);if(a.f||a.b)ok++}catch(e){}continue}
-   const fs=await itemFiles(it);for(const f of fs){tot++;const b=await fBlob(f,it.id+'|'+(f.path||f.l));if(b)ok++}
+   const fs=(await itemFiles(it)).filter(f=>!(f&&f.path&&window.__sbNeed&&__sbNeed(f.path)));for(const f of fs){tot++;const b=await fBlob(f,it.id+'|'+(f.path||f.l));if(b)ok++}
    WARM.txt='📥 '+ok+'/'+tot+' '+tt('files on this phone','फ़ाइलें इस फ़ोन में');const e=$q('#dlof');if(e)e.textContent=WARM.txt;await new Promise(z=>setTimeout(z,60))}
   WARM.txt=!tot?'':(ok==tot?'✅ ':'📥 ')+ok+'/'+tot+' '+tt('files saved on this phone','फ़ाइलें इस फ़ोन में सहेजी');const e=$q('#dlof');if(e)e.textContent=WARM.txt;WARM.done=1}finally{WARM.on=0}}
 setInterval(()=>{if(ST&&ST.sess&&document.visibilityState=='visible'){try{warm()}catch(e){}}},60000);setTimeout(()=>{try{if(ST&&ST.sess)warm()}catch(e){}},4000);
@@ -7578,7 +7589,7 @@ const st=document.createElement('style');st.textContent=`
 (function(){
 const $q=s=>document.querySelector(s);
 const tt=(a,b)=>{try{return rt2(a,b)}catch(e){return a}};
-const BUILD='v53-20261124';
+const BUILD='v54-20261124';
 
 /* ---------- 1. pause what is off screen ---------- */
 const SEL='#mgrow > *, #wx8s, .wx8s, .cvg, #v svg.s7svg, #v .mgi, #v .p4h, #v .pzh, #v .dpg > *, #wm svg';
@@ -7940,8 +7951,13 @@ function curSel(){try{if(window.__DL&&__DL.sel&&__DL.sel.size)return new Set(__D
  try{const s=JSON.parse(localStorage.getItem('yatra_dlsel')||'null');if(s&&s.length)return new Set(s)}catch(e){}
  try{const C=__dlCatalog();return new Set(C.filter(c=>c.k=='pass'||c.k=='aa').flatMap(c=>c.g.flatMap(g=>g.it.map(x=>x.id))))}catch(e){return new Set()}}
 let prepT=0,prepOn=0,lastSig='';
+/* v54: a set that holds a Supabase document nobody has opened yet is not built in the background (files load only on request) */
+function sbWait(sel){if(!window.__sbNeed)return false;for(const id of sel){const k=id.slice(0,2),v=id.slice(2);let ps=[];
+ if(k=='p:'){const p=(window.DP||[]).find(x=>x.id==v);if(p)ps=['.pdf','.jpg','.png'].map(e=>'darshan/'+p.f+e)}
+ else if(k!='a:'){try{ps=(drvList(v)||[]).map(f=>f.path).filter(Boolean)}catch(e){}}
+ if(ps.some(x=>__sbNeed(x)))return true}return false}
 async function prep(){if(prepOn||!window.__dlBuild||!ST||!ST.sess||document.hidden)return;if(window.__SIM&&__SIM.off)return;
- const sel=curSel();if(!sel.size)return;const sig=sigOf(sel);if(sig==lastSig&&RM.has(sig))return;
+ const sel=curSel();if(!sel.size)return;if(sbWait(sel))return;const sig=sigOf(sel);if(sig==lastSig&&RM.has(sig))return;
  if(await rGet(sig)){lastSig=sig;return}
  /* wait while Drive files are still arriving, so the PDF is complete */
  if(window.GDRIVE&&GDRIVE.key&&!window.__gdReady&&!prep.waited){prep.waited=1;return}
