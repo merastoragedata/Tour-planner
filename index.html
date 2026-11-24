@@ -27,6 +27,7 @@ DONE v42 (24 Nov 2026): Aadhaar page watermark lighter and kept off the card pic
 DONE v43 (24 Nov 2026): Aadhaar watermark choice everywhere (in-app ID page and Downloads): Hotel check-in, Mandir darshan, Own text (typed, up to 70 letters), No watermark (no text, no cross lines, no background pattern); choice kept in localStorage yatra_wm.
 DONE v44 (24 Nov 2026): watermark choice shown as a titled 2x2 panel (in-app ID page and Downloads, Aadhaar section open by default); self-attestation line and signature/date removed from the Aadhaar page (only a small 'copy made on' note stays).
 DONE v45 (24 Nov 2026): TTD Special Entry passes replaced by the official per-person PDFs (darshan/ttd2-<ack>.pdf|jpg, each pilgrim own pass, no group); Tirupati stay added: Srinivasam Rest House (TTD) 7 Dec 12:00 -> 8 Dec 12:00, Suresh + Divya, ₹210 (+₹211 refundable deposit), id IAJS24092606384460, payer default Suresh (receipt mobile 5538), file stays/IAJS24092606384460.pdf (4.7 MB, owner uploads it); Aadhaar watermark 'Own watermark text' box always shown; offline-saving progress hidden; weather: single dropdown (Auto, My location, trip places in date order, other saved places, search) + 16-day date strip with that day's forecast; Today weather strip opens the tapped place and date.
+DONE v46 (24 Nov): off-screen animations paused (607->110 running), keyboard/bottom-bar float fix (iOS visualViewport), BUILD self-update (v46-20261124), Expenses PDF/Excel side button (stmtHub), admin hero card text, mobile header tightened, selected-passes filename.
 NOT DONE: Supabase switched on and tested; real push notifications (needs server; calendar alarms instead); Hindi; fetching photos from Google Photos (Google does not allow it for shared albums: the button opens the album); WhatsApp-only features (calls, end-to-end encryption, status); family info cards with verified Hindi video links; food stops; coach orders for other trains (owner will send screenshots); detailed itinerary (owner will send); NITR voucher 6006386739 PDF (upload was overwritten, ask owner to re-send); unverified Where Is My Train package name com.whereismytrain.android.
 OPEN DECISIONS: Trivandrum and Kanyakumari stays are FINALISED; TVC to Kanyakumari travel (16649 or road); Madurai to Rameswaram (16343 or 56711); Tirupati to Kanchipuram (16204, or Arakkonam by train then road); accommodation for TVC night 30 Nov, Madurai, Rameswaram, Tirupati, Kanchipuram; Atul Jabalpur to Itarsi ticket; Vinit cancellations; one duplicate Trichy to Tirupati set.
 V7 PHASE 1 (5 Nov 2026): one-row header (Aa, हिं, theme button, avatar; title always visible); sheets with close bar; ticket-card letter-spacing bug fixed (.tk); Today: Photos/Chat buttons restored (games CSS .bigb override neutralised), story cards above notification card; carousel no longer changes theme, auto theme only during trip by itinerary; past events fold; either/or journeys dropdown (ST.choice, ST.opts; admin only; shared keys); expense form all options in 2 columns, split-how dropdown default Nil; text size 80-170% via --fs on every font-size; per-user prefs pf_<user> (install/notification choices, background) sync via kv once Supabase is live; backgrounds (presets + own photo, photo local); calmer shankh/train animations. ORIGINAL FILES NOW OPEN FROM GOOGLE DRIVE: DRV map (path -> Drive file id) is baked into the script from folder 1LIZ-maFCtxpuACoplwml-FHN4zhlHduI (tickets/, stays/, reference/); viewer = Drive /preview iframe. New files added to Drive need their ids added to DRV. NEXT: phase 2 map, phase 3 games.
@@ -6007,7 +6008,7 @@ window.dpsPrint=async function(mode){const lib0=await pdfLib().catch(()=>null);i
   const K=DPK[it.p.k]||{},cap=it.fy?'Kanyakumari ferry · Special Entry x 8 · 02 Dec 2026':(it.p.name+'  ·  '+(K.city||'')+' · '+String(K.pass||'').split(' · ')[0]+'  ·  '+(K.d?new Date(K.d).toDateString().slice(4):''));
   page.drawText(cap.replace(/[^\x20-\x7E]/g,'').slice(0,95),{x:sl.x,y:sl.y+sl.h+4,size:7.5,font,color:grey});slot++}
  if(X)return{n:items.length,miss};out.getPages().forEach((pg,i)=>pg.drawText('Yatra 2026 · '+(i+1),{x:A4[0]-M-60,y:8,size:6.5,font,color:rgb(.6,.6,.6)}));
- const bytes=await out.save(),blob=new Blob([bytes],{type:'application/pdf'}),name='Yatra2026-'+(mode=='mine'?(P[me()]||'my').split(' ')[0]+'-passes':mode&&mode!='all'?mode+'-passes':'all-passes')+'-2-per-page.pdf';
+ const bytes=await out.save(),blob=new Blob([bytes],{type:'application/pdf'}),name='Yatra2026-'+(Array.isArray(mode)?'selected-passes':mode=='mine'?(P[me()]||'my').split(' ')[0]+'-passes':mode&&mode!='all'?mode+'-passes':'all-passes')+'-2-per-page.pdf';
  const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),60000);
  say(tt(items.length+' passes · '+out.getPageCount()+' pages ready','पास '+items.length+' · पेज '+out.getPageCount()+' तैयार')+(miss?tt(' · '+miss+' not in the store yet',' · '+miss+' अभी नहीं'):''))};
 
@@ -6575,8 +6576,9 @@ function frame(t){raf=requestAnimationFrame(frame);if(!vis||!H||!H.isConnected||
 }
 /* ---------- train speed drives the scenery ---------- */
 const MOVE=/^(s7scr|s7bobt|s7rf|fxsk|s7cross|s7arr)$/;
-function speedAnims(){if(!H)return;train();const rate=S.train?(S.halt?0:Math.max(.25,Math.min(2.2,S.speed/70))):1;
- H.querySelectorAll('.h7sc.on *').forEach(el=>{let an;try{an=el.getAnimations()}catch(e){return}an.forEach(a=>{const nm=a.animationName||'';if(!MOVE.test(nm))return;if(rate==0){if(a.playState=='running')a.pause()}else{if(a.playState=='paused')a.play();if(Math.abs(a.playbackRate-rate)>.05)a.playbackRate=rate}})});
+let SA={r:null,n:-1,el:null};function speedAnims(){if(!H)return;train();const rate=S.train?(S.halt?0:Math.max(.25,Math.min(2.2,S.speed/70))):1;
+ const sc=H.querySelector('.h7sc.on');if(!sc)return;let an;try{an=sc.getAnimations({subtree:true})}catch(e){return}if(SA.r===rate&&SA.n===an.length&&SA.el===sc)return;SA={r:rate,n:an.length,el:sc};
+ an.forEach(a=>{const nm=a.animationName||'';if(!MOVE.test(nm))return;if(rate==0){if(a.playState=='running')a.pause()}else{if(a.playState=='paused')a.play();if(Math.abs(a.playbackRate-rate)>.05)a.playbackRate=rate}});
  H.classList.toggle('v35halt',S.train&&!!S.halt)}
 /* ---------- depth: haze + blur on far hills, cinematic grade ---------- */
 function depth(){if(!H)return;H.querySelectorAll('.h7sc svg.s7svg:not(.fx20):not([data-v35])').forEach(sv=>{sv.dataset.v35=1;const p=SC7P[sc7Ph(+sv.dataset.h||12)]||SC7P.day,ns='http://www.w3.org/2000/svg';
@@ -6612,7 +6614,7 @@ function adminCard(){if(!adm()||ST.tab!='today')return;const v=$q('#v');if(!v||v
 
 /* ---------- loop ---------- */
 function apply(){if(!ensure())return;depth();grade();media();speedAnims()}
-let T1=0;new MutationObserver(()=>{clearTimeout(T1);T1=setTimeout(()=>{if(ST&&ST.tab=='today'){apply();adminCard()}},120)}).observe(document.documentElement,{childList:true,subtree:true});
+let T1=0;new MutationObserver(()=>{clearTimeout(T1);T1=setTimeout(()=>{if(ST&&ST.tab=='today'){apply();adminCard()}},450)}).observe(document.documentElement,{childList:true,subtree:true});
 setInterval(()=>{if(ST&&ST.tab=='today'&&!document.hidden){const p=S.ph;clock();if(p!==S.ph)build();apply();adminCard()}},4000);
 setInterval(weather,10*60e3);setTimeout(weather,2500);setTimeout(modeLoad,2000);setInterval(modeLoad,5*60e3);
 try{new IntersectionObserver(es=>es.forEach(e=>{vis=e.isIntersecting})).observe(document.body)}catch(e){}
@@ -7546,6 +7548,60 @@ const st=document.createElement('style');st.textContent=`
 .wx45card{margin-top:8px;background:#ffffff26;border-radius:16px;padding:12px}.wx45h{display:flex;justify-content:space-between;align-items:center;gap:10px}.wx45h small{display:block;opacity:.9}.wx45h b{font-size:1.15rem}
 .wx45t{font-size:2rem;font-weight:800}.wx45t em{font-size:1rem;font-style:normal;opacity:.75;margin-left:6px}
 .wx45g{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}.wx45g span{background:#ffffff1f;border-radius:10px;padding:6px 8px;font-size:.72rem;display:flex;flex-direction:column}.wx45g b{font-size:.95rem}`;document.head.appendChild(st);
+})();
+</script>
+
+<script id="v46js">
+/* ===== v46 (24 Nov 2026): speed and layout pass.
+   - animations outside the screen are paused (place cards, weather strip, the hidden hero layer); only what you see moves
+   - hero speed control touches only the visible scene, and only when the speed changes
+   - bottom bar: hidden while typing, put back in place after the keyboard / date picker closes (iPhone left it floating)
+   - every phone switches to the newest version of the page by itself (old copies kept by the browser are dropped)
+   - Expenses overview: PDF / Excel statement button back next to the person picker
+   - admin hero card: correct clip name and Drive clip count ===== */
+(function(){
+const $q=s=>document.querySelector(s);
+const tt=(a,b)=>{try{return rt2(a,b)}catch(e){return a}};
+const BUILD='v46-20261124';
+
+/* ---------- 1. pause what is off screen ---------- */
+const SEL='#mgrow > *, #wx8s, .wx8s, .cvg, #v svg.s7svg, #v .mgi, #v .p4h, #v .pzh, #v .dpg > *, #wm svg';
+const io=new IntersectionObserver(es=>es.forEach(e=>e.target.classList.toggle('v46p',!e.isIntersecting)),{rootMargin:'60px'});
+const seen=new WeakSet();
+function scan(){document.querySelectorAll(SEL).forEach(el=>{if(!seen.has(el)&&!el.closest('#hero7')){seen.add(el);io.observe(el)}})}
+let st0=0;new MutationObserver(()=>{if(st0)return;st0=setTimeout(()=>{st0=0;scan()},400)}).observe(document.body,{childList:true,subtree:true});
+setTimeout(scan,500);document.addEventListener('visibilitychange',()=>{if(!document.hidden)scan()});
+
+/* ---------- 2. bottom bar while typing (iPhone keyboard / date picker) ---------- */
+const typing=el=>el&&(el.tagName=='TEXTAREA'||el.tagName=='SELECT'||(el.tagName=='INPUT'&&!/^(checkbox|radio|button|submit|range|file|color)$/i.test(el.type||'')));
+document.addEventListener('focusin',e=>{if(typing(e.target))document.body.classList.add('v46kb')});
+document.addEventListener('focusout',()=>{setTimeout(()=>{if(!typing(document.activeElement)){document.body.classList.remove('v46kb');fixFixed()}},120)});
+function fixFixed(){const y=scrollY;requestAnimationFrame(()=>{scrollTo(scrollX,y+1);requestAnimationFrame(()=>scrollTo(scrollX,y))});const n=$q('#nav');if(n){n.style.transform='translateZ(0)';setTimeout(()=>{n.style.transform=''},60)}}
+if(window.visualViewport){let t=0;visualViewport.addEventListener('resize',()=>{clearTimeout(t);t=setTimeout(()=>{if(!typing(document.activeElement))fixFixed()},250)})}
+addEventListener('orientationchange',()=>setTimeout(fixFixed,400));addEventListener('pageshow',()=>setTimeout(fixFixed,200));
+
+/* ---------- 3. always the newest page on every phone ---------- */
+(async()=>{try{if(sessionStorage.getItem('v46chk'))return;sessionStorage.setItem('v46chk','1');if(!navigator.onLine)return;
+ const r=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'});if(!r.ok)return;const t=await r.text();const m=/const BUILD='([^']+)'/.exec(t);if(!m||m[1]==BUILD)return;
+ const ks=window.caches?await caches.keys():[];for(const k of ks){if(/^yatra-v12/.test(k)){const c=await caches.open(k);for(const q of await c.keys()){if(/index\.html|\/$/.test(q.url))await c.delete(q)}}}
+ try{const regs=await navigator.serviceWorker.getRegistrations();regs.forEach(g=>g.update())}catch(e){}
+ location.reload()}catch(e){}})();
+
+/* ---------- 4. Expenses: statement PDF / Excel next to the person picker ---------- */
+new MutationObserver(()=>{const t=$q('#v .mny .mtop');if(!t||t.querySelector('.v46st'))return;const b=document.createElement('button');b.type='button';b.className='v46st';b.innerHTML='📄 '+tt('PDF / Excel','PDF / एक्सेल');b.title=tt('Statement of everyone or one person','सबका या एक व्यक्ति का विवरण');b.onclick=()=>{try{HUB.p=null;stmtHub()}catch(e){}};t.appendChild(b)}).observe(document.body,{childList:true,subtree:true});
+
+/* ---------- 5. admin hero card text ---------- */
+new MutationObserver(()=>{const m=$q('#v .v35m small.mut');if(!m||m.dataset.v46)return;m.dataset.v46=1;let n=0;try{n=Object.keys((window.GDRIVE&&GDRIVE.files)||{}).filter(p=>/^videos\/.+\.mp4$/.test(p)).length+Object.keys((window.DOCS&&DOCS.idx)||{}).filter(p=>/^videos\/.+\.mp4$/.test(p)).length}catch(e){}
+ m.textContent=tt('Video plays where a clip exists ('+n+' in Drive), otherwise the animation; photo if neither works. Put clips in Drive → videos, named hero-<scene>.mp4 (for example hero-train.mp4, hero-meenakshi.mp4).','जहाँ क्लिप हो वहाँ वीडियो (Drive में '+n+'), नहीं तो एनिमेशन; दोनों न चलें तो फ़ोटो। क्लिप Drive → videos में hero-<scene>.mp4 नाम से रखें (जैसे hero-train.mp4, hero-meenakshi.mp4)।')}).observe(document.body,{childList:true,subtree:true});
+
+const st=document.createElement('style');st.textContent=`
+.v46p,.v46p *,#hero7 .h7sc:not(.on) *{animation-play-state:paused!important}
+body.v46kb #nav,body.v46kb #bnav,body.v46kb .bnav{display:none!important}
+.mny .mtop{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.mny .mtop select{flex:1;min-width:140px}
+.v46st{border:0;border-radius:12px;padding:10px 12px;font-weight:800;background:var(--acc);color:#fff;white-space:nowrap;box-shadow:var(--shadow)}
+@media (min-width:900px){main#v{max-width:880px;margin-left:auto;margin-right:auto}}
+@media (max-width:440px){header.top{gap:5px!important;padding-left:8px!important;padding-right:8px!important}header.top>.ic,header.top>button.ic{width:38px!important;height:38px!important;min-width:38px!important;font-size:16px!important;padding:0!important}header.top .brand{min-width:0;flex:1 1 auto;overflow:hidden}header.top .brand h1{font-size:18px!important;white-space:nowrap}header.top .brand #orn0{display:none}}
+.mny .mtop h2{flex:1 1 100%;margin-bottom:2px}`;document.head.appendChild(st);
 })();
 </script>
 
