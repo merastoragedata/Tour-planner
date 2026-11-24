@@ -33,6 +33,8 @@ DONE v48 (24 Nov): Today scene card + hero scene arrows Ashish-only; simulator f
 DONE v49 (24 Nov): guided Google Drive key setup gdWizard() (admin) – 6 steps with Google Console links, copy buttons (project name, site restriction location.origin+'/*'), live key test against the Yatra root folder with plain-language error causes, Save for everyone via gdKeySave; entry from Downloads warning, Settings → Documents box and Settings list; v49dw and v47rd added to the back-button overlay list.
 DONE v50 (24 Nov): documents ready on the phone – Drive sync starts at 0.3 s, prefetch 4 at a time in order darshan > tickets > stays (videos skipped), event gdready; pdf.js + pdf-lib preloaded; pass crop boxes and photo crops cached (localStorage yatra_bbc + Cache yatra-dl crop|path|version); Aadhaar pages memoised per person+images+watermark; the ticked set is built in the background and kept as Cache yatra-dl ready/<signature of file versions> (meta yatra_ready, 6 kept) so Download/View of it is instant, rebuilt only when a file changes; 'Saved on this phone' list and file-count line removed; viewers (.vw, sheets) open above Downloads; sheets get ← Back; phone back closes the viewer before Downloads (vwo token, __ovPop skips while #vw open); drawer closes on back.
 DONE v51 (24 Nov): alerts log – table yatra_notes (anon select only), edge notify v2 writes every alert there (and test pushes reach the sender), tick v4 logs alarms; bell (#nbell → notifOpen) lists all alerts for me (to_u null or mine, not my own), unread count on #nbd, ✕ per alert, Clear all (cutoff id), local banners kept too (deduped), push on/off card; polling 45 s. Voices: edge function tts (keys sarvam_key, google_tts_key, bh_uid, bh_key and usage tts_usage in yatra_secrets): Sarvam until 95% of limit (default 333000 chars, off on 402/403/429) → Google Cloud TTS until 95% of each voice type's free monthly chars (Chirp3-HD/Neural2 1M, WaveNet/Standard 4M) → Bhashini → phone; phGen2 and story voice (elMake) use it; ElevenLabs removed; old phone-stored keys move to the server once; Bhashini WAV stored as 'W:' in phrase packs. Push itself was already live since v6 (yatra_push, VAPID in yatra_secrets, cron yatra-tick every minute).
+DONE v52 (24 Nov): pass PDF (Downloads + print): Srirangam passes sorted by person then time, page break at each person, so one person's Perumal + Thayar share a page (Divya's 3rd pass alone); next set starts on a new page; ready-PDF signature bumped (L2) so old bundles rebuild.
+DONE v53 (24 Nov): Divya's second Srirangam Perumal pass (srp, 3 PM) left out of Downloads (window.__dlSkip in catalog), still on the Passes page and its print.
 NOT DONE: Supabase switched on and tested; Hindi; fetching photos from Google Photos (Google does not allow it for shared albums: the button opens the album); WhatsApp-only features (calls, end-to-end encryption, status); family info cards with verified Hindi video links; food stops; coach orders for other trains (owner will send screenshots); detailed itinerary (owner will send); NITR voucher 6006386739 PDF (upload was overwritten, ask owner to re-send); unverified Where Is My Train package name com.whereismytrain.android.
 OPEN DECISIONS: Trivandrum and Kanyakumari stays are FINALISED; TVC to Kanyakumari travel (16649 or road); Madurai to Rameswaram (16343 or 56711); Tirupati to Kanchipuram (16204, or Arakkonam by train then road); accommodation for TVC night 30 Nov, Madurai, Rameswaram, Tirupati, Kanchipuram; Atul Jabalpur to Itarsi ticket; Vinit cancellations; one duplicate Trichy to Tirupati set.
 V7 PHASE 1 (5 Nov 2026): one-row header (Aa, हिं, theme button, avatar; title always visible); sheets with close bar; ticket-card letter-spacing bug fixed (.tk); Today: Photos/Chat buttons restored (games CSS .bigb override neutralised), story cards above notification card; carousel no longer changes theme, auto theme only during trip by itinerary; past events fold; either/or journeys dropdown (ST.choice, ST.opts; admin only; shared keys); expense form all options in 2 columns, split-how dropdown default Nil; text size 80-170% via --fs on every font-size; per-user prefs pf_<user> (install/notification choices, background) sync via kv once Supabase is live; backgrounds (presets + own photo, photo local); calmer shankh/train animations. ORIGINAL FILES NOW OPEN FROM GOOGLE DRIVE: DRV map (path -> Drive file id) is baked into the script from folder 1LIZ-maFCtxpuACoplwml-FHN4zhlHduI (tickets/, stays/, reference/); viewer = Drive /preview iframe. New files added to Drive need their ids added to DRV. NEXT: phase 2 map, phase 3 games.
@@ -5992,8 +5994,12 @@ async function cropBox(lib,page){const v=page.getViewport({scale:1});let top=0,b
  if(x1<=x0)return{x:0,y:0,w:v.width,h:v.height,c};const m=4;return{x:Math.max(0,x0/sc-m),y:Math.max(0,y0/sc-m),w:Math.min(v.width,(x1-x0)/sc+2*m),h:Math.min(v.height,(y1-y0)/sc+2*m),c,sc}}
 
 /* ---- print PDF: two passes on each A4 page ---- */
-const dpSortKey=p=>[+new Date((DPK[p.k]||{}).d||0),p.k,ORDER.indexOf(p.u)];
-const byKey=(a,b)=>{const x=dpSortKey(a),y=dpSortKey(b);for(let i=0;i<3;i++){if(x[i]<y[i])return -1;if(x[i]>y[i])return 1}return 0};
+/* not offered in Downloads (still on the Passes page): Divya's second Srirangam Perumal pass (3 PM) */
+window.__dlSkip=p=>p&&p.k=='srp'&&p.u=='d';
+/* Srirangam: each person's Perumal and Thayar passes sit together on one page */
+const srg=p=>/srirangam/i.test((DPK[p.k]||{}).city||'');
+const dpSortKey=p=>{const K=DPK[p.k]||{},d=new Date(K.d||0);if(srg(p))return [new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime(),'~srirangam',ORDER.indexOf(p.u),+d,p.k];return [+d,p.k,ORDER.indexOf(p.u),0,''];};
+const byKey=(a,b)=>{const x=dpSortKey(a),y=dpSortKey(b);for(let i=0;i<5;i++){if(x[i]<y[i])return -1;if(x[i]>y[i])return 1}return 0};
 const BBC=window.__BBC=(()=>{try{return JSON.parse(localStorage.getItem('yatra_bbc')||'{}')||{}}catch(e){return{}}})(),bbSave=()=>{try{localStorage.setItem('yatra_bbc',JSON.stringify(BBC))}catch(e){}};
 const fver=pp=>((window.GDRIVE&&GDRIVE.files[pp])||{}).mt||((window.DOCS&&DOCS.idx[pp])||{}).t||'';
 async function cropC(pp){const k='crop|'+pp+'|'+fver(pp),m=BBC[k],u='https://dl.local/'+encodeURIComponent(k);if(m){try{const r=await(await caches.open('yatra-dl')).match(u);if(r)return{blob:await r.blob(),w:m.w,h:m.h}}catch(e){}}const cr=await cropShot(await window.docBlob(pp));try{await(await caches.open('yatra-dl')).put(u,new Response(cr.blob,{headers:{'Content-Type':cr.blob.type||'image/jpeg'}}));BBC[k]={w:cr.w,h:cr.h};bbSave()}catch(e){}return cr}
@@ -6008,7 +6014,8 @@ window.dpsPrint=async function(mode){const lib0=await pdfLib().catch(()=>null);i
  if(mode=='all'||!mode){try{if(has('tickets/P-06400122.pdf')){const src=await PDFDocument.load(await ab(await window.docBlob('tickets/P-06400122.pdf')));const pg=src.getPage(0),{width,height}=pg.getSize();const[e]=await out.embedPdf(src,[0]);items.push({e,w:width,h:height,p:{name:'All 8 pilgrims',k:'_fy'},fy:1})}}catch(x){}}
  if(!items.length){if(X)return{n:0,miss};return say(tt('No passes in the store yet. Admin: import the pack first.','अभी कोई पास नहीं। एडमिन: पहले पैक इम्पोर्ट करें।'))}
  const A4=[595.28,841.89],M=22,W=A4[0]-2*M,H=A4[1]-2*M;let page=null,slot=0,shape='';const grey=rgb(.4,.4,.4);
- for(const it of items){const s1=Math.min(W/it.w,(H-14)/it.h),s2=it.w>=it.h?Math.min(W/it.w,(H/2-26)/it.h):Math.min((W/2-8)/it.w,(H-14)/it.h),sh=it.fy||s2<s1*.8?'fy':it.w>=it.h?'wide':'tall';if(!page||slot>=2||sh!=shape||sh=='fy'){page=out.addPage(A4);slot=0;shape=sh;
+ items.forEach((it,i)=>{if(srg(it.p)&&!it.fy&&(i==0||!srg(items[i-1].p)||items[i-1].p.u!==it.p.u))it.brk=1;if(!srg(it.p)&&i>0&&srg(items[i-1].p))it.brk=1});
+ for(const it of items){const s1=Math.min(W/it.w,(H-14)/it.h),s2=it.w>=it.h?Math.min(W/it.w,(H/2-26)/it.h):Math.min((W/2-8)/it.w,(H-14)/it.h),sh=it.fy||s2<s1*.8?'fy':it.w>=it.h?'wide':'tall';if(!page||slot>=2||sh!=shape||sh=='fy'||it.brk){page=out.addPage(A4);slot=0;shape=sh;
    if(sh=='fy'){}else if(sh=='wide')page.drawLine({start:{x:M,y:A4[1]/2-2},end:{x:A4[0]-M,y:A4[1]/2-2},thickness:.6,color:rgb(.6,.6,.6),dashArray:[4,4]});else page.drawLine({start:{x:A4[0]/2,y:M},end:{x:A4[0]/2,y:A4[1]-M},thickness:.6,color:rgb(.6,.6,.6),dashArray:[4,4]})}
   const sl=sh=='fy'?{x:M,y:M,w:W,h:H-14}:sh=='wide'?{x:M,y:slot==0?A4[1]/2+12:M,w:W,h:H/2-26}:{x:slot==0?M:A4[0]/2+8,y:M,w:W/2-8,h:H-14};
   const s=Math.min(sl.w/it.w,sl.h/it.h),w=it.w*s,h=it.h*s,x=sl.x+(sl.w-w)/2,y=sl.y+sl.h-h;
@@ -7143,7 +7150,7 @@ const tkFiles=id=>{try{return drvList(id)||[]}catch(e){return []}};
 function catalog(){const C=[];
  /* passes, by temple set */
  const ps={pass:{k:'pass',ic:'🎫',l:tt('Darshan passes','दर्शन पास'),g:[]}};try{
-  const sets={};(DP||[]).forEach(p=>{if(p.del)return;const key=p.grp||p.id;const s=sets[p.k]=sets[p.k]||{k:p.k,it:[],seen:{}};if(s.seen[key])return;s.seen[key]=1;
+  const sets={};(DP||[]).forEach(p=>{if(p.del)return;if(window.__dlSkip&&__dlSkip(p))return;const key=p.grp||p.id;const s=sets[p.k]=sets[p.k]||{k:p.k,it:[],seen:{}};if(s.seen[key])return;s.seen[key]=1;
    const who=p.grp?DP.filter(x=>x.grp==p.grp).map(x=>String(x.name||'').split(' ')[0]).join(', '):p.name;s.it.push({id:'p:'+p.id,kind:'pass',pid:p.id,l:who||p.name||p.id,sub:p.ack||'',u:p.u})});
   Object.values(sets).sort((a,b)=>+new Date((DPK[a.k]||{}).d||0)-+new Date((DPK[b.k]||{}).d||0)).forEach(s=>{const K=DPK[s.k]||{};ps.pass.g.push({id:'ps:'+s.k,l:(K.city?K.city+' · ':'')+String(K.pass||K.temple||'').split(' · ')[0],sub:K.d?dshort(K.d)+(K.win?' · '+K.win:''):'',it:s.it})});
   if(typeof FY!='undefined')ps.pass.g.push({id:'ps:fy',l:tt('Kanyakumari ferry · Vivekananda Rock','कन्याकुमारी फेरी · विवेकानंद शिला'),sub:'2 Dec · '+FY.slot,it:[{id:'f:'+FY.id,kind:'file',fid:FY.id,l:tt('All 8 pilgrims · one ticket','सभी 8 यात्री · एक टिकट'),sub:FY.id}]});
@@ -7571,7 +7578,7 @@ const st=document.createElement('style');st.textContent=`
 (function(){
 const $q=s=>document.querySelector(s);
 const tt=(a,b)=>{try{return rt2(a,b)}catch(e){return a}};
-const BUILD='v51-20261124';
+const BUILD='v53-20261124';
 
 /* ---------- 1. pause what is off screen ---------- */
 const SEL='#mgrow > *, #wx8s, .wx8s, .cvg, #v svg.s7svg, #v .mgi, #v .p4h, #v .pzh, #v .dpg > *, #wm svg';
@@ -7917,7 +7924,7 @@ function sigOf(sel){const ids=[...sel].sort(),parts=[];
   if(k=='p:'){const p=(window.DP||[]).find(x=>x.id==v);if(p){const b='darshan/'+p.f;parts.push(id+'@'+['.pdf','.jpg','.png'].map(e=>ver(b+e)).join(','))}else parts.push(id)}
   else if(k=='a:')parts.push(id+'@'+aaSig(v));
   else{let l=[];try{l=drvList(v)||[]}catch(e){}parts.push(id+'@'+l.map(f=>(f.path||f.id||f.u||'')+':'+(f.path?ver(f.path):'')).join(','))}}
- return h32(parts.join(';'))+'-'+ids.length}
+ return h32('L2;'+parts.join(';'))+'-'+ids.length}
 const RM=new Map();let META={};try{META=JSON.parse(localStorage.getItem('yatra_ready')||'{}')||{}}catch(e){}
 const metaSave=()=>{try{const ks=Object.keys(META).sort((a,b)=>META[b].t-META[a].t);const keep={};ks.slice(0,6).forEach(k=>keep[k]=META[k]);META=keep;localStorage.setItem('yatra_ready',JSON.stringify(META))}catch(e){}};
 async function rGet(sig){if(RM.has(sig))return RM.get(sig);const m=META[sig];if(!m)return null;try{const r=await(await caches.open(DLC)).match(U('ready/'+sig));if(!r)return null;const by=new Uint8Array(await r.arrayBuffer());const o={bytes:by,n:m.n,miss:m.miss||[]};RM.set(sig,o);return o}catch(e){return null}}
