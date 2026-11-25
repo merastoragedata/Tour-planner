@@ -40,6 +40,7 @@ DONE v55 (25 Nov): Maps & Trains train dropdown fixed (it showed "undefined": v3
 DONE v56 (25 Nov): bottom bar (v56js) = Today, Trip, Maps & Trains, Expenses, Pilgrims + More; More opens a sheet with every other page (Chat, Checklist, Weather, Phrases, Alarms, People, Videos, To do, Settings, Drive for admin) and carries the chat unread count; phone back closes the sheet; bars with fewer than 7 items (Vinit, kids) unchanged. Tried moving all code to a separate app.js: measured on a 6x slowed CPU it was SLOWER (one 1.7 s blocking task instead of many short ones, no gain on repeat opens), so the portal stays ONE file.
 NOT DONE: Supabase switched on and tested; Hindi; fetching photos from Google Photos (Google does not allow it for shared albums: the button opens the album); WhatsApp-only features (calls, end-to-end encryption, status); family info cards with verified Hindi video links; food stops; coach orders for other trains (owner will send screenshots); detailed itinerary (owner will send); NITR voucher 6006386739 PDF (upload was overwritten, ask owner to re-send); unverified Where Is My Train package name com.whereismytrain.android.
 DONE v57 (25 Nov): 30 Nov plan = Padmanabhaswamy 6:30, Pazhavangadi Ganapathy, Attukal before 12, Udupis check-out 12:00, Kovalam check-in 13:30, Poovar boat, Kovalam sunset (Shankhumukham dropped from SG). 1 Dec = two plans on To decide item 1 (OPT0[1], same ST.choice[1]): 0 Zoo plan (Kovalam out 8:00, Azhimala, Chenkal, zoo, 16649 TVC 18:50 -> CAPE 21:20), 1 Chenkal plan (Kovalam out 9:30, Azhimala, Chenkal, 20636 from Neyyattinkara ~16:25 unverified -> Nagercoil Town 17:18, dinner, 16649 NJT 20:08 -> CAPE 21:20). SG rows for 1 Dec and the pending time / Kovalam check-out read ST.choice[1] (getters + applyChoices wrapper); Triveni check-in 21:45. Old choice 1 ('By road') now means Chenkal plan. Zoo closed Mondays (30 Nov is Monday).
+DONE v58 (25 Nov): stay times follow the travel plan (block v58 before the expense form): S0 keeps booked times; each render sets S[2]/S[3] = planned check-in (later of booked and last guest arrival + local travel TRF) and planned check-out (earlier of booked and next guest departure - travel - 30 min); legs = T tickets + PEND items with a time (arrival = last HH:MM in the decided option); STAYMAN holds day-trip times (Kovalam: in 13:30, out 8:00 zoo plan / 9:30 Chenkal plan); stay note gets 'Planned in/out (reason) · hotel times'. 30 Nov: Udupis out 12:00 -> Kovalam 14 km, lunch, check-in 13:30 -> Poovar 17 km -> back for sunset (Kovalam is on the way, so checking in first costs only the stop).
 OPEN DECISIONS: Trivandrum and Kanyakumari stays are FINALISED; 1 Dec plan (Zoo or Chenkal; verify 20636 time at Neyyattinkara); Madurai to Rameswaram (16343 or 56711); Tirupati to Kanchipuram (16204, or Arakkonam by train then road); accommodation for TVC night 30 Nov, Madurai, Rameswaram, Tirupati, Kanchipuram; Atul Jabalpur to Itarsi ticket; Vinit cancellations; one duplicate Trichy to Tirupati set.
 V7 PHASE 1 (5 Nov 2026): one-row header (Aa, हिं, theme button, avatar; title always visible); sheets with close bar; ticket-card letter-spacing bug fixed (.tk); Today: Photos/Chat buttons restored (games CSS .bigb override neutralised), story cards above notification card; carousel no longer changes theme, auto theme only during trip by itinerary; past events fold; either/or journeys dropdown (ST.choice, ST.opts; admin only; shared keys); expense form all options in 2 columns, split-how dropdown default Nil; text size 80-170% via --fs on every font-size; per-user prefs pf_<user> (install/notification choices, background) sync via kv once Supabase is live; backgrounds (presets + own photo, photo local); calmer shankh/train animations. ORIGINAL FILES NOW OPEN FROM GOOGLE DRIVE: DRV map (path -> Drive file id) is baked into the script from folder 1LIZ-maFCtxpuACoplwml-FHN4zhlHduI (tickets/, stays/, reference/); viewer = Drive /preview iframe. New files added to Drive need their ids added to DRV. NEXT: phase 2 map, phase 3 games.
 -->
@@ -2107,7 +2108,7 @@ const _openPend7=openPend;openPend=function(j){applyChoices();_openPend7(j);cons
  /* 30 Nov */
  SG[0][3]='6:30 AM · strict dress code, no phones · Pazhavangadi Ganapathy is a 5-minute walk';
  SG[1]=['1130','Pazhavangadi Ganapathy and Attukal Bhagavathy','temple','Ganapathy 9:30 AM · Attukal before 12:00 (closes about 12:30) · check out of Sri Udupis Inn by 12:00, luggage in the vehicle'];
- SG.push(['1130','Poovar backwaters and Kovalam Lighthouse Beach','beach','Evening by the sea · lunch, Kovalam check-in about 13:30, Poovar boat 14:15, back for the Kovalam sunset (about 17:50)']);
+ SG.push(['1130','Poovar backwaters and Kovalam Lighthouse Beach','beach','Evening by the sea · drive to Kovalam 12:00 (14 km), lunch there, check in 13:30 · leave 14:00 for Poovar (17 km, 40 min) · boat 14:45–16:30 (boats stop at dusk) · back at Kovalam 17:15 for the sunset (about 18:00)']);
  /* 1 Dec: rows read the admin's choice every time they are shown */
  const pl=()=>{try{const c=(ST.choice||{})[1];return c===0||c===1?c:-1}catch(e){return -1}};
  const dyn=(r,f)=>{Object.keys(f).forEach(i=>Object.defineProperty(r,i,{enumerable:true,configurable:true,get:f[i]}));return r};
@@ -2121,16 +2122,58 @@ const _openPend7=openPend;openPend=function(j){applyChoices();_openPend7(j);cons
   3:()=>['Lunch 12:30 · zoo 13:15–16:30 (open on Tuesdays) · dinner near Trivandrum Central or at the Cape · 16649 at 18:50 → Kanyakumari 21:20',
    'Train 20636 from Neyyattinkara about 16:25 (verify) → Nagercoil Town 17:18 · dinner in Nagercoil · 16649 Nagercoil Town 20:08 → Kanyakumari 21:20',
    'Trip → To decide → Trivandrum → Kanyakumari'][pl()<0?2:pl()]}));
- /* stay times follow the plan (check-in/out are flexible) */
- const KV=S.find(s=>s[7]==='SMH-262'),KK=S.find(s=>s[7]==='GH25020279147548');
- if(KV)KV[2]='1130 1330';
- if(KK)KK[2]='1201 2145';
  const _ac=applyChoices;
  applyChoices=function(){try{if(ST.opts&&ST.opts[1]){ST.opts[1][0]=OP[0];ST.opts[1][1]=OP[1]}}catch(e){}
   _ac.apply(this,arguments);const c=pl();
-  PEND[1][0]=c===1?'1201 1625':'1201 1850';
-  if(KV)KV[3]=c===1?'1201 0930':'1201 0800'};
+  PEND[1][0]=c===1?'1201 1625':'1201 1850'};
  try{applyChoices()}catch(e){}
+})();
+// --- v58 (25 Nov): stay times follow the travel plan. Booked hotel times stay in S0; every render works out the planned check-in/out:
+//     check-in  = later of booked check-in and (last arrival of the guests in that city + local travel), so a late arrival means a late check-in;
+//     check-out = earlier of booked check-out and (next departure of the guests from that city - local travel - 30 min at the station);
+//     legs = train tickets + pending legs with a time (decided option text gives the arrival); day-trip plans set Kovalam by hand (STAYMAN).
+(function(){
+ const S0=S.map(s=>s.slice());
+ const key=n=>String(n||'').toLowerCase().replace(/thiruvananthapuram|trivandrum( central)?/g,'trivandrum').replace(/\b(jn|junction|central|town|cntl)\b/g,'').replace(/[^a-z]/g,'');
+ const names=c=>String(c).split(/[()]/).map(key).filter(Boolean);
+ const same=(a,b)=>a===b||(a.length>4&&b.length>4&&(a.includes(b)||b.includes(a)));
+ /* station or town -> minutes to the stay (road, with luggage) */
+ const TRF={nagpur:25,nscboseitwari:10,trivandrum:20,kovalam:30,kanyakumari:15,madurai:20,rameswaram:15,tiruchirappalli:25,tirupati:20,kanchipuram:15};
+ const trf=(...k)=>{for(const x of k)if(TRF[x]!=null)return TRF[x];return 20};
+ const BUF=30;
+ const fmt=d=>String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0');
+ const hm=d=>String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+ const pl=()=>{try{const c=(ST.choice||{})[1];return c===0||c===1?c:-1}catch(e){return -1}};
+ /* plan-made times that no train decides (day trips by road) */
+ const STAYMAN={'SMH-262':()=>({i:'1130 1330',o:pl()===1?'1201 0930':'1201 0800',why:'day plan'})};
+ function legs(){const L=[];
+  T.forEach(t=>{const ppl=String(t[8]).split('|').map(x=>x.split('=')[0]);L.push({f:key(t[2]),t:key(t[3]),dep:D(t[4]),arr:D(t[5]),ppl,lb:t[1]})});
+  PEND.forEach((p,j)=>{const m=/^(.+?)\s*→\s*(.+?)(\s*\(.*)?$/.exec(p[1]);if(!m||!/^\d{4} \d{4}$/.test(p[0]))return;
+   const dep=D(p[0]),c=(ST.choice||{})[j],o=(typeof optsOf=='function'&&optsOf(j))||null,txt=(c!=null&&o&&o[c])||'';
+   const tm=[...txt.matchAll(/(\d{1,2}):(\d{2})/g)].map(x=>+x[1]*60+ +x[2]),dm=dep.getHours()*60+dep.getMinutes();
+   let arr=null;if(tm.length){const a=tm[tm.length-1];if(a>dm){arr=new Date(dep);arr.setHours(0,a,0,0)}}
+   L.push({f:key(m[1]),t:key(m[2]),dep,arr,ppl:null,lb:'pending'})});
+  return L}
+ function plan(){let L;try{L=legs()}catch(e){return}
+  S.forEach((s,i)=>{const b=S0[i];s[2]=b[2];s[3]=b[3];s[6]=b[6];
+   const man=STAYMAN[s[7]]&&STAYMAN[s[7]]();
+   const bi=D(b[2]),bo=D(b[3]),nm=names(b[1]),who=b[5].split(''),inc=l=>!l.ppl||l.ppl.some(p=>who.includes(p));
+   let ni=bi,no=bo,whyI='',whyO='';
+   if(man){ni=D(man.i);no=D(man.o);whyI=whyO=man.why}else{
+    /* arrival: legs into this city that land from 12 h before booked check-in until check-out */
+    L.filter(l=>l.arr&&inc(l)&&nm.some(n=>same(n,l.t))&&l.arr>=bi-432e5&&l.arr<bo).forEach(l=>{const x=new Date(+l.arr+trf(l.t,...nm)*6e4);if(x>ni){ni=x;whyI='arrival '+hm(l.arr)}});
+    /* departure: legs out of this city after check-in, up to 12 h after booked check-out */
+    L.filter(l=>inc(l)&&nm.some(n=>same(n,l.f))&&l.dep>ni&&l.dep<=+bo+432e5).forEach(l=>{const x=new Date(+l.dep-(trf(l.f,...nm)+BUF)*6e4);if(x<no){no=x;whyO=(l.lb==='pending'?'train ':'train '+l.lb+' ')+hm(l.dep)}});
+   }
+   if(no<=ni)return;
+   const fi=fmt(ni),fo=fmt(no);if(fi===b[2]&&fo===b[3])return;
+   s[2]=fi;s[3]=fo;
+   const ch=[];if(fi!==b[2])ch.push('in '+hm(ni)+(whyI?' ('+whyI+')':''));if(fo!==b[3])ch.push('out '+hm(no)+(whyO?' ('+whyO+')':''));
+   s[6]=b[6]+' · Planned '+ch.join(', ')+' · hotel times '+hm(bi)+' → '+hm(bo)});
+ }
+ window.stayPlan=plan;
+ const _ac8=applyChoices;applyChoices=function(){_ac8.apply(this,arguments);try{plan()}catch(e){}};
+ try{plan()}catch(e){}
 })();
 // --- expense form: same options as before, arranged in two columns; split-how is a dropdown (nil by default) ---
 xfReset=function(){XF={pay:{[me()]:''},sel:'akshltud'.split(''),mode:'',ind:{}}};
@@ -7628,7 +7671,7 @@ const st=document.createElement('style');st.textContent=`
 (function(){
 const $q=s=>document.querySelector(s);
 const tt=(a,b)=>{try{return rt2(a,b)}catch(e){return a}};
-const BUILD='v57-20261125';
+const BUILD='v58-20261125';
 
 /* ---------- 1. pause what is off screen ---------- */
 const SEL='#mgrow > *, #wx8s, .wx8s, .cvg, #v svg.s7svg, #v .mgi, #v .p4h, #v .pzh, #v .dpg > *, #wm svg';
