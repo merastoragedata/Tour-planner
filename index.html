@@ -39,7 +39,8 @@ DONE v54 (24 Nov): NEW DOCUMENTS IN SUPABASE STORAGE, LOADED ONLY ON REQUEST. Fi
 DONE v55 (25 Nov): Maps & Trains train dropdown fixed (it showed "undefined": v32 defined window.m7Lbl for station labels and overwrote the dropdown's label function, now m7TrLbl). Startup speed: head script v55boot sets __BOOT; base render() returns early while loading and v55bootend (last script) renders once – on a 6x slowed CPU DOMContentLoaded went 9.5 s -> 2.8 s and main-thread long tasks 8.0 s -> 3.7 s. Polish layer v55js: solid 16px form fields with focus ring, press feedback, keyboard focus outlines, one card shadow, balanced headings, Today hero text shadow, Expenses tiles in one row of 5, duplicate section heading hidden (.v55dup), slim Others row, bottom bar keeps the current page centred with edge fades only when it scrolls, nav label 'Expenses', tabular numbers, content-visibility on long lists (.p4c, closed .fdy days, .plist, .lmsl), html.lowend (<=4 GB RAM or <=4 cores or data saver) drops backdrop blur only – animations untouched. Console: prep warning on a failed CDN load is now debug. NEXT (owner asked 25 Nov, after he changes the itinerary on 26 Nov): admin page to paste a YouTube link per destination so that video plays for that destination.
 DONE v56 (25 Nov): bottom bar (v56js) = Today, Trip, Maps & Trains, Expenses, Pilgrims + More; More opens a sheet with every other page (Chat, Checklist, Weather, Phrases, Alarms, People, Videos, To do, Settings, Drive for admin) and carries the chat unread count; phone back closes the sheet; bars with fewer than 7 items (Vinit, kids) unchanged. Tried moving all code to a separate app.js: measured on a 6x slowed CPU it was SLOWER (one 1.7 s blocking task instead of many short ones, no gain on repeat opens), so the portal stays ONE file.
 NOT DONE: Supabase switched on and tested; Hindi; fetching photos from Google Photos (Google does not allow it for shared albums: the button opens the album); WhatsApp-only features (calls, end-to-end encryption, status); family info cards with verified Hindi video links; food stops; coach orders for other trains (owner will send screenshots); detailed itinerary (owner will send); NITR voucher 6006386739 PDF (upload was overwritten, ask owner to re-send); unverified Where Is My Train package name com.whereismytrain.android.
-OPEN DECISIONS: Trivandrum and Kanyakumari stays are FINALISED; TVC to Kanyakumari travel (16649 or road); Madurai to Rameswaram (16343 or 56711); Tirupati to Kanchipuram (16204, or Arakkonam by train then road); accommodation for TVC night 30 Nov, Madurai, Rameswaram, Tirupati, Kanchipuram; Atul Jabalpur to Itarsi ticket; Vinit cancellations; one duplicate Trichy to Tirupati set.
+DONE v57 (25 Nov): 30 Nov plan = Padmanabhaswamy 6:30, Pazhavangadi Ganapathy, Attukal before 12, Udupis check-out 12:00, Kovalam check-in 13:30, Poovar boat, Kovalam sunset (Shankhumukham dropped from SG). 1 Dec = two plans on To decide item 1 (OPT0[1], same ST.choice[1]): 0 Zoo plan (Kovalam out 8:00, Azhimala, Chenkal, zoo, 16649 TVC 18:50 -> CAPE 21:20), 1 Chenkal plan (Kovalam out 9:30, Azhimala, Chenkal, 20636 from Neyyattinkara ~16:25 unverified -> Nagercoil Town 17:18, dinner, 16649 NJT 20:08 -> CAPE 21:20). SG rows for 1 Dec and the pending time / Kovalam check-out read ST.choice[1] (getters + applyChoices wrapper); Triveni check-in 21:45. Old choice 1 ('By road') now means Chenkal plan. Zoo closed Mondays (30 Nov is Monday).
+OPEN DECISIONS: Trivandrum and Kanyakumari stays are FINALISED; 1 Dec plan (Zoo or Chenkal; verify 20636 time at Neyyattinkara); Madurai to Rameswaram (16343 or 56711); Tirupati to Kanchipuram (16204, or Arakkonam by train then road); accommodation for TVC night 30 Nov, Madurai, Rameswaram, Tirupati, Kanchipuram; Atul Jabalpur to Itarsi ticket; Vinit cancellations; one duplicate Trichy to Tirupati set.
 V7 PHASE 1 (5 Nov 2026): one-row header (Aa, हिं, theme button, avatar; title always visible); sheets with close bar; ticket-card letter-spacing bug fixed (.tk); Today: Photos/Chat buttons restored (games CSS .bigb override neutralised), story cards above notification card; carousel no longer changes theme, auto theme only during trip by itinerary; past events fold; either/or journeys dropdown (ST.choice, ST.opts; admin only; shared keys); expense form all options in 2 columns, split-how dropdown default Nil; text size 80-170% via --fs on every font-size; per-user prefs pf_<user> (install/notification choices, background) sync via kv once Supabase is live; backgrounds (presets + own photo, photo local); calmer shankh/train animations. ORIGINAL FILES NOW OPEN FROM GOOGLE DRIVE: DRV map (path -> Drive file id) is baked into the script from folder 1LIZ-maFCtxpuACoplwml-FHN4zhlHduI (tickets/, stays/, reference/); viewer = Drive /preview iframe. New files added to Drive need their ids added to DRV. NEXT: phase 2 map, phase 3 games.
 -->
 <html lang="en"><head>
@@ -2096,6 +2097,41 @@ function addOpt(j){if(!isAdm())return toast('Only admins can add options');const
 const _openPend7=openPend;openPend=function(j){applyChoices();_openPend7(j);const o=optsOf(j);if(!o)return;const c=(ST.choice||{})[j],card=$('#sh .card.pend');if(!card)return;
  const ctl=isAdm()?`<h4 class="mini">Choose the option</h4><select class="xsel" onchange="setChoice(${j},this.value)"><option value="">— Not decided —</option>${o.map((x,i)=>`<option value="${i}" ${c==i?'selected':''}>${x}</option>`).join('')}</select><div class="btns"><button onclick="addOpt(${j})">+ Add option</button></div>`:`<h4 class="mini">Options</h4>${o.map((x,i)=>`<div class="cpr ${c==i?'me':''}"><span>${x}</span>${c==i?'<span class="okb">CHOSEN</span>':''}</div>`).join('')}<p class="mut small">${c!=null?'Decided by the admin.':'Waiting for the admin to decide.'}</p>`;
  card.insertAdjacentHTML('afterend',ctl);const b=$('#sh .phb');if(b&&c!=null){b.textContent='DECIDED';b.style.background='#2a7d45'}};
+// --- v57 (25 Nov): day plans for 30 Nov and 1 Dec; 1 Dec has two plans, chosen by the admin in To decide item 1 (Trivandrum -> Kanyakumari) ---
+(function(){
+ const OP=['Zoo plan · Kovalam → Azhimala → Chenkal → Zoo · Parasuram 16649 Trivandrum Central 18:50 → Kanyakumari 21:20 (direct, no change at Nagercoil) · dinner at Trivandrum or the Cape',
+  'Chenkal plan · no zoo · Anantapuri 20636 from Neyyattinkara (about 16:25, verify) → Nagercoil Town 17:18 · dinner in Nagercoil · Parasuram 16649 Nagercoil Town 20:08 → Kanyakumari 21:20'];
+ OPT0[1]=OP.slice();
+ PEND[1][1]=PEND0[1][1]='Trivandrum → Kanyakumari (1 Dec plan)';
+ PEND[1][2]=PEND0[1][2]='Zoo plan (16649 from Trivandrum 18:50) or Chenkal plan (train from Neyyattinkara, dinner in Nagercoil) · admin decides';
+ /* 30 Nov */
+ SG[0][3]='6:30 AM · strict dress code, no phones · Pazhavangadi Ganapathy is a 5-minute walk';
+ SG[1]=['1130','Pazhavangadi Ganapathy and Attukal Bhagavathy','temple','Ganapathy 9:30 AM · Attukal before 12:00 (closes about 12:30) · check out of Sri Udupis Inn by 12:00, luggage in the vehicle'];
+ SG.push(['1130','Poovar backwaters and Kovalam Lighthouse Beach','beach','Evening by the sea · lunch, Kovalam check-in about 13:30, Poovar boat 14:15, back for the Kovalam sunset (about 17:50)']);
+ /* 1 Dec: rows read the admin's choice every time they are shown */
+ const pl=()=>{try{const c=(ST.choice||{})[1];return c===0||c===1?c:-1}catch(e){return -1}};
+ const dyn=(r,f)=>{Object.keys(f).forEach(i=>Object.defineProperty(r,i,{enumerable:true,configurable:true,get:f[i]}));return r};
+ SG.push(dyn(['1201','Kovalam Beach, Azhimala and Chenkal Maheswaram','temple',''],{3:()=>[
+  'Kovalam beach 6:15 · check out by 8:00 · Azhimala 8:30 · Chenkal 9:45 · drive to the city about 11:15',
+  'Kovalam beach at leisure · check out 9:30 · Azhimala 10:00 · Chenkal 11:15 · lunch near Neyyattinkara · station by 16:10',
+  'Azhimala and Chenkal in the morning · timings follow the admin’s plan choice'][pl()<0?2:pl()]}));
+ SG.push(dyn(['1201','','',''],{
+  1:()=>['Thiruvananthapuram Zoo and Napier Museum','Dinner in Nagercoil, then Kanyakumari','Zoo plan or Chenkal plan · admin to choose'][pl()<0?2:pl()],
+  2:()=>pl()===1?'beach':'temple',
+  3:()=>['Lunch 12:30 · zoo 13:15–16:30 (open on Tuesdays) · dinner near Trivandrum Central or at the Cape · 16649 at 18:50 → Kanyakumari 21:20',
+   'Train 20636 from Neyyattinkara about 16:25 (verify) → Nagercoil Town 17:18 · dinner in Nagercoil · 16649 Nagercoil Town 20:08 → Kanyakumari 21:20',
+   'Trip → To decide → Trivandrum → Kanyakumari'][pl()<0?2:pl()]}));
+ /* stay times follow the plan (check-in/out are flexible) */
+ const KV=S.find(s=>s[7]==='SMH-262'),KK=S.find(s=>s[7]==='GH25020279147548');
+ if(KV)KV[2]='1130 1330';
+ if(KK)KK[2]='1201 2145';
+ const _ac=applyChoices;
+ applyChoices=function(){try{if(ST.opts&&ST.opts[1]){ST.opts[1][0]=OP[0];ST.opts[1][1]=OP[1]}}catch(e){}
+  _ac.apply(this,arguments);const c=pl();
+  PEND[1][0]=c===1?'1201 1625':'1201 1850';
+  if(KV)KV[3]=c===1?'1201 0930':'1201 0800'};
+ try{applyChoices()}catch(e){}
+})();
 // --- expense form: same options as before, arranged in two columns; split-how is a dropdown (nil by default) ---
 xfReset=function(){XF={pay:{[me()]:''},sel:'akshltud'.split(''),mode:'',ind:{}}};
 xfUI=function(){
@@ -7592,7 +7628,7 @@ const st=document.createElement('style');st.textContent=`
 (function(){
 const $q=s=>document.querySelector(s);
 const tt=(a,b)=>{try{return rt2(a,b)}catch(e){return a}};
-const BUILD='v56-20261125';
+const BUILD='v57-20261125';
 
 /* ---------- 1. pause what is off screen ---------- */
 const SEL='#mgrow > *, #wx8s, .wx8s, .cvg, #v svg.s7svg, #v .mgi, #v .p4h, #v .pzh, #v .dpg > *, #wm svg';
