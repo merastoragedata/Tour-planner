@@ -36,11 +36,14 @@ DONE v51 (24 Nov): alerts log – table yatra_notes (anon select only), edge not
 DONE v52 (24 Nov): pass PDF (Downloads + print): Srirangam passes sorted by person then time, page break at each person, so one person's Perumal + Thayar share a page (Divya's 3rd pass alone); next set starts on a new page; ready-PDF signature bumped (L2) so old bundles rebuild.
 DONE v53 (24 Nov): Divya's second Srirangam Perumal pass (srp, 3 PM) left out of Downloads (window.__dlSkip in catalog), still on the Passes page and its print.
 DONE v54 (24 Nov): NEW DOCUMENTS IN SUPABASE STORAGE, LOADED ONLY ON REQUEST. Files already in Drive stay in Drive (Drive file list now refreshed every 3 min instead of 15, so a file added to Drive shows within minutes). Every new upload from the app (Settings > Documents upload/replace, admin Add passes, Add train ticket, entry pass – all go through docPut) goes to the private Storage bucket 'docs' (20 MB limit; anon policies "docs read/insert/update/delete" on storage.objects) at the same path (tickets/<PNR>.pdf, stays/<id>.pdf, darshan/<set>-<ack>.pdf ...); docs_idx entry gets s:1. Old kv copies (img_doc_<path>) still open. A Supabase file is downloaded only when a person opens, shares or downloads it (fetchDoc via /storage/v1/object/authenticated/docs/<path>), then kept in Cache Storage yatra-sbdocs; lists, thumbnails, the Downloads warm-up and the background ready-PDF skip Supabase files nobody has opened yet (window.__sbNeed, sbWait). Tirupati Srinivasam receipt stays/IAJS24092606384460.pdf is in Drive (paid by Suresh, already DEFPAID u).
+DONE v55 (25 Nov): Maps & Trains train dropdown fixed (it showed "undefined": v32 defined window.m7Lbl for station labels and overwrote the dropdown's label function, now m7TrLbl). Startup speed: head script v55boot sets __BOOT; base render() returns early while loading and v55bootend (last script) renders once – on a 6x slowed CPU DOMContentLoaded went 9.5 s -> 2.8 s and main-thread long tasks 8.0 s -> 3.7 s. Polish layer v55js: solid 16px form fields with focus ring, press feedback, keyboard focus outlines, one card shadow, balanced headings, Today hero text shadow, Expenses tiles in one row of 5, duplicate section heading hidden (.v55dup), slim Others row, bottom bar keeps the current page centred with edge fades only when it scrolls, nav label 'Expenses', tabular numbers, content-visibility on long lists (.p4c, closed .fdy days, .plist, .lmsl), html.lowend (<=4 GB RAM or <=4 cores or data saver) drops backdrop blur only – animations untouched. Console: prep warning on a failed CDN load is now debug. NEXT (owner asked 25 Nov, after he changes the itinerary on 26 Nov): admin page to paste a YouTube link per destination so that video plays for that destination.
+DONE v56 (25 Nov): bottom bar (v56js) = Today, Trip, Maps & Trains, Expenses, Pilgrims + More; More opens a sheet with every other page (Chat, Checklist, Weather, Phrases, Alarms, People, Videos, To do, Settings, Drive for admin) and carries the chat unread count; phone back closes the sheet; bars with fewer than 7 items (Vinit, kids) unchanged. Tried moving all code to a separate app.js: measured on a 6x slowed CPU it was SLOWER (one 1.7 s blocking task instead of many short ones, no gain on repeat opens), so the portal stays ONE file.
 NOT DONE: Supabase switched on and tested; Hindi; fetching photos from Google Photos (Google does not allow it for shared albums: the button opens the album); WhatsApp-only features (calls, end-to-end encryption, status); family info cards with verified Hindi video links; food stops; coach orders for other trains (owner will send screenshots); detailed itinerary (owner will send); NITR voucher 6006386739 PDF (upload was overwritten, ask owner to re-send); unverified Where Is My Train package name com.whereismytrain.android.
 OPEN DECISIONS: Trivandrum and Kanyakumari stays are FINALISED; TVC to Kanyakumari travel (16649 or road); Madurai to Rameswaram (16343 or 56711); Tirupati to Kanchipuram (16204, or Arakkonam by train then road); accommodation for TVC night 30 Nov, Madurai, Rameswaram, Tirupati, Kanchipuram; Atul Jabalpur to Itarsi ticket; Vinit cancellations; one duplicate Trichy to Tirupati set.
 V7 PHASE 1 (5 Nov 2026): one-row header (Aa, हिं, theme button, avatar; title always visible); sheets with close bar; ticket-card letter-spacing bug fixed (.tk); Today: Photos/Chat buttons restored (games CSS .bigb override neutralised), story cards above notification card; carousel no longer changes theme, auto theme only during trip by itinerary; past events fold; either/or journeys dropdown (ST.choice, ST.opts; admin only; shared keys); expense form all options in 2 columns, split-how dropdown default Nil; text size 80-170% via --fs on every font-size; per-user prefs pf_<user> (install/notification choices, background) sync via kv once Supabase is live; backgrounds (presets + own photo, photo local); calmer shankh/train animations. ORIGINAL FILES NOW OPEN FROM GOOGLE DRIVE: DRV map (path -> Drive file id) is baked into the script from folder 1LIZ-maFCtxpuACoplwml-FHN4zhlHduI (tickets/, stays/, reference/); viewer = Drive /preview iframe. New files added to Drive need their ids added to DRV. NEXT: phase 2 map, phase 3 games.
 -->
 <html lang="en"><head>
+<script id="v55boot">/* v55: while the page is still loading, the many render() calls of the patch layers are merged into one render at the end */window.__BOOT=1;</script>
 <script id="simjs">
 (function(){window.__SIM={off:0};try{var s=JSON.parse(localStorage.getItem('yatra_sim')||'null'),off=s&&s.on&&isFinite(s.off)?+s.off:0;if(!off)return;window.__SIM.off=off;var RD=Date;
 function FD(a,b,c,d,e,f,g){if(!(this instanceof FD))return new RD(RD.now()+off).toString();var n=arguments.length;
@@ -1313,7 +1316,7 @@ cr.forEach(([p,a],k)=>{pos['c'+p]=yd(k);s+=`<g class="node"><rect x="248" y="${y
 fl.forEach(([f,t,a],k)=>{const y1=pos['d'+f],y2=pos['c'+t],mx=180;s+=`<path d="M112 ${y1} C${mx-20} ${y1} ${mx+20} ${y2} 246 ${y2}" stroke="#2a7d45" stroke-width="2.5" fill="none" class="fl" marker-end="url(#ah)"/><text x="${mx}" y="${(y1+y2)/2-5}" text-anchor="middle" font-size="12" font-weight="700" fill="currentColor" stroke="var(--card)" stroke-width="4" paint-order="stroke">${inr(a)}</text>`});
 return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Settle-up flow">${s}</svg>`}
 
-function render(){if(!ST.sess){loginUI('in');return}$('#lg').classList.remove('show');$('#who').textContent=P[ST.me]+(ST.me!=ST.sess?' (viewing)':'');
+function render(){if(window.__BOOT){window.__BOOTR=1;return}if(!ST.sess){loginUI('in');return}$('#lg').classList.remove('show');$('#who').textContent=P[ST.me]+(ST.me!=ST.sess?' (viewing)':'');
 const m=me(),T0=[['today','Today'],['trip','Trip'],['money','Expenses / Payments'],['trains','Trains'],['stays','Stays'],['people','People'],['todo','To do']],tabs=m=='v'?[['money','Charges']]:m=='m'?T0.filter(x=>x[0]!='money'):T0;
 if(m=='v')ST.tab='money';else if(ST.tab!='chat'&&!tabs.some(x=>x[0]==ST.tab))ST.tab=tabs[0][0];
 $('#nav').innerHTML=tabs.map(([k,n])=>`<button class="${k==ST.tab?'on':''}" onclick="ST.tab='${k}';save();render()">${n}</button>`).join('')+(m=='v'?'':LK().drive?`<a class="nl" href="${LK().drive}" target="_blank" rel="noopener">Drive folder</a>`:`<button onclick="toast('Drive folder link is not added yet')">Drive folder</button>`);
@@ -1611,10 +1614,10 @@ root.querySelectorAll('[placeholder],[title],[aria-label]').forEach(e=>['placeho
 new MutationObserver(ms=>{if(ST.lang!='hi'||HIBUSY)return;ms.forEach(m=>m.addedNodes.forEach(n=>hiPass(n)))}).observe(document.body,{childList:true,subtree:true});
 
 // ---------- render ----------
-function render(){if(!ST.sess){loginUI('in');return}$('#lg').classList.remove('show');if(isKid()){kidsRender();return}document.body.classList.remove('kidmode');
+function render(){if(window.__BOOT){window.__BOOTR=1;return}if(!ST.sess){loginUI('in');return}$('#lg').classList.remove('show');if(isKid()){kidsRender();return}document.body.classList.remove('kidmode');
 if(ST.tab=='trains'||ST.tab=='stays'){ST.vw=ST.tab;ST.tab='trip'}if(ST.vw=='map'||ST.vw=='leg')ST.vw='flow';
 const m=me();document.body.classList.toggle('chatmode',ST.tab=='chat'&&ST.mv=='r');document.body.classList.remove('todaymode');if(ST.tab!='today'&&typeof mgLeave=='function')mgLeave();$('#avl').textContent=(P[ST.sess]||'?')[0];$('#langb').textContent=ST.lang=='hi'?'EN':'हिं';$('#orn0').style.display='';
-const T0=[['today','Today','🏠'],['trip','Trip','🧭'],['map','Maps & Trains','🗺️'],['money','Expenses / Payments','💰'],['chat','Chat','💬'],['lists','Checklist','📝'],['pilgrims','Pilgrims','🪪'],['weather','Weather','⛅'],['phrases','Phrases','🗣️'],['alarms','Alarms','⏰'],['people','People','👥'],['videos','Videos','🎬'],['todo','To do','✅']],
+const T0=[['today','Today','🏠'],['trip','Trip','🧭'],['map','Maps & Trains','🗺️'],['money','Expenses','💰'],['chat','Chat','💬'],['lists','Checklist','📝'],['pilgrims','Pilgrims','🪪'],['weather','Weather','⛅'],['phrases','Phrases','🗣️'],['alarms','Alarms','⏰'],['people','People','👥'],['videos','Videos','🎬'],['todo','To do','✅']],
 tabs=m=='v'?[['money','Charges','💰']]:m=='m'?T0.filter(x=>x[0]!='money'):T0;
 if(m=='v')ST.tab='money';else if(!tabs.some(x=>x[0]==ST.tab))ST.tab=tabs[0][0];
 $('#nav').innerHTML=tabs.map(([k,n,ic])=>`<button class="${k==ST.tab?'on':''}" onclick="go('${k}')"><i>${ic}</i><span>${n}</span>${k=='chat'?'<em class="ub"></em>':''}</button>`).join('')+(m=='v'?'':LK().drive?`<a class="nl" href="${LK().drive}" target="_blank" rel="noopener"><i>📁</i><span>Drive folder</span></a>`:`<button onclick="toast('Drive folder link is not added yet')"><i>📁</i><span>Drive folder</span></button>`);
@@ -3333,14 +3336,14 @@ function m7Tick(){const els=document.querySelectorAll('#smap .m7tr');if(!els.len
 /* ===== Live map page: train dropdown (Auto + manual), Now/Next, delay controls ===== */
 const _lmv=liveMapView;
 M7.auto=1;
-function m7Lbl(i){const t=T[i];return t[1]+' · '+rt7n(t[2])+' → '+rt7n(t[3])+' · '+fd(D(t[4]))}
+function m7TrLbl(i){const t=T[i];return t[1]+' · '+rt7n(t[2])+' → '+rt7n(t[3])+' · '+fd(D(t[4]))}
 function m7Pick(v){if(v=='auto'){M7.auto=1;M7.sel=m7Default()}else{M7.auto=0;M7.sel=+v}M7.follow=1;m7Fit();render()}
 function m7DelayCard(i){if(i==null||i<0||!T[i])return '';const t=T[i],k=t[1]+t[4].slice(0,4),d=(typeof lateM=='function'?lateM(t):0)||0;
 return `<div class="card dly ${d?'late':''}"><div class="row"><b>${t[1]} ${(TR[t[1]]||[''])[0]}</b><span class="mut">Delay</span></div><div class="dlr"><button onclick="setLate('${k}',Math.max(0,${d}-10))" aria-label="Less">−10</button><input type="number" inputmode="numeric" min="0" value="${d||''}" placeholder="0" onchange="setLate('${k}',this.value)" aria-label="Minutes late"><span>min late</span><button onclick="setLate('${k}',${d}+10)">+10</button><button onclick="setLate('${k}',${d}+30)">+30</button>${d?`<button onclick="setLate('${k}',0)">On time</button>`:''}</div></div>`}
 liveMapView=function(){let h=_lmv();if(typeof legProgress!='function')return h;
  if(M7.auto){const dflt=m7Default();if(M7.sel!=dflt&&M7.sel!=-2){M7.sel=dflt;try{m7Fit()}catch(e){}}}
  const ids=m7Legs(),hi=ST.lang=='hi',cur=m7Default();
- const sel=`<div class="lmpick"><label class="mut" for="lmsel">${hi?'ट्रेन चुनें':'Train'}</label><select id="lmsel" onchange="m7Pick(this.value)"><option value="auto" ${M7.auto?'selected':''}>${hi?'ऑटो · अभी की ट्रेन':'Auto · current train'}${cur>=0?' ('+T[cur][1]+')':''}</option><option value="-1" ${!M7.auto&&M7.sel==-1?'selected':''}>${hi?'सभी ट्रेनें':'All trains'}</option>${ids.map(i=>`<option value="${i}" ${!M7.auto&&M7.sel==i?'selected':''}>${m7Lbl(i)}</option>`).join('')}</select></div>`;
+ const sel=`<div class="lmpick"><label class="mut" for="lmsel">${hi?'ट्रेन चुनें':'Train'}</label><select id="lmsel" onchange="m7Pick(this.value)"><option value="auto" ${M7.auto?'selected':''}>${hi?'ऑटो · अभी की ट्रेन':'Auto · current train'}${cur>=0?' ('+T[cur][1]+')':''}</option><option value="-1" ${!M7.auto&&M7.sel==-1?'selected':''}>${hi?'सभी ट्रेनें':'All trains'}</option>${ids.map(i=>`<option value="${i}" ${!M7.auto&&M7.sel==i?'selected':''}>${m7TrLbl(i)}</option>`).join('')}</select></div>`;
  h=h.replace(/<div class="seg lmchips">.*?<\/div>/s,sel);
  return h};
 mapView=liveMapView;
@@ -7589,7 +7592,7 @@ const st=document.createElement('style');st.textContent=`
 (function(){
 const $q=s=>document.querySelector(s);
 const tt=(a,b)=>{try{return rt2(a,b)}catch(e){return a}};
-const BUILD='v54-20261124';
+const BUILD='v56-20261125';
 
 /* ---------- 1. pause what is off screen ---------- */
 const SEL='#mgrow > *, #wx8s, .wx8s, .cvg, #v svg.s7svg, #v .mgi, #v .p4h, #v .pzh, #v .dpg > *, #wm svg';
@@ -7961,7 +7964,7 @@ async function prep(){if(prepOn||!window.__dlBuild||!ST||!ST.sess||document.hidd
  if(await rGet(sig)){lastSig=sig;return}
  /* wait while Drive files are still arriving, so the PDF is complete */
  if(window.GDRIVE&&GDRIVE.key&&!window.__gdReady&&!prep.waited){prep.waited=1;return}
- prepOn=1;try{await __readyGet(sel,null,__dlBuild);lastSig=sig}catch(e){console.warn('prep',e)}finally{prepOn=0}}
+ prepOn=1;try{await __readyGet(sel,null,__dlBuild);lastSig=sig}catch(e){(e instanceof Error?console.warn('prep',e):console.debug('prep: a library did not load (offline?)'))}finally{prepOn=0}}
 const soon=(ms)=>{clearTimeout(prepT);prepT=setTimeout(()=>{(window.requestIdleCallback||setTimeout)(()=>prep(),{timeout:3000})},ms||2500)};
 addEventListener('gdready',()=>soon(1500));
 setTimeout(()=>soon(1),12000);setInterval(()=>soon(1),90000);
@@ -8087,4 +8090,112 @@ const st=document.createElement('style');st.textContent=`
 })();
 
 </script>
+<script id="v55js">
+/* ===== v55 (25 Nov 2026): whole-site polish + speed on slow phones =====
+   - boot: render() calls made while the page is still loading are merged into one (see v55boot / v55bootend) – startup on a slow phone ~3x faster
+   - one finishing layer of styles: solid form fields, focus rings, press feedback, tabular numbers, calmer pattern, tidy tiles, readable hero text
+   - long lists draw only what is on screen (content-visibility); slow phones (<=4 GB / <=4 cores) drop glass blur (the costliest effect) – animations untouched
+   - bottom bar keeps the current page in view, soft edge fades show it scrolls; duplicate page/section headings hidden */
+(function(){
+const $q=s=>document.querySelector(s);
+/* slow-phone flag (no animation is reduced; only the background blur, which costs the most GPU on cheap phones) */
+try{const m=navigator.deviceMemory||8,c=navigator.hardwareConcurrency||8,sd=navigator.connection&&navigator.connection.saveData;if(m<=4||c<=4||sd)document.documentElement.classList.add('lowend')}catch(e){}
+const st=document.createElement('style');st.id='v55css';st.textContent=`
+:root{--v55r:16px;--v55sh:0 1px 2px rgba(60,20,10,.06),0 6px 18px -6px rgba(60,20,10,.16);--v55sh2:0 2px 4px rgba(60,20,10,.07),0 14px 30px -10px rgba(60,20,10,.22);--v55ring:0 0 0 3px rgba(212,160,23,.38)}
+html{-webkit-text-size-adjust:100%;text-rendering:optimizeLegibility}
+body{font-variant-numeric:tabular-nums;-webkit-tap-highlight-color:transparent}
+body{background-image:radial-gradient(circle at 12px 12px,rgba(212,160,23,.085) 2px,transparent 3px)!important}
+/* form fields: solid, roomy, 16px so iPhone does not zoom, clear focus */
+:where(#v,#md,.sheet) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]),select,textarea):is(:not([class]),[class='']):not(#tuq){background:#fff;border:1.5px solid rgba(110,50,20,.2);border-radius:12px;padding:11px 13px;font-size:16px;min-height:44px;width:100%;box-sizing:border-box;color:inherit;font-family:inherit;transition:border-color .15s,box-shadow .15s}
+:where(#v,#md,.sheet) textarea:is(:not([class]),[class='']){min-height:88px;line-height:1.45}
+:where(#v,#md,.sheet) :is(input,select,textarea):focus-visible{outline:none;border-color:#d4a017!important;box-shadow:var(--v55ring)!important}
+#v input::placeholder,#v textarea::placeholder{color:rgba(80,40,20,.42)}
+/* buttons: press feedback and keyboard focus */
+button,.btn,[role=button]{touch-action:manipulation}
+button:not(:disabled):active,.btn:active{transform:scale(.97);transition:transform .06s}
+:is(button,a,summary,[tabindex]):focus-visible{outline:2.5px solid #d4a017;outline-offset:2px;border-radius:10px}
+button:disabled{opacity:.5}
+/* cards: one shadow language */
+#v .card{box-shadow:var(--v55sh)}
+#v .card:hover{box-shadow:var(--v55sh2)}
+/* section titles: no orphan word wrap */
+#v h2,#v h3,#v .orh{text-wrap:balance}
+#v p,#v .mut{text-wrap:pretty}
+/* Today hero text stays readable on bright skies */
+.hero7 .h7top,.hero7 .h7in h1,.hero7 .h7in h2,.hero7 .h7in b,.hero7 .h7in small{text-shadow:0 1px 2px rgba(0,0,0,.55),0 0 12px rgba(0,0,0,.25)}
+.hero7 .h7top{opacity:1!important}
+/* Expenses: five action tiles in one even row */
+#v .mact{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:8px!important}
+#v .mact .mab{padding:10px 2px!important;min-height:78px;font-size:.72rem!important;line-height:1.15;word-break:keep-all;overflow-wrap:normal;hyphens:none;letter-spacing:-.01em}
+#tukey,#v input.sp8s{background:#fff;border:1.5px solid rgba(110,50,20,.2);border-radius:12px;padding:11px 13px;font-size:16px;min-height:44px;margin:6px 0}
+#v .mact .mab *{font-size:inherit}
+#v .mact .mab i,#v .mact .mab .ic,#v .mact .mab b:first-child{font-size:1.35rem!important}
+#v .v55dup{display:none!important}
+/* Trip: the Others group is a slim row, not a big card */
+#v details.sec.fo>summary{padding:12px 14px!important;min-height:0!important;font-size:.95rem}
+/* weather hero hint readable */
+.wxhero .mut{opacity:.92!important;color:inherit}
+/* bottom bar: shows it scrolls, current page kept in view */
+#nav{scroll-behavior:smooth}#nav.v55ov{-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 18px,#000 calc(100% - 18px),transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 18px,#000 calc(100% - 18px),transparent 100%)}
+#nav button span{white-space:nowrap}
+/* long lists: phone draws only what is on screen */
+#v .p4c,#v details.fdy:not([open]),#v .plist>*,#v .lmsl>*{content-visibility:auto;contain-intrinsic-size:auto 120px}
+#v .p4c{contain-intrinsic-size:auto 190px}
+/* slow phones: no glass blur (big GPU cost); solid glass instead */
+html.lowend *{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+html.lowend .glass,html.lowend [class*=glass]{background-color:rgba(255,255,255,.9)}
+@media (max-width:360px){#v .mact .mab{font-size:.7rem!important;min-height:70px}}
+`;document.head.appendChild(st);
+/* after every render: keep the active tab visible, hide a section heading that repeats the page heading */
+function after(){try{const n=$q('#nav'),on=n&&n.querySelector('button.on');if(n)n.classList.toggle('v55ov',n.scrollWidth>n.clientWidth+4);if(on&&n.scrollWidth>n.clientWidth){const l=on.offsetLeft-(n.clientWidth-on.offsetWidth)/2;if(Math.abs(n.scrollLeft-l)>8)n.scrollLeft=l}}catch(e){}
+ try{const h2=$q('#v h2.orh');if(h2){const t=h2.textContent.trim();document.querySelectorAll('#v h3.orh').forEach(h=>{if(h.textContent.trim()==t)h.classList.add('v55dup')})}}catch(e){}}
+const _r=render;render=function(){const r=_r.apply(this,arguments);if(!window.__BOOT)requestAnimationFrame(after);return r};try{window.render=render}catch(e){}
+addEventListener('load',()=>setTimeout(after,300));addEventListener('resize',()=>{clearTimeout(window.__v55rz);window.__v55rz=setTimeout(after,200)});
+})();
+</script>
+<script id="v56js">
+/* ===== v56 (25 Nov 2026): bottom bar = Today, Trip, Maps & Trains, Expenses, Pilgrims + More (all other pages incl. Chat, Settings, Drive in a sheet; More carries the chat unread count) ===== */
+(function(){
+const $q=s=>document.querySelector(s);
+const MAIN=['today','trip','map','money','pilgrims'];
+const tt=(a,b)=>{try{return rt2(a,b)}catch(e){return a}};
+const keyOf=b=>{const o=b.getAttribute('onclick')||'';const m=/go\('([a-z]+)'\)/.exec(o);if(m)return m[1];if(/settingsOpen/.test(o))return 'settings';if(b.matches('a.nl')||/Drive folder/.test(b.textContent))return 'drive';return ''};
+function build(){const n=$q('#nav');if(!n||!ST||!ST.sess)return;const items=[...n.children].filter(e=>!e.classList.contains('v56m'));
+ if(items.length<7){n.querySelectorAll('.v56m').forEach(e=>e.remove());items.forEach(e=>e.classList.remove('v56h'));n.classList.remove('v56');return}
+ n.classList.add('v56');let curMore=false;
+ items.forEach(e=>{const k=keyOf(e),i=MAIN.indexOf(k);if(i>=0){e.classList.remove('v56h');e.style.order=i}else{e.classList.add('v56h');e.style.order=90;if(e.classList.contains('on'))curMore=true}});
+ let mb=n.querySelector('.v56m');if(!mb){mb=document.createElement('button');mb.type='button';mb.className='v56m';mb.setAttribute('aria-label','More');mb.onclick=open;n.appendChild(mb)}
+ mb.style.order=50;mb.innerHTML=`<i>☰</i><span>${tt('More','और')}</span><em class="ub v56ub"></em>`;mb.classList.toggle('on',curMore);badge()}
+function badge(){const n=$q('#nav');if(!n)return;const src=[...n.querySelectorAll('.v56h .ub')].find(e=>e.textContent.trim()&&getComputedStyle(e).display!='none');const d=n.querySelector('.v56ub');if(d){d.textContent=src?src.textContent.trim():'';d.style.display=src?'':'none'}}
+function open(){const n=$q('#nav');if(!n)return;const hid=[...n.querySelectorAll('.v56h')];let o=$q('#v56s');if(o)o.remove();o=document.createElement('div');o.id='v56s';
+ o.innerHTML=`<div class="v56bg"></div><div class="v56p" role="dialog" aria-label="More pages"><div class="v56g"></div><button type="button" class="v56x">${tt('Close','बंद करें')}</button></div>`;
+ const g=o.querySelector('.v56g');hid.forEach(e=>{const c=e.cloneNode(true);c.classList.remove('v56h');c.style.order='';c.classList.add('v56i');c.addEventListener('click',()=>{try{if(history.state&&history.state.v56){const h=Object.assign({},history.state);delete h.v56;history.replaceState(h,'')}}catch(e){}close(true)},true);g.appendChild(c)});
+ o.querySelector('.v56bg').onclick=close;o.querySelector('.v56x').onclick=close;document.body.appendChild(o);requestAnimationFrame(()=>o.classList.add('show'));
+ try{history.pushState(Object.assign({},history.state||{},{v56:1}),'')}catch(e){}}
+function close(fromPop){const o=$q('#v56s');if(!o)return;o.classList.remove('show');setTimeout(()=>o.remove(),180);if(fromPop!==true){try{if(history.state&&history.state.v56)history.back()}catch(e){}}}
+addEventListener('popstate',()=>{if($q('#v56s'))close(true)},true);
+const st=document.createElement('style');st.textContent=`
+#nav.v56{overflow:hidden!important;justify-content:space-around;-webkit-mask-image:none!important;mask-image:none!important}
+#nav.v56>*{flex:1 1 0!important;min-width:0!important}
+#nav .v56h{display:none!important}
+#nav .v56m{position:relative}
+#nav .v56m i{font-style:normal;font-weight:800}
+#nav .v56ub{position:absolute;top:2px;right:calc(50% - 22px)}
+#v56s{position:fixed;inset:0;z-index:10050;pointer-events:none}
+#v56s .v56bg{position:absolute;inset:0;background:rgba(30,10,5,.38);opacity:0;transition:opacity .18s}
+#v56s .v56p{position:absolute;left:0;right:0;bottom:0;background:#fffaf2;border-radius:22px 22px 0 0;padding:14px 12px calc(12px + env(safe-area-inset-bottom,0px));transform:translateY(100%);transition:transform .2s ease-out;box-shadow:0 -10px 30px rgba(60,20,10,.25)}
+#v56s.show{pointer-events:auto}#v56s.show .v56bg{opacity:1}#v56s.show .v56p{transform:none}
+#v56s .v56p:before{content:'';display:block;width:42px;height:5px;border-radius:9px;background:rgba(110,50,20,.25);margin:0 auto 12px}
+#v56s .v56g{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+#v56s .v56i{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 4px;border-radius:16px;background:#fff;border:1px solid rgba(110,50,20,.12);font:inherit;font-size:.78rem;font-weight:600;color:#5a2a14;text-decoration:none;position:relative;min-height:74px;justify-content:center}
+#v56s .v56i i{font-style:normal;font-size:1.5rem;line-height:1}
+#v56s .v56i.on{background:#f6e3b4;border-color:#d4a017}
+#v56s .v56i .ub{position:absolute;top:6px;right:10px}
+#v56s .v56x{display:block;width:100%;margin-top:12px;padding:12px;border-radius:14px;border:0;background:#8c1c2b;color:#fff;font-weight:700;font-size:1rem}
+`;document.head.appendChild(st);
+const _r=render;render=function(){const r=_r.apply(this,arguments);if(!window.__BOOT){try{build()}catch(e){}}return r};try{window.render=render}catch(e){}
+setInterval(()=>{try{badge()}catch(e){}},3000);addEventListener('load',()=>setTimeout(()=>{try{build()}catch(e){}},200));
+})();
+</script>
+<script id="v55bootend">window.__BOOT=0;try{if(window.__BOOTR)render()}catch(e){console.warn(e)}</script>
 </body></html>
