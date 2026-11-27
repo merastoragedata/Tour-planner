@@ -41,6 +41,7 @@ DONE v56 (25 Nov): bottom bar (v56js) = Today, Trip, Maps & Trains, Expenses, Pi
 NOT DONE: Supabase switched on and tested; Hindi; fetching photos from Google Photos (Google does not allow it for shared albums: the button opens the album); WhatsApp-only features (calls, end-to-end encryption, status); family info cards with verified Hindi video links; food stops; coach orders for other trains (owner will send screenshots); detailed itinerary (owner will send); NITR voucher 6006386739 PDF (upload was overwritten, ask owner to re-send); unverified Where Is My Train package name com.whereismytrain.android.
 DONE v57 (25 Nov): 30 Nov plan = Padmanabhaswamy 6:30, Pazhavangadi Ganapathy, Attukal before 12, Udupis check-out 12:00, Kovalam check-in 13:30, Poovar boat, Kovalam sunset (Shankhumukham dropped from SG). 1 Dec = two plans on To decide item 1 (OPT0[1], same ST.choice[1]): 0 Zoo plan (Kovalam out 8:00, Azhimala, Chenkal, zoo, 16649 TVC 18:50 -> CAPE 21:20), 1 Chenkal plan (Kovalam out 9:30, Azhimala, Chenkal, 20636 from Neyyattinkara 16:28 / Parassala 16:41 (checked 25 Nov) -> Nagercoil Town 17:18, dinner, 16649 NJT 20:08 -> CAPE 21:20). SG rows for 1 Dec and the pending time / Kovalam check-out read ST.choice[1] (getters + applyChoices wrapper); Triveni check-in 21:45. Old choice 1 ('By road') now means Chenkal plan. Zoo closed Mondays (30 Nov is Monday).
 DONE v60 (27 Nov): PLACE FILMS (script v60js before v60wx/v59css): every non-train place key plays 3 clips, 6 s each with 0.9 s crossfade (film() player, hidden clips display:none, slide dwell window.__v60dwell 18.4 s read by sc7Tick): A ground scene (SC7S), B isometric drone view (iso kit box/pyr/hip/cyl/dome/gop/vim/tank/palm/rock/hillI; DM[key] models; ground clipped at a horizon line, buildings not; drone .v60dr flies, camera .v60cam drifts, AERIAL tag), C close-up by kind (hallClip temple corridor with lamps/diyas/pilgrim/petals; shoreClip; boatClip for Poovar; streetClip for Nagercoil + zoo). Stays (hotel key) get A + a town drone view with a YOUR STAY pin. New keys with ground scenes GR: pazhavangadi, attukal, poovar, azhimala, chenkal, zoo, nagercoil, kapila, ekambareswarar, varadharaja, kailasanathar (kanchipuram = Kamakshi). SC7SG maps every SG row to its places (Rockfort row adds Srirangam; Tiruchanoor row adds Kapila; Kanchipuram row 4 temples); sc7Plan splits a day between rows in order. Night: outdoor shade only on A/B; fx20 sparkle overlay off for films (cost). Train film: yellow station board (HIN Hindi + English) of the station the train is at or just passed (legProgress cur.n / cur.from; preview = departure station). WEATHER (script v60wx): XY60 coordinates for every place, wxView adds an 'Every stop on the itinerary' optgroup and a 'Weather at every stop' list (one Open-Meteo multi-location request, cached 30 min in localStorage yatra_wx60). Perf (4x slowed CPU, low-end 20 fps step): place films p50 50 ms, train 67 ms; 2x: 22.7 ms avg, none over 50 ms. Greeting says '1 day to the yatra'.
+DONE v62 (27 Nov): scroll smoothness: window.__scrolling (scroll listener, 200 ms) stops the v35 canvas frame, the v59 scene steps and the v60 clip switch while scrolling; the colour filter on the hero svg is removed (#hero7 svg.s7svg filter:none). Scroll test 2x CPU: 76 -> few frames over 34 ms. The scroll parallax --hy is registered non-inherited and set on the hero svgs only (it restyled all ~1300 hero elements every scroll frame). #hero7{contain:strict} (fixed size) - biggest scroll win.
 DONE v61 (27 Nov): no night look in the animations (owner asked): window.__dayH clamps the hour for sc7Svg, sc7Bg and the v35 canvas clock: 17:36 onwards and night -> 17:12 golden light, before 05:12 -> 06:36 dawn; night/dusk palettes are no longer shown.
 DONE v59 (26 Nov): PNR 6110315961 (15608 Aronai) Suresh WL RLWL/1 -> CNF A1/39 LB (status 26 Nov 20:25), Divya stays A2/16; to-do c8 text updated (id kept). TODAY SMOOTHNESS (block v59css/v59js before v55bootend): measured on Today with 4x slowed CPU 6-9 fps uneven -> steady 20 fps (2x: 39 -> 19 ms avg, 60 fps). Causes: 460 GPU layers because paused off-screen animations keep layers (now .v46p and hidden-scene animations are removed with animation:none, 134 layers); ~100 SVG-internal animations repainting the hero scene every frame (hero CSS animations are taken over and stepped at 30 fps, 20 fps on html.lowend, called from the v35 canvas frame via window.__v59s so canvas + scene share one paint; reduced-motion respected); v35 frame wrote --px/--py every frame (now only on change); hero stars .s7tw and clouds .s7cl still (canvas draws them), weather-strip icons .wsr/.wsc/.wcl still; .cvg::after sweep uses transform instead of left.
 DONE v58 (25 Nov): stay times follow the travel plan (block v58 before the expense form): S0 keeps booked times; each render sets S[2]/S[3] = planned check-in (later of booked and last guest arrival + local travel TRF) and planned check-out (earlier of booked and next guest departure - travel - 30 min); legs = T tickets + PEND items with a time (arrival = last HH:MM in the decided option); STAYMAN holds day-trip times (Kovalam: in 13:30, out 8:00 zoo plan / 9:30 Chenkal plan); stay note gets 'Planned in/out (reason) · hotel times'. 30 Nov: Udupis out 12:00 -> Kovalam 14 km, lunch, check-in 13:30 -> Poovar 17 km -> back for sunset (Kovalam is on the way, so checking in first costs only the stop).
@@ -5514,7 +5515,7 @@ function phTint(){const p=ph();if(document.body.dataset.ph!=p)document.body.data
 phTint();setInterval(phTint,30000);document.addEventListener('visibilitychange',phTint);
 document.addEventListener('visibilitychange',()=>{const h=document.getElementById('hero7');if(h)h.classList.toggle('fxoff',document.hidden)});
 /* parallax: scene drifts slower than the page */
-let PY=0,PT=0;addEventListener('scroll',()=>{if(PT||rm())return;PT=requestAnimationFrame(()=>{PT=0;const h=document.getElementById('hero7');if(!h)return;const y=Math.min(scrollY,h.offsetHeight);if(Math.abs(y-PY)<1)return;PY=y;h.style.setProperty('--hy',(y*.16).toFixed(1)+'px')})},{passive:true});
+let PY=0,PT=0;addEventListener('scroll',()=>{if(PT||rm())return;PT=requestAnimationFrame(()=>{PT=0;const h=document.getElementById('hero7');if(!h)return;const y=Math.min(scrollY,h.offsetHeight);if(Math.abs(y-PY)<1)return;PY=y;const v=(y*.16).toFixed(1)+'px';if(window.__hyReg){h.querySelectorAll('svg.s7svg').forEach(e=>e.style.setProperty('--hy',v))}else h.style.setProperty('--hy',v)})},{passive:true});
 /* ---------- Today: cover cards and deity icons ---------- */
 function fxCards(){document.querySelectorAll('svg.em.gl:not([data-fx])').forEach(s=>{s.dataset.fx=1;if(rm())return;s.insertAdjacentHTML('beforeend',`<circle class="fxhalo" cx="30" cy="30" r="22" fill="none" stroke="#ffd23f" stroke-width="1.4"/><g class="fxorb"><circle cx="30" cy="5" r="1.8" fill="#fff6b0"/><circle cx="55" cy="30" r="1.3" fill="#ffd23f"/><circle cx="8" cy="40" r="1.1" fill="#fff"/></g>`)})}
 function fxPlaces(){if(rm())return;document.querySelectorAll('.mgart svg:not([data-fx])').forEach(s=>{s.dataset.fx=1;let cx=300,cy=120;const c=s.querySelector('.mrays circle');if(c){cx=+c.getAttribute('cx');cy=+c.getAttribute('cy')}
@@ -6662,7 +6663,7 @@ function build(){if(!W)return;clock();const n=Math.round(3+cloudy()*9),[col,a]=P
 let last=0,raf=0,vis=true,tx=0,ty=0,gx=0,gy=0;
 function sunPos(){try{const c=H.querySelector('.h7sc.on .s7sun circle, .h7sc.on circle[r][fill*="sg"]');if(!c)return null;const b=c.getBoundingClientRect(),h=H.getBoundingClientRect();if(!b.width)return null;return{x:b.left-h.left+b.width/2,y:b.top-h.top+b.height/2,r:b.width/2}}catch(e){return null}}
 let sunT=0;
-function frame(t){raf=requestAnimationFrame(frame);if(!vis||!H||!H.isConnected||document.hidden)return;if(t-last<(window.__v59ms||33)-4)return;const dt=Math.min(.08,(t-last)/1000);last=t;try{window.__v59s&&window.__v59s(t)}catch(e){}
+function frame(t){raf=requestAnimationFrame(frame);if(!vis||!H||!H.isConnected||document.hidden||window.__scrolling)return;if(t-last<(window.__v59ms||33)-4)return;const dt=Math.min(.08,(t-last)/1000);last=t;try{window.__v59s&&window.__v59s(t)}catch(e){}
  const x=CX;x.clearRect(0,0,W,HT);const ph=S.ph,night=ph=='night',wind=(S.wind||6)/10;
  gx+=(tx-gx)*.06;gy+=(ty-gy)*.06;{const px=gx.toFixed(3),py=gy.toFixed(3);if(px!==H.__px){H.__px=px;H.style.setProperty('--px',px)}if(py!==H.__py){H.__py=py;H.style.setProperty('--py',py)}}
  if(t-sunT>2000){S.sun=sunPos();sunT=t}
@@ -7674,7 +7675,7 @@ const st=document.createElement('style');st.textContent=`
 (function(){
 const $q=s=>document.querySelector(s);
 const tt=(a,b)=>{try{return rt2(a,b)}catch(e){return a}};
-const BUILD='v61-20261127';
+const BUILD='v62-20261127';
 
 /* ---------- 1. pause what is off screen ---------- */
 const SEL='#mgrow > *, #wx8s, .wx8s, .cvg, #v svg.s7svg, #v .mgi, #v .p4h, #v .pzh, #v .dpg > *, #wm svg';
@@ -8532,7 +8533,7 @@ Object.keys(SC7S).concat(Object.keys(DM)).filter((k,i,a)=>a.indexOf(k)==i&&!SKIP
  let o=r.replace(m[0],'');o=o.replace('</g><g class="v60sh v60B',m[0]+'</g><g class="v60sh v60B').replace('</g><g class="v60sh v60C',m[0]+'</g><g class="v60sh v60C');return o}}
 /* film player: one clip shown at a time; the others are display:none (no style, no paint, no animations); crossfade 0.9 s every 6 s */
 const CLIP=6000;function film(){const h=document.getElementById('hero7');if(!h)return;h.querySelectorAll('.h7sc').forEach(sc=>{const sh=[...sc.querySelectorAll('.v60sh')];sc.classList.toggle('v60film',sh.length>0);if(sh.length<2)return;
- const now=Date.now();if(!sc.__v60||sc.__v60.n!==sh[0]){sc.__v60={n:sh[0],i:0,t:now};return}const f=sc.__v60;if(document.hidden||now-f.t<CLIP)return;
+ const now=Date.now();if(!sc.__v60||sc.__v60.n!==sh[0]){sc.__v60={n:sh[0],i:0,t:now};return}const f=sc.__v60;if(document.hidden||window.__scrolling||now-f.t<CLIP)return;
  const a=sh[f.i],j=(f.i+1)%sh.length,b=sh[j];f.i=j;f.t=now;b.classList.remove('v60gone');b.classList.add('v60on');b.classList.remove('v60vis');void b.getBoundingClientRect();
  requestAnimationFrame(()=>{b.classList.add('v60vis');a.classList.remove('v60vis');if(a.classList.contains('v60A'))a.style.opacity='0';b.style.opacity='';setTimeout(()=>{if(f.i!==j)return;a.classList.remove('v60on');if(a.classList.contains('v60A'))a.classList.add('v60gone');a.style.opacity=''},950)})})}
 setInterval(film,500);
@@ -8636,8 +8637,15 @@ window.__dayH=h=>{h=+h;if(!isFinite(h))return 12;return h>=17.6?17.2:h<5.2?6.6:h
 /* off-screen and hidden-scene animations are removed, not paused: a paused animation still keeps a GPU layer, and 400+ of them made 460 layers */
 .v46p,.v46p *,.v46p::before,.v46p::after,.v46p *::before,.v46p *::after,#hero7 .h7sc:not(.on),#hero7 .h7sc:not(.on) *{animation:none!important}
 #hero7 .h7sc svg.s7svg{will-change:transform}
+#hero7 .h7sc svg.s7svg:not(.fx20){filter:none!important}
+/* the hero has a fixed width and height: strict containment keeps its painting and layout from touching the rest of the page while it scrolls */
+#hero7{contain:strict}
 </style>
 <script id="v59js">
+/* v62 (27 Nov): while the page scrolls the hero stands still (no canvas draw, no scene steps, no clip change), 200 ms after the last scroll it moves again */
+/* --hy (scroll parallax) is not inherited and is set only on the scene svgs, so a scroll step restyles 2 elements, not the whole hero */
+try{CSS.registerProperty({name:'--hy',syntax:'<length>',inherits:false,initialValue:'0px'});window.__hyReg=1}catch(e){}
+window.__scrolling=0;{let t=0;addEventListener('scroll',()=>{window.__scrolling=1;clearTimeout(t);t=setTimeout(()=>{window.__scrolling=0},200)},{passive:true,capture:true})}
 /* v59 (26 Nov): the hero scene's SVG animations (scenery scroll, wheels, birds, shots) used to repaint the whole scene up to 60 times a second,
    which phones could not keep up with (about 9 fps on a 4x slowed CPU). One clock now steps them at a steady 30 fps (20 fps on low-end phones),
    in the same frame as the canvas atmosphere, so a phone does one paint per step. Off-screen and hidden scenes are not stepped. */
@@ -8649,7 +8657,7 @@ window.__dayH=h=>{h=+h;if(!isFinite(h))return 12;return h>=17.6?17.2:h<5.2?6.6:h
    list=h.getAnimations({subtree:true}).filter(a=>{if(!(a instanceof CSSAnimation))return false;const e=a.effect&&a.effect.target;if(!e||e.closest('.h7sc:not(.on)'))return false;
     if(!TM.has(a)){TM.set(a,a.currentTime||0);a.pause()}return true})}catch(e){list=[]}}
  /* one step: advance every taken-over animation by the real time since the last step */
- function step(t){if(t-seen>1000){seen=t;collect()}const dt=last?Math.min(t-last,250):0;last=t;
+ function step(t){if(window.__scrolling){last=t;return}if(t-seen>1000){seen=t;collect()}const dt=last?Math.min(t-last,250):0;last=t;
   for(const a of list){try{const v=TM.get(a)+dt;TM.set(a,v);a.currentTime=v}catch(e){}}}
  /* the canvas atmosphere calls step() inside its own frame (same paint); when the canvas is not drawing (video/photo hero, hidden), this loop steps */
  let viaCanvas=0;window.__v59ms=STEP;window.__v59s=t=>{viaCanvas=t;step(t)};
