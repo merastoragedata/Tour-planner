@@ -41,6 +41,7 @@ DONE v56 (25 Nov): bottom bar (v56js) = Today, Trip, Maps & Trains, Expenses, Pi
 NOT DONE: Supabase switched on and tested; Hindi; fetching photos from Google Photos (Google does not allow it for shared albums: the button opens the album); WhatsApp-only features (calls, end-to-end encryption, status); family info cards with verified Hindi video links; food stops; coach orders for other trains (owner will send screenshots); detailed itinerary (owner will send); NITR voucher 6006386739 PDF (upload was overwritten, ask owner to re-send); unverified Where Is My Train package name com.whereismytrain.android.
 DONE v57 (25 Nov): 30 Nov plan = Padmanabhaswamy 6:30, Pazhavangadi Ganapathy, Attukal before 12, Udupis check-out 12:00, Kovalam check-in 13:30, Poovar boat, Kovalam sunset (Shankhumukham dropped from SG). 1 Dec = two plans on To decide item 1 (OPT0[1], same ST.choice[1]): 0 Zoo plan (Kovalam out 8:00, Azhimala, Chenkal, zoo, 16649 TVC 18:50 -> CAPE 21:20), 1 Chenkal plan (Kovalam out 9:30, Azhimala, Chenkal, 20636 from Neyyattinkara 16:28 / Parassala 16:41 (checked 25 Nov) -> Nagercoil Town 17:18, dinner, 16649 NJT 20:08 -> CAPE 21:20). SG rows for 1 Dec and the pending time / Kovalam check-out read ST.choice[1] (getters + applyChoices wrapper); Triveni check-in 21:45. Old choice 1 ('By road') now means Chenkal plan. Zoo closed Mondays (30 Nov is Monday).
 DONE v60 (27 Nov): PLACE FILMS (script v60js before v60wx/v59css): every non-train place key plays 3 clips, 6 s each with 0.9 s crossfade (film() player, hidden clips display:none, slide dwell window.__v60dwell 18.4 s read by sc7Tick): A ground scene (SC7S), B isometric drone view (iso kit box/pyr/hip/cyl/dome/gop/vim/tank/palm/rock/hillI; DM[key] models; ground clipped at a horizon line, buildings not; drone .v60dr flies, camera .v60cam drifts, AERIAL tag), C close-up by kind (hallClip temple corridor with lamps/diyas/pilgrim/petals; shoreClip; boatClip for Poovar; streetClip for Nagercoil + zoo). Stays (hotel key) get A + a town drone view with a YOUR STAY pin. New keys with ground scenes GR: pazhavangadi, attukal, poovar, azhimala, chenkal, zoo, nagercoil, kapila, ekambareswarar, varadharaja, kailasanathar (kanchipuram = Kamakshi). SC7SG maps every SG row to its places (Rockfort row adds Srirangam; Tiruchanoor row adds Kapila; Kanchipuram row 4 temples); sc7Plan splits a day between rows in order. Night: outdoor shade only on A/B; fx20 sparkle overlay off for films (cost). Train film: yellow station board (HIN Hindi + English) of the station the train is at or just passed (legProgress cur.n / cur.from; preview = departure station). WEATHER (script v60wx): XY60 coordinates for every place, wxView adds an 'Every stop on the itinerary' optgroup and a 'Weather at every stop' list (one Open-Meteo multi-location request, cached 30 min in localStorage yatra_wx60). Perf (4x slowed CPU, low-end 20 fps step): place films p50 50 ms, train 67 ms; 2x: 22.7 ms avg, none over 50 ms. Greeting says '1 day to the yatra'.
+DONE v66 (28 Nov): expenses save in one go: split defaults to equal (xfReset); exp and pm lists are merged on every yatra_kv GET (fetch wrapper) with this phone's unsent changes (PEND new/edited ids win 5 min, TOMB deleted ids stay deleted; kept in localStorage yatra_v66) and pushed back when the merge differs, so a pull no longer wipes a just-saved expense and two phones no longer overwrite each other.
 DONE v65 (28 Nov): iPhone 'A problem repeatedly occurred' (out of memory) when zooming an attachment: html.vwopen while #vw is shown or #dlv exists hides every other body child (display:none) so the hero canvas/scenes and pages underneath are not drawn or kept; scroll position restored on close.
 DONE v64 (28 Nov): Photos button opens the Google Photos app directly (Android intent:// with package com.google.android.apps.photos and browser fallback; others same-window link) instead of window.open, which left an empty browser tab behind.
 DONE v63 (28 Nov): attachments viewer #vw: z-index 10050 (above sheets #md 9650), ✕ Close button (closeVw) instead of history.back in all 3 toolbars, popstate no longer closes it (re-pushes its vwo state), histSync paused while open, last opened file (viewOrig/sbOpen args) kept in sessionStorage yatra_vw_open and reopened after a reload; Downloads PDF viewer #dlv z-index 10060 with ✕ Close.
@@ -7682,7 +7683,7 @@ const st=document.createElement('style');st.textContent=`
 (function(){
 const $q=s=>document.querySelector(s);
 const tt=(a,b)=>{try{return rt2(a,b)}catch(e){return a}};
-const BUILD='v65-20261128';
+const BUILD='v66-20261128';
 
 /* ---------- 1. pause what is off screen ---------- */
 const SEL='#mgrow > *, #wx8s, .wx8s, .cvg, #v svg.s7svg, #v .mgi, #v .p4h, #v .pzh, #v .dpg > *, #wm svg';
@@ -8658,6 +8659,36 @@ let sy=0;function vwSync(){const v=document.getElementById('vw'),on=!!((v&&v.cla
 const st=document.createElement('style');st.textContent=`html.vwopen body>*:not(#vw):not(#dlv):not(#toast):not(.toast):not(script):not(style){display:none!important}html.vwopen,html.vwopen body{overflow:hidden!important;overscroll-behavior:none}
 .vw{z-index:10050!important}#dlv{z-index:10060!important}
 .vw .vwt .vwx{font-size:15px!important;font-weight:800;min-width:auto!important;padding:0 14px!important;border-radius:99px;background:#fff!important;color:#111!important}`;document.head.appendChild(st);
+})();
+</script>
+<script id="v66js">
+/* v66 (28 Nov): EXPENSES SAVE IN ONE GO AND SHOW EVERYWHERE.
+   1. The split defaults to "Equally among ticked people" (it started empty, so the first Save failed with "Individual amounts must add up").
+   2. Expenses (exp) and payments (pm) are one shared list each. A pull that arrived before this phone's save reached the server used to
+      overwrite the list with the older copy, so a new expense vanished; two phones saving together also overwrote each other.
+      Now every pulled copy of these lists is merged with this phone's unsent changes (new/edited entries win for 5 min, deleted ones stay
+      deleted), and if the merged list differs from the server's it is sent back, so every phone ends with all entries. */
+(function(){
+{const r=xfReset;xfReset=function(){const o=r.apply(this,arguments);try{if(XF&&!XF.mode)XF.mode='eq'}catch(e){}return o}}
+try{if(XF&&XF.pay&&!XF.mode)XF.mode='eq'}catch(e){}
+const KEYS=['exp','pm'],FRESH=5*60e3,PEND={},TOMB={},SNAP={};
+const idOf=x=>x&&x.id!=null?String(x.id):JSON.stringify(x),js=x=>JSON.stringify(x);
+const snap=k=>{const m=new Map();(Array.isArray(ST[k])?ST[k]:[]).forEach(x=>m.set(idOf(x),js(x)));return m};
+KEYS.forEach(k=>{PEND[k]=new Map();TOMB[k]=new Map();SNAP[k]=snap(k)});
+try{const o=JSON.parse(localStorage.getItem('yatra_v66')||'{}');KEYS.forEach(k=>{(o[k]&&o[k].p||[]).forEach(([i,t])=>PEND[k].set(i,t));(o[k]&&o[k].t||[]).forEach(([i,t])=>TOMB[k].set(i,t))})}catch(e){}
+const keep=()=>{try{const o={};KEYS.forEach(k=>o[k]={p:[...PEND[k]],t:[...TOMB[k]]});localStorage.setItem('yatra_v66',JSON.stringify(o))}catch(e){}};
+/* local saves: note what changed */
+const raw=save;save=function(k){if(KEYS.includes(k)){const cur=snap(k),old=SNAP[k],t=Date.now();cur.forEach((v,id)=>{if(old.get(id)!==v){PEND[k].set(id,t);TOMB[k].delete(id)}});old.forEach((v,id)=>{if(!cur.has(id)){TOMB[k].set(id,t);PEND[k].delete(id)}});SNAP[k]=cur;keep()}return raw.apply(this,arguments)};
+function merge(k,remote){const t=Date.now();if(!Array.isArray(remote))remote=[];const loc=new Map((Array.isArray(ST[k])?ST[k]:[]).map(x=>[idOf(x),x]));
+ const out=[];const seen=new Set();remote.forEach(x=>{const id=idOf(x);seen.add(id);const td=TOMB[k].get(id);if(td&&t-td<FRESH)return;const pd=PEND[k].get(id);if(pd&&t-pd<FRESH&&loc.has(id)){if(js(loc.get(id))===js(x))PEND[k].delete(id);out.push(loc.get(id));return}PEND[k].delete(id);out.push(x)});
+ PEND[k].forEach((pt,id)=>{if(seen.has(id))return;if(t-pt>=FRESH*6){PEND[k].delete(id);return}if(loc.has(id))out.push(loc.get(id))});
+ TOMB[k].forEach((td,id)=>{if(!seen.has(id)||t-td>=FRESH*6)TOMB[k].delete(id)});keep();return out}
+/* every read of the shared rows passes through the merge (this wraps the fetch that pull() and the egress mirror use) */
+const F=window.fetch;window.fetch=async function(u,o){const r=await F.apply(this,arguments);try{const url=String(u&&u.url||u),m=String(o&&o.method||'GET').toUpperCase();
+ if(m!='GET'||!/\/rest\/v1\/yatra_kv\?/.test(url)||!r.ok)return r;const rows=await r.clone().json();if(!Array.isArray(rows))return r;let ch=0,push=[];
+ const out=rows.map(x=>{if(!x||!KEYS.includes(x.key))return x;const mv=merge(x.key,x.val);if(js(mv)!==js(x.val)){ch=1;push.push(x.key)}SNAP[x.key]=new Map(mv.map(y=>[idOf(y),js(y)]));return Object.assign({},x,{val:mv})});
+ if(!ch)return r;setTimeout(()=>push.forEach(k=>{try{raw(k)}catch(e){}}),600);
+ return new Response(JSON.stringify(out),{status:r.status,statusText:r.statusText,headers:r.headers})}catch(e){return r}};
 })();
 </script>
 <style id="v59css">
